@@ -1,0 +1,39 @@
+env=win_cmd+wsl+pshell;
+
+0. trunk_dev+feat_branches;use_gh_cli;need_trace
+1. work_on_prob;no_break_existing
+2. run_tests(cargo);iter_safe
+3. keep_lessons_learned
+4. upd8_readme_post_feat
+
+5. git_rules:
+   - cmd_pager+'|cat'
+   - use_--no-pager
+   - 1ln_commit||multi_-m
+   - incl_tix_nums
+   - detail4debug_ref
+
+6. cmd_rules:
+   - no_newln_in_str
+   - use_;&&_not_newln
+   - esc_special_chars
+   - set_nointeract_flags
+
+7. test_fail_proc:
+   - analyze_root_b4_mod
+   - id_impact_scope
+   - assess_arch_effect
+   - keep_exist_funcs
+   - min_focused_fix
+
+eval_crit:
+- preserve_feats?
+- min_focused_chg?
+- fix_arch_issue?
+- avoid_new_complex?
+
+rec_actions:
+- comment_not_del
+- use_feat_flags
+- doc_in_lessons
+- discuss_sys_improv
