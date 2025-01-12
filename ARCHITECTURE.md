@@ -749,51 +749,89 @@
 - eg/Classes/PluginItem.py - Plugin tree item representation
 - eg/Classes/PluginInstall.py - Plugin installation and updates
 
+## Configuration Management System
 
-Based on the code analysis, I can see that EventGhost uses Stackless Python in several key ways:
-Core Threading Model:
-Uses stackless tasklets for lightweight concurrency
-Implements a custom ThreadWorker class that bridges stackless tasklets with Win32 message pumping
-Handles event processing and UI interactions through tasklets
-Dialog Management:
-Uses tasklets for modal and non-modal dialog handling
-Implements asynchronous UI updates through tasklet channels
-Manages dialog lifecycle and event processing
-Event Processing:
-Uses tasklets for event filtering and routing
-Implements event queuing through stackless channels
-Handles event synchronization between threads
-The challenges in moving to Rust would be:
-Tasklet Replacement:
-Rust's async/await could replace most tasklet functionality
-Tokio runtime could handle the async event loop
-Would need to implement custom task scheduling
-Channel Communication:
-Rust's channels (mpsc, crossbeam) could replace stackless channels
-Would need to handle cross-thread communication differently
-Could use async channels for event routing
-Threading Model:
-Would need to reimplement the ThreadWorker using Rust's threading model
-Could use async tasks instead of stackless tasklets
-Would need careful consideration of thread safety
-Win32 Integration:
-Rust has good Win32 bindings through windows-rs
-Message pump implementation would need to be rewritten
-Would need to handle COM initialization differently
-Advantages of moving to Rust:
-Better Threading Model:
-Rust's ownership system prevents data races
-Async/await provides modern concurrency
-No GIL limitations
-Performance:
-Native code execution
-Zero-cost abstractions
-Better memory management
-Safety:
-Memory safety guarantees
-Thread safety by design
-Better error handling
-Modern Async:
-Built-in async/await
-Rich ecosystem of async tools
-Better performance than Python's async
+### Core Components
+
+1. **Config Class** (`Config.py`)
+   - Central configuration store with default values
+   - Handles persistent storage of application settings
+   - Manages runtime configuration state
+   - Supports section-based organization of settings
+
+2. **PersistentData** (`PersistentData.py`)
+   - Metaclass-based configuration persistence
+   - Automatic configuration hierarchy building
+   - Supports nested configuration sections
+
+3. **Document Management** (`Document.py`)
+   - XML-based configuration file handling
+   - Undo/Redo support for configuration changes
+   - Save/Load functionality with change tracking
+   - Configuration tree state persistence
+
+4. **Configuration UI** (`ConfigDialog.py`, `OptionsDialog.py`)
+   - Dialog-based configuration interface
+   - Settings categorization and organization
+   - Real-time configuration updates
+   - User preference management
+
+### Storage and Persistence
+
+1. **File Format**
+   - Primary storage in Python-based config files
+   - XML format for tree configuration
+   - Base64 encoding for sensitive data
+   - Hierarchical structure matching UI tree
+
+2. **Configuration Paths**
+   - User-specific configuration directory
+   - Application-wide default settings
+   - Plugin-specific configuration storage
+   - Temporary configuration handling
+
+3. **State Management**
+   - Tree expansion state tracking
+   - Window positions and sizes
+   - User preferences persistence
+   - Plugin state management
+
+### Migration Considerations
+
+1. **Current Implementation**
+   - Python-based configuration files
+   - Direct filesystem access
+   - wxPython UI integration
+   - In-memory configuration caching
+
+2. **Rust Migration Path**
+   - Consider using Serde for serialization
+   - Implement configuration trait system
+   - Maintain backward compatibility
+   - Add migration tooling support
+
+3. **Key Challenges**
+   - Configuration format versioning
+   - Plugin configuration compatibility
+   - UI state persistence
+   - Cross-platform paths handling
+
+4. **Plugin Considerations**
+   - Plugin-specific configuration storage
+   - Configuration validation system
+   - Default value handling
+   - Configuration upgrade paths
+
+### Security Considerations
+
+1. **Sensitive Data**
+   - Password storage encryption
+   - Secure configuration paths
+   - Permission management
+   - Configuration backup
+
+2. **Access Control**
+   - User-specific settings
+   - Plugin sandboxing
+   - Configuration isolation
+   - Validation and sanitization
