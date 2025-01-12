@@ -8,6 +8,24 @@
 - Event filtering and routing
 - Event binding and callbacks
 - Custom event types (eg.EventGhostEvent)
+- Event Processing Flow:
+  - Event source detection
+  - Event object creation
+  - Queue management
+  - Event dispatching
+  - Action triggering
+- Event Types:
+  - System events
+  - Plugin events
+  - User events
+  - Remote events
+  - Timer events
+- Event Properties:
+  - Event prefix
+  - Event suffix
+  - Payload data
+  - Source information
+  - Timestamp
 
 ### 2. Threading Model
 - Main thread (UI)
@@ -15,6 +33,9 @@
 - Worker threads (Background tasks)
 - Stackless Python tasklets
 - Thread synchronization mechanisms
+- Named pipe communication
+- Inter-process messaging
+- Windows-specific thread handling
 
 ### 3. Plugin System
 - Plugin loading/unloading
@@ -22,6 +43,9 @@
 - Plugin configuration
 - Action registration
 - Event handling registration
+- Dynamic module imports
+- Plugin dependency resolution
+- Version compatibility checking
 
 ### 4. Configuration Management
 - XML-based configuration storage
@@ -29,6 +53,9 @@
 - User preferences
 - Plugin settings persistence
 - Tree structure serialization
+- Registry interaction
+- Environment variables
+- System state detection
 
 ### 5. UI Framework
 - Main window
@@ -36,6 +63,40 @@
 - Configuration dialogs
 - Log window
 - System tray integration
+
+### 6. Windows Integration
+- Named Pipe Communication
+  - Inter-process messaging
+  - Remote control interface
+  - Plugin communication
+  - Command processing
+  - Security descriptor handling
+  - Multiple pipe instance support
+  - Message queuing system
+- Windows API Wrappers
+  - Dynamic API loading
+  - Error handling
+  - Resource management
+  - Win32 security attributes
+  - File handle management
+  - Pipe state management
+- System Hooks
+  - Keyboard monitoring
+  - Mouse tracking
+  - Window events
+  - Message filtering
+  - Event propagation
+- Registry Access
+  - Configuration storage
+  - System settings
+  - Application detection
+  - Permission handling
+- Process Management
+  - Application launching
+  - Window manipulation
+  - Process monitoring
+  - Thread synchronization
+  - Resource cleanup
 
 ## Core Features
 
@@ -203,3 +264,11 @@
 - eg/Classes/ConfigDialog.py - Base configuration dialog
 - eg/Classes/ConfigPanel.py - Configuration panel component
 - eg/Classes/ContainerItem.py - Base container class 
+
+### Windows Integration
+- eg/NamedPipe.py - IPC via Windows named pipes
+  - Implements command processing via named pipes
+  - Handles multi-instance pipe connections
+  - Provides secure IPC between admin/user contexts
+  - Supports async command execution
+  - Uses daemon threads for pipe management 
