@@ -835,3 +835,118 @@
    - Plugin sandboxing
    - Configuration isolation
    - Validation and sanitization
+
+## Logging System
+
+### Core Components
+
+1. **Log Class** (`Log.py`)
+   - Central logging manager
+   - Handles multiple log types (info, error, debug, warning)
+   - Supports log listeners and event listeners
+   - Manages stdout/stderr redirection
+   - Debug level control
+   - Stack trace formatting
+
+2. **LogCtrl** (`MainFrame/LogCtrl.py`)
+   - Virtual list control for log display
+   - Circular buffer implementation
+   - Configurable display options
+   - Copy/paste support
+   - Event replay functionality
+   - Custom formatting
+
+3. **Debug System**
+   - Debug level configuration
+   - Debug notice printing
+   - Warning notice handling
+   - Performance logging
+   - System information logging
+
+4. **UI Integration**
+   - Log window with filtering
+   - Color-coded messages
+   - Timestamp formatting
+   - Indentation support
+   - Context menu actions
+   - Drag and drop support
+
+### Key Features
+
+1. **Log Types**
+   - Standard output logging
+   - Error logging
+   - Debug logging
+   - Event logging
+   - Warning messages
+   - Stack traces
+   - System information
+
+2. **Display Features**
+   - Configurable timestamps
+   - Message indentation
+   - Color coding by type
+   - Icon indicators
+   - Virtual scrolling
+   - Auto-scrolling
+
+3. **Interaction**
+   - Copy to clipboard
+   - Event replay
+   - Message filtering
+   - Clear log
+   - Select all
+   - Drag and drop
+
+4. **Performance**
+   - Circular buffer management
+   - Virtual list implementation
+   - Batch updates
+   - Memory management
+   - Buffer size control
+
+### Migration Considerations
+
+1. **Current Implementation**
+   - Python logging integration
+   - wxPython UI components
+   - File-based logging
+   - Memory-based buffering
+   - Thread-safe logging
+
+2. **Rust Migration Path**
+   - Consider using `tracing` crate
+   - Implement structured logging
+   - Support async logging
+   - Maintain performance
+   - Enable log rotation
+
+3. **Key Challenges**
+   - Log format compatibility
+   - Performance optimization
+   - UI integration
+   - Thread safety
+   - Buffer management
+
+4. **Plugin Considerations**
+   - Plugin-specific logging
+   - Log level control
+   - Format standardization
+   - Performance impact
+   - Debug support
+
+### Security Considerations
+
+1. **Log Content**
+   - Sensitive data filtering
+   - Log file permissions
+   - User data protection
+   - Error message safety
+   - Debug info control
+
+2. **Access Control**
+   - Log file access
+   - Clear log permissions
+   - Export restrictions
+   - Remote logging security
+   - Debug level control
