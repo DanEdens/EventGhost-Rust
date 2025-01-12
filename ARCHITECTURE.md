@@ -1,5 +1,102 @@
 # EventGhost Architecture Overview
 
+## Files Analyzed
+
+### Core Classes
+- eg/Classes/ActionBase.py - Base class for all plugin actions
+- eg/Classes/ActionGroup.py - Handles grouping of related actions
+- eg/Classes/ActionItem.py - Represents individual action instances
+- eg/Classes/ActionSelectButton.py - UI component for action selection
+- eg/Classes/ActionThread.py - Main execution thread for actions
+- eg/Classes/ActionWithStringParameter.py - Action subclass with string config
+- eg/Classes/AddActionDialog.py - Dialog for adding new actions
+- eg/Classes/AddActionGroupDialog.py - Dialog for adding action groups
+- eg/Classes/AddEventDialog.py - Dialog for adding new events
+- eg/Classes/AddPluginDialog.py - Dialog for adding plugins
+- eg/Classes/AnimatedWindow.py - Animated UI component
+- eg/Classes/App.py - Main application class
+- eg/Classes/AutostartItem.py - Handles autostart functionality
+- eg/Classes/BoxedGroup.py - UI layout component
+- eg/Classes/ButtonRow.py - UI button container
+- eg/Classes/CheckBoxGrid.py - UI grid of checkboxes
+- eg/Classes/CheckUpdate.py - Update checker functionality
+- eg/Classes/Choice.py - UI choice component
+- eg/Classes/Colour.py - Color management
+- eg/Classes/ColourSelectButton.py - UI color picker
+- eg/Classes/Config.py - Configuration management
+- eg/Classes/ConfigDialog.py - Base configuration dialog
+- eg/Classes/ConfigPanel.py - Configuration panel component
+- eg/Classes/ContainerItem.py - Base container class
+
+### Core Infrastructure
+#### Windows Integration
+- eg/NamedPipe.py - IPC via Windows named pipes
+  - Implements command processing via named pipes
+  - Handles multi-instance pipe connections
+  - Provides secure IPC between admin/user contexts
+  - Supports async command execution
+  - Uses daemon threads for pipe management
+
+#### Event System
+- eg/EventThread.py
+  - Manages event filtering and execution
+  - Handles memory quotas and limitations
+  - Controls event session lifecycle
+  - Provides synchronous/async event triggers
+  - Implements event filtering system
+
+#### Threading and Task Management
+- eg/Classes/ThreadWorker.py - Core message pumping and task execution system
+- eg/Classes/Tasklet.py - Stackless Python tasklet wrapper implementation
+- eg/Classes/TaskletDialog.py - Dialog management using tasklets
+- eg/Classes/Scheduler.py - Task scheduling and timing system
+- eg/__init__.py - Core initialization and stackless integration
+- extensions/cFunctions/hooks.c - Native hooks and idle detection system
+
+#### Plugin System
+- eg/Classes/PluginBase.py - Base plugin class and lifecycle management
+- eg/Classes/PluginManager.py - Plugin loading and instance management
+- eg/Classes/PluginModuleInfo.py - Plugin metadata and registration
+- eg/Classes/PluginInstanceInfo.py - Plugin instance state tracking
+- eg/Classes/PluginItem.py - Plugin tree item representation
+- eg/Classes/PluginInstall.py - Plugin installation and updates
+
+### Analyzed Plugins
+#### Complete Analysis with Rust Implementation
+- plugins/GlobalMonitor/ - System performance monitoring and metrics
+  - Performance counter system
+  - Resource monitoring
+  - Event generation pipeline
+  - Data collection services
+
+#### Core Components and Migration Analysis
+- plugins/RadioSure/ - Media player control plugin
+  - Window observation system
+  - Event generation pipeline
+  - Thread management
+  - Windows API integration
+
+#### Initial Analysis
+- plugins/FileOperations/ - File system operations and monitoring
+  - File system watchers
+  - Operation interceptors
+  - Path management
+  - Event triggers
+
+- plugins/DirectoryWatcher/ - Directory monitoring and change detection
+  - Directory monitor service
+  - Change detection system
+  - Filter management
+  - Event dispatcher
+
+### Remaining Core Plugins (To Be Analyzed)
+- plugins/System/ - Core system control
+- plugins/Mouse/ - Mouse input/control
+- plugins/Keyboard/ - Keyboard input/control
+- plugins/Window/ - Window management
+- plugins/Task/ - Process/task management
+- plugins/Network/ - Network communication
+
 ## Core Systems
 
 ### 1. Event System
@@ -1135,64 +1232,6 @@ Core plugin for window management and control.
 - User guide
 - Migration guide
 
-## Files Analyzed
-
-### Core Classes
-- eg/Classes/ActionBase.py - Base class for all plugin actions
-- eg/Classes/ActionGroup.py - Handles grouping of related actions
-- eg/Classes/ActionItem.py - Represents individual action instances
-- eg/Classes/ActionSelectButton.py - UI component for action selection
-- eg/Classes/ActionThread.py - Main execution thread for actions
-- eg/Classes/ActionWithStringParameter.py - Action subclass with string config
-- eg/Classes/AddActionDialog.py - Dialog for adding new actions
-- eg/Classes/AddActionGroupDialog.py - Dialog for adding action groups
-- eg/Classes/AddEventDialog.py - Dialog for adding new events
-- eg/Classes/AddPluginDialog.py - Dialog for adding plugins
-- eg/Classes/AnimatedWindow.py - Animated UI component
-- eg/Classes/App.py - Main application class
-- eg/Classes/AutostartItem.py - Handles autostart functionality
-- eg/Classes/BoxedGroup.py - UI layout component
-- eg/Classes/ButtonRow.py - UI button container
-- eg/Classes/CheckBoxGrid.py - UI grid of checkboxes
-- eg/Classes/CheckUpdate.py - Update checker functionality
-- eg/Classes/Choice.py - UI choice component
-- eg/Classes/Colour.py - Color management
-- eg/Classes/ColourSelectButton.py - UI color picker
-- eg/Classes/Config.py - Configuration management
-- eg/Classes/ConfigDialog.py - Base configuration dialog
-- eg/Classes/ConfigPanel.py - Configuration panel component
-- eg/Classes/ContainerItem.py - Base container class
-
-### Windows Integration
-- eg/NamedPipe.py - IPC via Windows named pipes
-  - Implements command processing via named pipes
-  - Handles multi-instance pipe connections
-  - Provides secure IPC between admin/user contexts
-  - Supports async command execution
-  - Uses daemon threads for pipe management
-
-### EventThread.py
-- Manages event filtering and execution
-- Handles memory quotas and limitations
-- Controls event session lifecycle
-- Provides synchronous/async event triggers
-- Implements event filtering system
-
-### Threading and Task Management
-- eg/Classes/ThreadWorker.py - Core message pumping and task execution system
-- eg/Classes/Tasklet.py - Stackless Python tasklet wrapper implementation
-- eg/Classes/TaskletDialog.py - Dialog management using tasklets
-- eg/Classes/Scheduler.py - Task scheduling and timing system
-- eg/__init__.py - Core initialization and stackless integration
-- extensions/cFunctions/hooks.c - Native hooks and idle detection system
-
-### Plugin System
-- eg/Classes/PluginBase.py - Base plugin class and lifecycle management
-- eg/Classes/PluginManager.py - Plugin loading and instance management
-- eg/Classes/PluginModuleInfo.py - Plugin metadata and registration
-- eg/Classes/PluginInstanceInfo.py - Plugin instance state tracking
-- eg/Classes/PluginItem.py - Plugin tree item representation
-- eg/Classes/PluginInstall.py - Plugin installation and updates
 
 ## Configuration Management System
 
