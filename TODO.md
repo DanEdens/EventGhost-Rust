@@ -66,11 +66,95 @@
   - State tracking outlined
 
 ### Pending Analysis
-- [ ] Task Plugin
-  - Process management
-  - Scheduling system
+- [ ] Global Monitor Plugin
+  - System monitoring capabilities
+  - Resource tracking
+  - Performance metrics
+  - Event generation system
+
+- [ ] File Operations Plugin
+  - File system monitoring
+  - File operation handling
+  - Event generation for file changes
+  - Path management
+
+- [ ] Directory Watcher Plugin
+  - Directory monitoring system
+  - Change notification system
+  - Event filtering
+  - Path management
+
+- [ ] AutoRemote Plugin
+  - Remote control functionality
+  - Device communication
+  - Event routing
+  - Security considerations
+
+- [ ] TrayTip Plugin
+  - System tray notifications
+  - Message formatting
   - Event triggers
+  - UI integration
+
+- [ ] Speech Plugin
+  - Text-to-speech system
+  - Voice recognition
+  - Event generation
+  - Language support
+
+- [ ] Google Chrome Plugin
+  - Browser interaction
+  - Tab management
+  - Event monitoring
+  - Extension integration
+
+- [ ] Timer Plugin
+  - Timing system
+  - Event scheduling
+  - Interval management
+  - Precision handling
+
+- [ ] MQTT Client Plugin
+  - Message queue integration
+  - Topic management
+  - Event routing
+  - Connection handling
+
+- [ ] OS Menu Plugin
+  - System menu integration
+  - Menu item management
+  - Event handling
+  - UI integration
+
+- [ ] WindowsVirtualDesktop Plugin
+  - Virtual desktop management
+  - Desktop switching
+  - Window management
+  - Event handling
+
+- [ ] Task Monitor Plus Plugin
+  - Enhanced task monitoring
+  - Process management
+  - Resource tracking
+  - Event generation
+
+- [ ] Process Watcher Plugin
+  - Process monitoring
   - State tracking
+  - Event generation
+  - Resource management
+
+- [ ] Ping Plugin
+  - Network connectivity testing
+  - Response time monitoring
+  - Event generation
+  - Error handling
+
+- [ ] SchedulGhost Plugin
+  - Task scheduling
+  - Time-based events
+  - Schedule management
+  - Event generation
 
 ### Migration Tasks
 
