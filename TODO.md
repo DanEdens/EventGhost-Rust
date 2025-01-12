@@ -1,8 +1,6 @@
 # EventGhost Rust Migration TODOs
 
-## Systems to Analyze
-
-### Core Systems
+## Core Systems to Analyze
 - [x] Event System
 - [x] Threading Model
 - [x] Plugin System
@@ -11,7 +9,42 @@
 - [x] Logging System
 - [ ] Remote Management (Next)
 
-### Implementation Details to Document
+## Core Plugins
+- [x] EventGhost Plugin
+  - [x] Action management
+  - [x] Flow control
+  - [x] UI integration
+  - [x] System integration
+  - [ ] Migration patterns
+  - [ ] Testing strategy
+  - [ ] Security model
+
+- [x] Keyboard Plugin
+  - [x] Event generation
+  - [x] Event processing
+  - [x] System integration
+  - [ ] Cross-platform support
+  - [ ] Testing framework
+  - [ ] Security model
+
+- [x] System Plugin
+  - [x] Power management
+  - [x] Display control
+  - [x] Audio control
+  - [x] System integration
+  - [ ] Cross-platform support
+  - [ ] Testing framework
+  - [ ] Security model
+
+- [ ] Additional Core Plugins
+  - [ ] Mouse
+  - [ ] Window
+  - [ ] Network
+  - [ ] Task
+  - [ ] Process
+  - [ ] File
+
+## Implementation Details
 - [x] UI Framework
   - [x] wxPython replacement options
   - [x] Tree view implementation
@@ -58,34 +91,52 @@
   - [ ] Authorization
   - [ ] API versioning
 
+## Plugin Migration Strategy
+- [ ] Core Plugin Architecture
+  - [ ] Define plugin traits
+  - [ ] Event handling system
+  - [ ] Action management
+  - [ ] Configuration interface
+  - [ ] Resource management
+  - [ ] Security model
+
+- [ ] Plugin Loading
+  - [ ] Dynamic loading system
+  - [ ] Plugin registration
+  - [ ] Action registration
+  - [ ] Resource management
+  - [ ] Error handling
+
+- [ ] Event Processing
+  - [ ] Event system integration
+  - [ ] Handler management
+  - [ ] Queue processing
+  - [ ] Error handling
+  - [ ] Performance optimization
+
+- [ ] Testing Framework
+  - [ ] Unit testing
+  - [ ] Integration testing
+  - [ ] Plugin testing
+  - [ ] UI testing
+  - [ ] Performance testing
+
 ## Migration Planning
 - [x] Document current architecture
-- [ ] Create detailed component dependency graph
-- [ ] Identify critical path components
+- [ ] Create component dependency graph
+- [ ] Identify critical path
 - [ ] Design migration sequence
 - [ ] Create test coverage plan
 - [ ] Document API changes
-- [ ] Plan plugin compatibility layer
+- [ ] Plan compatibility layer
 - [ ] Define migration phases
-- [ ] Set up CI/CD pipeline
-- [ ] Create rollback procedures
 
-## Documentation Needs
-- [x] Update architecture docs for analyzed systems
-- [ ] Create Rust-specific API documentation
-- [ ] Write migration guides for plugin developers
-- [ ] Document new patterns and best practices
-- [ ] Create troubleshooting guides
-- [ ] Performance optimization guides
-- [ ] Security best practices
-- [ ] Development environment setup
-
-## Testing Requirements
-- [ ] Define test strategy for each component
-- [ ] Create test frameworks
-- [ ] Document testing patterns
-- [ ] Plan integration test approach
-- [ ] Design plugin test system
-- [ ] Performance testing suite
-- [ ] Migration test procedures
-- [ ] Compatibility test suite
+## Documentation
+- [x] Architecture documentation
+- [ ] API documentation
+- [ ] Migration guides
+- [ ] Best practices
+- [ ] Security guidelines
+- [ ] Testing patterns
+- [ ] Performance optimization
+- [ ] Development setup
