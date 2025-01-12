@@ -1,39 +1,16 @@
-env=win_cmd+wsl+pshell;
-
-0. trunk_dev+feat_branches;use_gh_cli;need_trace
-1. work_on_prob;no_break_existing
-2. run_tests(cargo);iter_safe
-3. keep_lessons_learned
-4. upd8_readme_post_feat
-
-5. git_rules:
-   - cmd_pager+'|cat'
-   - use_--no-pager
-   - 1ln_commit||multi_-m
-   - incl_tix_nums
-   - detail4debug_ref
-
-6. cmd_rules:
-   - no_newln_in_str
-   - use_;&&_not_newln
-   - esc_special_chars
-   - set_nointeract_flags
-
-7. test_fail_proc:
-   - analyze_root_b4_mod
-   - id_impact_scope
-   - assess_arch_effect
-   - keep_exist_funcs
-   - min_focused_fix
-
-eval_crit:
-- preserve_feats?
-- min_focused_chg?
-- fix_arch_issue?
-- avoid_new_complex?
-
-rec_actions:
-- comment_not_del
-- use_feat_flags
-- doc_in_lessons
-- discuss_sys_improv
+0. Use trunk-based development with feature branches
+1. Work on the code problem asked, implementing it without harming existing methods, Ask if unsure.
+2. Run available tests (e.g. 'cargo test') and iterate until successful
+3. Maintain a "Lessons Learned" section in readme.md
+4. Update readme.md with progress after completing features
+5. Git workflow rules:
+   - Always append '| cat' to commands that might trigger a pager (git diff, git log, etc.)
+   - Use --no-pager flag for git commands when possible
+   - Keep commit messages single-line or use multiple -m flags
+   - Include ticket/issue numbers in commit messages when applicable
+   - Write detailed commit messages for future debugging reference
+6. Command execution rules:
+   - Avoid newlines in command strings
+   - Use semicolons or && for multiple commands instead of newlines
+   - Escape special characters in command strings
+   - Set appropriate flags to prevent interactive prompts

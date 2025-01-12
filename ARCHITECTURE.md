@@ -8,6 +8,20 @@
 - Event filtering and routing
 - Event binding and callbacks
 - Custom event types (eg.EventGhostEvent)
+- Event Thread Implementation:
+  - ThreadWorker-based event processing
+  - Memory management and quotas
+  - Event filtering system
+  - Event execution modes:
+    - Normal events
+    - Enduring events
+    - Wait-for-completion events
+- Event Execution:
+  - Action thread delegation
+  - Event source filtering
+  - Payload handling
+  - Timeout management
+  - Session control
 - Event Processing Flow:
   - Event source detection
   - Event object creation
@@ -106,6 +120,25 @@
 - Event filtering and conditions
 - Event logging
 - Event replay
+- Event Binding System:
+  - Dynamic binding registration
+  - Binding priority handling
+  - Conditional binding
+  - Binding groups
+  - Temporary bindings
+- Event Sources:
+  - Hardware input devices
+  - System state changes
+  - Plugin-generated events
+  - Network events
+  - Timer events
+  - User-triggered events
+- Event Processing Pipeline:
+  - Source validation
+  - Event normalization
+  - Queue prioritization
+  - Action triggering
+  - Result handling
 
 ### 2. Action Management
 - Action execution
@@ -272,3 +305,10 @@
   - Provides secure IPC between admin/user contexts
   - Supports async command execution
   - Uses daemon threads for pipe management 
+
+### EventThread.py
+- Manages event filtering and execution
+- Handles memory quotas and limitations
+- Controls event session lifecycle
+- Provides synchronous/async event triggers
+- Implements event filtering system 
