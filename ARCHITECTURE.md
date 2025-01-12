@@ -1694,3 +1694,36 @@ Core plugin for mouse control and event generation.
    - Source verification
    - Payload sanitization
    - Action authorization
+
+
+
+## STACKLESS PYTHON MIGRATION
+Rust's channels (mpsc, crossbeam) could replace stackless channels
+Would need to handle cross-thread communication differently
+Could use async channels for event routing
+Threading Model:
+Would need to reimplement the ThreadWorker using Rust's threading model
+Could use async tasks instead of stackless tasklets
+
+Would need careful consideration of thread safety
+Win32 Integration:
+Rust has good Win32 bindings through windows-rs
+Message pump implementation would need to be rewritten
+Would need to handle COM initialization differently
+Advantages of moving to Rust:
+Better Threading Model:
+Rust's ownership system prevents data races
+Async/await provides modern concurrency
+No GIL limitations
+Performance:
+Native code execution
+Zero-cost abstractions
+Better memory management
+Safety:
+Memory safety guarantees
+Thread safety by design
+Better error handling
+Modern Async:
+Built-in async/await
+Rich ecosystem of async tools
+Better performance than Python's async
