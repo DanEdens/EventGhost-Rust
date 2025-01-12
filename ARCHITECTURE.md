@@ -384,6 +384,124 @@
 - Plugin system
 - UI framework selection
 
+#### Stackless Python Migration
+1. Current Stackless Usage:
+   - Core Threading Model:
+     - Stackless tasklets for lightweight concurrency
+     - Custom ThreadWorker bridging tasklets with Win32 messages
+     - Event processing and UI interactions
+   - Dialog Management:
+     - Modal and non-modal dialog handling via tasklets
+     - Asynchronous UI updates through channels
+     - Dialog lifecycle management
+   - Event Processing:
+     - Event filtering and routing via tasklets
+     - Event queuing through stackless channels
+     - Cross-thread event synchronization
+
+2. Migration Challenges:
+   - Tasklet Replacement:
+     - Implementing Rust async/await equivalents
+     - Tokio runtime for async event loop
+     - Custom task scheduling requirements
+   - Channel Communication:
+     - Replacing stackless channels with Rust channels
+     - Cross-thread communication patterns
+     - Event routing through async channels
+   - Threading Model:
+     - ThreadWorker reimplementation in Rust
+     - Async tasks vs stackless tasklets
+     - Thread safety considerations
+   - Win32 Integration:
+     - Windows-rs API bindings usage
+     - Message pump reimplementation
+     - COM initialization handling
+
+3. Rust Advantages:
+   - Threading Model:
+     - Ownership system prevents data races
+     - Modern async/await concurrency
+     - No Global Interpreter Lock
+   - Performance:
+     - Native code execution
+     - Zero-cost abstractions
+     - Improved memory management
+   - Safety:
+     - Memory safety guarantees
+     - Thread safety by design
+     - Enhanced error handling
+   - Modern Async:
+     - Built-in async/await support
+     - Rich async ecosystem
+     - Superior async performance
+
+4. Implementation Patterns:
+   - Event System:
+     ```rust
+     // Event processing with async
+     struct EventSystem {
+         event_tx: mpsc::Sender<Event>,
+         event_rx: mpsc::Receiver<Event>,
+     }
+
+     impl EventSystem {
+         async fn process_events(&mut self) {
+             while let Some(event) = self.event_rx.recv().await {
+                 self.handle_event(event).await;
+             }
+         }
+     }
+     ```
+   - UI Integration:
+     ```rust
+     // UI message handling
+     use windows_rs::Win32::UI::WindowsAndMessaging::*;
+
+     struct MessagePump {
+         msg_tx: mpsc::Sender<Message>,
+     }
+
+     impl MessagePump {
+         async fn run(&mut self) {
+             let mut msg = MSG::default();
+             while GetMessage(&mut msg, None, 0, 0).as_bool() {
+                 TranslateMessage(&msg);
+                 DispatchMessage(&msg);
+             }
+         }
+     }
+     ```
+   - Task Management:
+     ```rust
+     // Instead of stackless tasklets
+     async fn handle_event(event: Event) {
+         // Event processing
+     }
+
+     // Instead of stackless channels
+     use tokio::sync::mpsc;
+     let (tx, rx) = mpsc::channel(32);
+     ```
+
+5. Migration Benefits:
+   - Eliminates Stackless Python dependency
+   - Provides modern async/await system
+   - Improves performance and safety
+   - Better Windows integration
+   - Enhanced error handling
+   - Simplified concurrency model
+   - Reduced memory overhead
+   - Improved debugging capabilities
+
+6. Key Considerations:
+   - Careful handling of existing plugin interfaces
+   - Gradual migration of core components
+   - Maintaining Windows API compatibility
+   - Testing strategy for async behavior
+   - Performance monitoring during transition
+   - Documentation of new patterns
+   - Training for Rust async concepts
+
 ### 3. Testing Requirements
 - Unit tests
 - Integration tests
@@ -396,7 +514,7 @@
 - API documentation
 - Plugin development guide
 - User guide
-- Migration guide 
+- Migration guide
 
 ## Files Analyzed
 
@@ -424,7 +542,7 @@
 - eg/Classes/Config.py - Configuration management
 - eg/Classes/ConfigDialog.py - Base configuration dialog
 - eg/Classes/ConfigPanel.py - Configuration panel component
-- eg/Classes/ContainerItem.py - Base container class 
+- eg/Classes/ContainerItem.py - Base container class
 
 ### Windows Integration
 - eg/NamedPipe.py - IPC via Windows named pipes
@@ -432,11 +550,76 @@
   - Handles multi-instance pipe connections
   - Provides secure IPC between admin/user contexts
   - Supports async command execution
-  - Uses daemon threads for pipe management 
+  - Uses daemon threads for pipe management
 
 ### EventThread.py
 - Manages event filtering and execution
 - Handles memory quotas and limitations
 - Controls event session lifecycle
 - Provides synchronous/async event triggers
-- Implements event filtering system 
+- Implements event filtering system
+
+### Threading and Task Management
+- eg/Classes/ThreadWorker.py - Core message pumping and task execution system
+- eg/Classes/Tasklet.py - Stackless Python tasklet wrapper implementation
+- eg/Classes/TaskletDialog.py - Dialog management using tasklets
+- eg/Classes/Scheduler.py - Task scheduling and timing system
+- eg/__init__.py - Core initialization and stackless integration
+- extensions/cFunctions/hooks.c - Native hooks and idle detection system
+
+### Plugin System
+- eg/Classes/PluginBase.py - Base plugin class and lifecycle management
+- eg/Classes/PluginManager.py - Plugin loading and instance management
+- eg/Classes/PluginModuleInfo.py - Plugin metadata and registration
+- eg/Classes/PluginInstanceInfo.py - Plugin instance state tracking
+- eg/Classes/PluginItem.py - Plugin tree item representation
+- eg/Classes/PluginInstall.py - Plugin installation and updates
+
+
+Based on the code analysis, I can see that EventGhost uses Stackless Python in several key ways:
+Core Threading Model:
+Uses stackless tasklets for lightweight concurrency
+Implements a custom ThreadWorker class that bridges stackless tasklets with Win32 message pumping
+Handles event processing and UI interactions through tasklets
+Dialog Management:
+Uses tasklets for modal and non-modal dialog handling
+Implements asynchronous UI updates through tasklet channels
+Manages dialog lifecycle and event processing
+Event Processing:
+Uses tasklets for event filtering and routing
+Implements event queuing through stackless channels
+Handles event synchronization between threads
+The challenges in moving to Rust would be:
+Tasklet Replacement:
+Rust's async/await could replace most tasklet functionality
+Tokio runtime could handle the async event loop
+Would need to implement custom task scheduling
+Channel Communication:
+Rust's channels (mpsc, crossbeam) could replace stackless channels
+Would need to handle cross-thread communication differently
+Could use async channels for event routing
+Threading Model:
+Would need to reimplement the ThreadWorker using Rust's threading model
+Could use async tasks instead of stackless tasklets
+Would need careful consideration of thread safety
+Win32 Integration:
+Rust has good Win32 bindings through windows-rs
+Message pump implementation would need to be rewritten
+Would need to handle COM initialization differently
+Advantages of moving to Rust:
+Better Threading Model:
+Rust's ownership system prevents data races
+Async/await provides modern concurrency
+No GIL limitations
+Performance:
+Native code execution
+Zero-cost abstractions
+Better memory management
+Safety:
+Memory safety guarantees
+Thread safety by design
+Better error handling
+Modern Async:
+Built-in async/await
+Rich ecosystem of async tools
+Better performance than Python's async
