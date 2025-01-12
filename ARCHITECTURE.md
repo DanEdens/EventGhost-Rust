@@ -61,6 +61,134 @@
 - Plugin dependency resolution
 - Version compatibility checking
 
+#### Core Components:
+
+##### PluginBase Class
+- Base class for all EventGhost plugins
+- Provides core plugin lifecycle methods:
+  - `__init__`: Plugin initialization and action registration
+  - `__start__`: Called when plugin is enabled
+  - `__stop__`: Called when plugin is disabled
+  - `__close__`: Called when plugin is unloaded
+- Handles event triggering and management
+- Provides configuration interface
+- Manages plugin metadata (name, description, version)
+- Supports internationalization through text attribute
+
+##### Plugin Manager
+- Manages plugin lifecycle and instances
+- Maintains plugin database and registration
+- Handles plugin loading and instantiation
+- Provides plugin info lookup and management
+- Supports multi-loading of plugins
+- Manages plugin dependencies and versions
+
+##### Plugin Instance Info
+- Tracks individual plugin instance state
+- Manages plugin actions and events
+- Handles plugin evaluation names
+- Maintains instance configuration
+- Tracks plugin execution state
+- Manages plugin exceptions
+
+##### Plugin Module Info
+- Handles plugin module registration
+- Manages plugin metadata and properties
+- Supports plugin localization
+- Handles plugin icons and resources
+- Validates plugin requirements
+- Tracks plugin paths and GUIDs
+
+##### Plugin Installation
+- Handles plugin package installation
+- Manages plugin dependencies
+- Validates plugin compatibility
+- Handles plugin updates
+- Manages plugin resources
+
+##### Action System
+- Base class for all plugin actions
+- Supports action configuration
+- Handles action execution
+- Manages action metadata
+- Provides action grouping
+- Supports action localization
+
+#### Key Features:
+
+##### Plugin Lifecycle
+1. Plugin Discovery
+   - Scans plugin directories
+   - Loads plugin metadata
+   - Validates plugin requirements
+
+2. Plugin Loading
+   - Imports plugin module
+   - Creates plugin instance
+   - Initializes plugin state
+   - Registers plugin actions
+
+3. Plugin Execution
+   - Handles plugin start/stop
+   - Manages plugin state
+   - Processes plugin events
+   - Executes plugin actions
+
+4. Plugin Cleanup
+   - Handles plugin shutdown
+   - Cleans up resources
+   - Unregisters actions
+   - Removes plugin instance
+
+##### Plugin Architecture
+1. Module Structure
+   - Plugin base class
+   - Action definitions
+   - Event handlers
+   - Configuration interface
+
+2. Resource Management
+   - Plugin icons
+   - Localization files
+   - Configuration data
+   - Plugin dependencies
+
+3. Security Model
+   - Plugin isolation
+   - Resource access control
+   - Event filtering
+   - Configuration validation
+
+4. Extension Points
+   - Action registration
+   - Event handling
+   - Configuration interface
+   - Resource management
+
+##### Plugin Development
+1. Base Classes
+   - PluginBase for core functionality
+   - ActionBase for plugin actions
+   - Custom exceptions for error handling
+
+2. Registration System
+   - Plugin metadata declaration
+   - Action registration
+   - Event binding
+   - Resource declaration
+
+3. Configuration System
+   - Plugin settings
+   - Action configuration
+   - Persistent storage
+   - UI integration
+
+4. Event System
+   - Event generation
+   - Event handling
+   - Event filtering
+   - Event persistence
+
 ### 4. Configuration Management
 - XML-based configuration storage
 - Runtime configuration
