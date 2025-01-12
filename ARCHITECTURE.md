@@ -206,6 +206,180 @@
 - Log window
 - System tray integration
 
+#### Core Components:
+
+##### Main Frame (MainFrame)
+- Central UI container using wxPython
+- Manages layout with wxAUI (Advanced User Interface)
+- Handles window events and user interactions
+- Implements menu and toolbar systems
+- Manages dialog lifecycle
+- Provides configuration persistence
+- Supports window state management
+
+##### Dialog System
+- Base Dialog class with common functionality
+- TaskletDialog for async operations
+- ConfigDialog for plugin/action configuration
+- MessageDialog for user notifications
+- TransferDialog for progress indication
+- Custom dialog controls and layouts
+- Modal and non-modal support
+
+##### Tree Control
+- Hierarchical view of configuration
+- Drag and drop support
+- Context menu integration
+- Item editing capabilities
+- Selection management
+- Visual feedback system
+- Custom item rendering
+
+##### Log Control
+- Event logging display
+- Column management
+- Filtering capabilities
+- Auto-scrolling
+- Text formatting
+- Timestamp handling
+
+##### UI Components
+- Custom controls and widgets
+- Header boxes
+- Animated windows
+- Hyperlink controls
+- Color pickers
+- Button arrays
+- Grid layouts
+
+#### Key Features:
+
+##### Layout Management
+1. Window Layout
+   - Dockable panels
+   - Persistent layouts
+   - Size management
+   - Position tracking
+   - Split views
+
+2. Dialog Management
+   - Dialog stacking
+   - Modal handling
+   - Window positioning
+   - Focus management
+   - Dialog persistence
+
+3. Control Integration
+   - Custom control creation
+   - Event routing
+   - State management
+   - Visual feedback
+   - Accessibility support
+
+4. Theme Support
+   - Custom drawing
+   - Icon management
+   - Color schemes
+   - Font handling
+   - Visual styles
+
+##### User Interaction
+1. Input Handling
+   - Keyboard shortcuts
+   - Mouse events
+   - Context menus
+   - Drag and drop
+   - Focus tracking
+
+2. Visual Feedback
+   - Status messages
+   - Progress indicators
+   - Error displays
+   - Tooltips
+   - Highlighting
+
+3. Configuration Interface
+   - Property editors
+   - Value validation
+   - Live preview
+   - Default handling
+   - State persistence
+
+4. Window Management
+   - Minimize/Maximize
+   - System tray
+   - Multiple monitors
+   - Window states
+   - Focus handling
+
+#### Migration Considerations:
+
+##### Current wxPython Dependencies
+1. Core Dependencies
+   - wxPython for UI framework
+   - wxAUI for docking
+   - wx.TreeCtrl for tree view
+   - wx.ListCtrl for logging
+   - Custom wx controls
+
+2. Platform Integration
+   - Native widgets
+   - System dialogs
+   - Window management
+   - Clipboard handling
+   - Drag and drop
+
+##### Rust UI Options
+1. Potential Frameworks
+   - Iced for native Rust UI
+   - Druid for performance
+   - egui for immediate mode
+   - gtk-rs for GTK binding
+   - Qt bindings via rust-qt
+
+2. Framework Requirements
+   - Tree view support
+   - Docking capability
+   - Rich text display
+   - Custom controls
+   - Native look and feel
+
+3. Migration Challenges
+   - Complex layouts
+   - Custom controls
+   - Event handling
+   - Dialog system
+   - Plugin UI integration
+
+4. Implementation Strategy
+   - Gradual component migration
+   - Parallel UI systems
+   - Compatibility layer
+   - State synchronization
+   - Plugin adaptation
+
+##### Plugin Considerations
+1. UI Integration
+   - Plugin dialog system
+   - Custom controls
+   - Resource management
+   - Event handling
+   - State persistence
+
+2. Compatibility Layer
+   - wxPython wrapper
+   - Control mapping
+   - Event translation
+   - Resource handling
+   - State management
+
+3. Migration Path
+   - Plugin UI guidelines
+   - Transition helpers
+   - UI component library
+   - Testing tools
+   - Documentation
+
 ### 6. Windows Integration
 - Named Pipe Communication
   - Inter-process messaging
