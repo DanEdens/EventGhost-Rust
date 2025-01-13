@@ -4,47 +4,16 @@
 
 ### Completed Plugin Analysis (RST Format)
 - [x] Mouse Plugin
-  - Full component analysis
-  - Rust implementation strategy
-  - Migration path documented
-  - Testing strategy defined
-  - Platform considerations detailed
-
 - [x] Keyboard Plugin
-  - Core functionality analyzed
-  - Event system documented
-  - Migration strategy outlined
-  - Testing approach defined
-  - Platform support planned
+- [x] System Plugin
 
 ### Plugins Needing RST Format Update
-- [ ] System Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Expand implementation details
-  - Add testing strategy
-  - Document platform considerations
-
 - [ ] Window Plugin
   - Initial analysis done
   - Needs RST formatting
   - Expand Rust implementation
   - Add error handling
   - Detail testing approach
-
-- [ ] Task Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Add migration strategy
-  - Expand testing section
-  - Detail platform support
-
-- [ ] Network Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Expand security considerations
-  - Add protocol details
-  - Document testing approach
 
 - [ ] Global Monitor Plugin
   - Initial analysis done
@@ -53,7 +22,28 @@
   - Add cross-platform strategy
   - Detail testing approach
 
+- [ ] EventGhost Core Plugin
+  - Initial analysis done
+  - Need detailed component breakdown
+  - Need implementation strategy
+  - Need testing approach
+  - Need platform considerations
+  
 ### Plugins Needing Full Analysis
+- [ ] Network Plugin
+  - Initial analysis done
+  - Needs RST formatting
+  - Expand security considerations
+  - Add protocol details
+  - Document testing approach
+
+- [ ] Task Plugin
+  - Initial analysis done
+  - Needs RST formatting
+  - Add migration strategy
+  - Expand testing section
+  - Detail platform support
+
 - [ ] Directory Watcher Plugin
   - Basic structure only
   - Need full component analysis
@@ -68,12 +58,6 @@
   - Need testing approach
   - Need platform considerations
 
-- [ ] EventGhost Core Plugin
-  - Initial analysis done
-  - Need detailed component breakdown
-  - Need implementation strategy
-  - Need testing approach
-  - Need platform considerations
 
 ### Additional Plugins for Analysis
 - [ ] Google Chrome Plugin

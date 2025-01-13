@@ -1,132 +1,197 @@
+System Plugin
+============
 
+Overview
+--------
+A core plugin providing comprehensive system control and hardware interaction capabilities. It enables control over various aspects of the system including power management, display settings, audio control, registry manipulation, and device monitoring.
 
-### 3. System Plugin (`plugins/System`)
-Core plugin for system control and hardware interaction.
-
-#### Core Functions
-1. **Power Management**
-   - Shutdown/Reboot
-   - Sleep/Hibernate
-   - Lock workstation
+Core Components
+-------------
+1. Power Management System
+   - System shutdown/reboot control
+   - Sleep/Hibernate management
+   - Workstation locking
    - System idle control
+   - Power broadcast notifications
+   - Session change monitoring
 
-2. **Display Control**
+2. Display Control System
    - Monitor power states
-   - Display settings
-   - Wallpaper management
-   - Screen saver control
+   - Display settings management
+   - Wallpaper control
+   - Screen saver management
+   - Multi-monitor support
+   - Image display capabilities
 
-3. **Audio Control**
+3. Audio Control System
    - Volume management
    - Mute control
    - Sound playback
-   - Device selection
+   - Multiple device support
+   - Audio event monitoring
+   - Device enumeration
 
-4. **System Integration**
-   - Registry access
+4. System Integration
+   - Registry access and manipulation
    - Drive management
-   - Device notifications
-   - Environment control
+   - Device change notifications
+   - Environment variable control
+   - Clipboard management
+   - QR code generation
 
-### Migration Considerations
+Key Features
+-----------
+1. Power Management
+   - Shutdown/Reboot operations
+   - Sleep/Hibernate control
+   - Workstation locking
+   - Idle time management
+   - Force close applications
+   - Power state monitoring
 
-1. **EventGhost Plugin**
-   - Core functionality migration
-   - Python script execution
+2. Display Control
+   - Monitor power states (on/off/standby)
+   - Display settings presets
+   - Wallpaper management
+   - Screen saver control
+   - Image display with advanced options
+   - Multi-monitor support
+
+3. Audio Features
+   - Master volume control
+   - Device-specific volume
+   - Mute toggling
+   - Sound file playback
+   - Audio device selection
+   - Volume change monitoring
+
+4. System Utilities
+   - Registry manipulation
+   - Drive tray control
+   - Environment refresh
+   - Clipboard operations
+   - Wake-on-LAN
+   - System timestamps
+
+Migration Considerations
+---------------------
+1. Core Functionality Migration
+   - Port Windows API calls to safe Rust bindings
+   - Implement proper privilege management
+   - Handle system events safely
+   - Maintain backward compatibility
+   - Ensure proper resource cleanup
+
+2. Event System
+   - Design event notification system
+   - Handle power broadcast events
+   - Manage device change notifications
+   - Session change monitoring
+   - Audio event handling
+
+3. Resource Management
+   - Safe handle management
+   - Proper privilege cleanup
+   - Thread safety considerations
+   - Memory management
+   - Device resource handling
+
+Implementation Strategy
+--------------------
+1. Power Management
+   .. code-block:: rust
+
+   pub struct PowerManager {
+       privileges: SystemPrivileges,
+       broadcast_receiver: PowerBroadcastReceiver,
+       session_monitor: SessionMonitor,
+   }
+
+   impl PowerManager {
+       pub fn shutdown(&self, force: bool) -> Result<(), Error> {
+           // Validate privileges
+           // Handle force close
+           // Execute shutdown
+           // Monitor result
+       }
+   }
+
+2. Display Control
+   .. code-block:: rust
+
+   pub struct DisplayManager {
+       monitors: Vec<Monitor>,
+       settings: DisplaySettings,
+       wallpaper: WallpaperManager,
+   }
+
+   impl DisplayManager {
+       pub fn set_power_state(&mut self, state: PowerState) -> Result<(), Error> {
+           // Validate state
+           // Apply power state
+           // Handle errors
+           // Monitor changes
+       }
+   }
+
+Testing Strategy
+-------------
+1. Unit Tests
+   - Power management functions
+   - Display control operations
+   - Audio system functions
+   - Registry operations
+   - Event handling
+
+2. Integration Tests
+   - System state changes
+   - Power management flow
+   - Audio device interaction
+   - Multi-monitor scenarios
    - Event system integration
-   - Configuration persistence
-   - UI component replacement
 
-2. **Keyboard Plugin**
-   - Windows hook system
-   - Event generation
-   - Key code mapping
-   - Modifier handling
-   - Cross-platform support
+3. Security Tests
+   - Privilege management
+   - Registry access control
+   - System operation permissions
+   - Resource access validation
+   - Error handling
 
-3. **System Plugin**
-   - Windows API access
-   - Hardware interaction
-   - Event notification
-   - Device management
-   - Security considerations
+Error Handling
+------------
+1. System Operations
+   - Privilege errors
+   - Operation failures
+   - Resource access issues
+   - State transition errors
+   - Device access problems
 
-### Implementation Strategy
+2. Resource Management
+   - Handle cleanup
+   - Memory management
+   - Thread safety
+   - Device resources
+   - Event handling
 
-1. **Core Plugin Architecture**
-   ```rust
-   // Plugin trait system
-   trait Plugin {
-       fn init(&mut self) -> Result<(), Error>;
-       fn start(&mut self) -> Result<(), Error>;
-       fn stop(&mut self) -> Result<(), Error>;
-       fn handle_event(&mut self, event: Event) -> Result<(), Error>;
-   }
+3. User Interaction
+   - Invalid parameters
+   - Missing permissions
+   - Device unavailable
+   - Operation timeout
+   - State conflicts
 
-   // Event handling
-   trait EventHandler {
-       fn process_event(&mut self, event: &Event) -> Result<(), Error>;
-       fn generate_event(&mut self, event_type: EventType) -> Result<Event, Error>;
-   }
+Platform Considerations
+--------------------
+1. Windows Integration
+   - Windows API usage
+   - Registry interaction
+   - Power management
+   - Display control
+   - Audio system
 
-   // Action management
-   trait Action {
-       fn execute(&mut self, params: ActionParams) -> Result<(), Error>;
-       fn configure(&mut self) -> Result<ActionConfig, Error>;
-       fn get_description(&self) -> &str;
-   }
-   ```
-
-2. **Plugin Loading**
-   ```rust
-   // Dynamic plugin loading
-   struct PluginLoader {
-       plugins: HashMap<String, Box<dyn Plugin>>,
-       actions: HashMap<String, Box<dyn Action>>,
-   }
-
-   impl PluginLoader {
-       fn load_plugin(&mut self, name: &str) -> Result<(), Error> {
-           // Load plugin dynamically
-           // Register actions
-           // Initialize plugin
-       }
-
-       fn unload_plugin(&mut self, name: &str) -> Result<(), Error> {
-           // Stop plugin
-           // Unregister actions
-           // Clean up resources
-       }
-   }
-   ```
-
-3. **Event Processing**
-   ```rust
-   // Event system integration
-   struct EventSystem {
-       handlers: Vec<Box<dyn EventHandler>>,
-       queue: mpsc::Sender<Event>,
-   }
-
-   impl EventSystem {
-       async fn process_events(&mut self) {
-           while let Some(event) = self.queue.recv().await {
-               for handler in &mut self.handlers {
-                   handler.process_event(&event)?;
-               }
-           }
-       }
-   }
-   ```
-
-4. **Security Considerations**
-   - Plugin isolation
-   - Resource limitations
-   - Permission management
-   - API access control
-
-5. **System Access**
-   - Privilege elevation
-   - API restrictions
-   - Device access
-   - Registry protection
+2. Cross-Platform Support
+   - Abstract system operations
+   - Platform-specific implementations
+   - Resource management
+   - Event system
+   - Error handling
