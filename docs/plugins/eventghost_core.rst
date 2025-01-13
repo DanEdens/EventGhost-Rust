@@ -1,296 +1,179 @@
-### 1. EventGhost Plugin (`plugins/EventGhost`)
-Core plugin providing fundamental control over events, macros, and configuration.
+EventGhost Core Plugin
+===================
 
-#### Key Components
-1. **Action Management**
-   - PythonCommand/Script execution
-   - Macro flow control (AutoRepeat, Wait)
-   - Tree item management (Enable/Disable)
-   - Event triggering and processing
-   - Configuration dialogs
+Overview
+--------
+The EventGhost Core Plugin is the foundational plugin that provides essential infrastructure for event handling, macro execution, and system integration. It serves as the backbone for other plugins, providing core services like event processing, Python script execution, and configuration management.
 
-2. **Flow Control**
-   - Jump conditions (JumpIfElse, JumpIfDoubleEvent)
-   - Event processing control
-   - Macro execution flow
-   - Conditional branching
+Core Components
+--------------
+Event System
+~~~~~~~~~~~
+.. code-block:: rust
 
-3. **UI Integration**
-   - Message boxes
-   - On-screen display
-   - Configuration dialogs
-   - Tree item selection
+    pub struct EventSystem {
+        event_queue: Arc<Mutex<VecDeque<Event>>>,
+        handlers: HashMap<String, Vec<Box<dyn EventHandler>>>,
+        notification_system: NotificationSystem,
+    }
 
-4. **System Integration**
-   - Python script execution
-   - Event processing
+    impl EventSystem {
+        pub fn trigger_event(&self, name: &str, payload: Value) -> Result<(), Error> {
+            let event = Event::new(name, payload);
+            self.process_event(event)
+        }
+    }
+
+Macro Execution Engine
+~~~~~~~~~~~~~~~~~~~~
+.. code-block:: rust
+
+    pub struct MacroEngine {
+        program_counter: Option<(ActionItem, usize)>,
+        return_stack: Vec<(ActionItem, usize)>,
+        execution_state: Arc<Mutex<ExecutionState>>,
+    }
+
+    impl MacroEngine {
+        pub fn execute_action(&mut self, action: ActionItem) -> Result<(), Error> {
+            // Action execution logic
+            // Flow control
+            // State management
+        }
+    }
+
+Key Features
+-----------
+1. Event Processing
+   - Event queue management
+   - Event handler registration
+   - Event filtering and routing
+   - Notification system
+
+2. Macro Control
+   - Action execution flow
+   - Jump conditions (JumpIfElse)
+   - Wait states and timing
+   - AutoRepeat functionality
+
+3. Python Integration
+   - Script execution environment
+   - Global variable management
+   - Python command execution
+   - Error handling and logging
+
+4. System Services
+   - Plugin registration and loading
+   - Configuration management
    - Window management
    - Process control
 
-### 2. Keyboard Plugin (`plugins/Keyboard`)
-Core plugin for keyboard event handling and hotkey management.
+Migration Considerations
+----------------------
+1. Core Architecture
+   - Thread-safe event processing
+   - Rust-based macro execution
+   - Plugin system architecture
+   - Configuration persistence
 
-#### Key Features
-1. **Event Generation**
-   - Hotkey detection
-   - Key blocking
-   - Modifier key handling
-   - Universal modifiers support
+2. Python Integration
+   - Python/Rust FFI layer
+   - Script execution safety
+   - Global state management
+   - Error propagation
 
-2. **Event Processing**
-   - Key code translation
-   - Event filtering
-   - Callback management
-   - State tracking
+Implementation Strategy
+---------------------
+1. Event System Implementation
+   .. code-block:: rust
 
-3. **Integration**
-   - Windows hook system
-   - Event system binding
-   - Action triggering
-   - Configuration interface
+    impl EventSystem {
+        pub fn register_handler(&mut self, pattern: &str, handler: Box<dyn EventHandler>) {
+            self.handlers.entry(pattern.to_string())
+                .or_default()
+                .push(handler);
+        }
+        
+        pub fn process_event(&self, event: Event) -> Result<(), Error> {
+            for (pattern, handlers) in &self.handlers {
+                if event.matches(pattern) {
+                    for handler in handlers {
+                        handler.handle_event(&event)?;
+                    }
+                }
+            }
+            Ok(())
+        }
+    }
 
-### 3. System Plugin (`plugins/System`)
-Core plugin for system control and hardware interaction.
+2. Macro Engine Implementation
+   .. code-block:: rust
 
-#### Core Functions
-1. **Power Management**
-   - Shutdown/Reboot
-   - Sleep/Hibernate
-   - Lock workstation
-   - System idle control
+    impl MacroEngine {
+        pub fn run_program(&mut self) -> Result<(), Error> {
+            while let Some((item, idx)) = self.program_counter.take() {
+                self.execute_action(item)?;
+                
+                if self.execution_state.lock()?.is_stopped {
+                    break;
+                }
+                
+                self.program_counter = item.get_next_action(idx);
+            }
+            Ok(())
+        }
+    }
 
-2. **Display Control**
-   - Monitor power states
-   - Display settings
-   - Wallpaper management
-   - Screen saver control
+Testing Strategy
+---------------
+1. Unit Tests
+   - Event system functionality
+   - Macro execution flow
+   - Python integration
+   - Configuration management
 
-3. **Audio Control**
-   - Volume management
-   - Mute control
-   - Sound playback
-   - Device selection
+2. Integration Tests
+   - Plugin interaction
+   - Event processing chain
+   - Macro execution scenarios
+   - System service integration
 
-4. **System Integration**
-   - Registry access
-   - Drive management
-   - Device notifications
-   - Environment control
+3. Performance Tests
+   - Event throughput
+   - Macro execution speed
+   - Memory usage patterns
+   - Resource management
 
-### 4. Mouse Plugin (`plugins/Mouse`)
-Core plugin for mouse control and event generation.
+Error Handling
+-------------
+1. Event Processing
+   - Invalid event formats
+   - Handler failures
+   - Queue overflow
+   - Timeout handling
 
-#### Key Components
-1. **Event Generation**
-   - Mouse button events
-   - Mouse movement events
-   - Mouse wheel events
-   - Direction tracking
-   - Position monitoring
+2. Macro Execution
+   - Action failures
+   - State corruption
+   - Resource exhaustion
+   - Deadlock prevention
 
-2. **Mouse Actions**
-   - Button clicks (Left, Right, Middle)
-   - Double clicks
-   - Button toggles
-   - Wheel control
-   - Absolute/Relative movement
-   - Directional movement
+3. System Integration
+   - Plugin loading errors
+   - Configuration failures
+   - Resource allocation
+   - Cleanup procedures
 
-3. **Movement Control**
-   - Absolute positioning
-   - Relative positioning
-   - Directional movement
-   - Acceleration control
-   - Speed management
-   - Multi-monitor support
+Platform Considerations
+---------------------
+1. Windows Integration
+   - Win32 API usage
+   - System event handling
+   - Window management
+   - Process control
 
-4. **System Integration**
-   - Windows mouse API
-   - Monitor handling
-   - Cursor management
-   - Event callbacks
-   - Thread management
-
-#### Key Features
-
-1. **Button Control**
-   - Single clicks
-   - Double clicks
-   - Button state tracking
-   - Button blocking
-   - Toggle support
-
-2. **Movement System**
-   - Coordinate calculation
-   - Monitor boundaries
-   - Speed control
-   - Acceleration
-   - Direction vectors
-
-3. **Configuration**
-   - Movement parameters
-   - Button behavior
-   - Monitor selection
-   - Position validation
-   - Alternative methods
-
-4. **Event System**
-   - Button events
-   - Movement events
-   - Position events
-   - State tracking
-   - Event filtering
-
-### Migration Considerations
-
-1. **Current Implementation**
-   - Windows API integration
-   - Thread-based movement
-   - Event callback system
-   - Monitor enumeration
-   - Position tracking
-
-2. **Rust Migration Path**
-   - Windows-rs bindings
-   - Thread safety
-   - Event system
-   - Error handling
-   - State management
-
-3. **Key Challenges**
-   - Multi-monitor support
-   - Event synchronization
-   - Position accuracy
-   - Thread coordination
-   - API compatibility
-
-4. **Implementation Strategy**
-   ```rust
-   // Mouse control system
-   struct MouseSystem {
-       thread: Option<JoinHandle<()>>,
-       event_tx: mpsc::Sender<MouseEvent>,
-       state: Arc<Mutex<MouseState>>,
-   }
-
-   // Mouse state tracking
-   struct MouseState {
-       position: Point,
-       buttons: ButtonState,
-       movement: MovementState,
-   }
-
-   // Event handling
-   impl MouseSystem {
-       async fn handle_event(&mut self, event: MouseEvent) {
-           match event {
-               MouseEvent::Click(button) => self.handle_click(button),
-               MouseEvent::Move(x, y) => self.handle_move(x, y),
-               MouseEvent::Wheel(delta) => self.handle_wheel(delta),
-           }
-       }
-   }
-
-   // Movement control
-   impl MouseSystem {
-       fn move_absolute(&mut self, x: i32, y: i32) -> Result<(), Error> {
-           // Handle multi-monitor coordinates
-           // Validate position
-           // Update state
-           // Trigger movement
-       }
-
-       fn move_relative(&mut self, dx: i32, dy: i32) -> Result<(), Error> {
-           // Calculate new position
-           // Handle boundaries
-           // Update state
-           // Trigger movement
-       }
-   }
-   ```
-
-### Implementation Strategy
-
-1. **Core Plugin Architecture**
-   ```rust
-   // Plugin trait system
-   trait Plugin {
-       fn init(&mut self) -> Result<(), Error>;
-       fn start(&mut self) -> Result<(), Error>;
-       fn stop(&mut self) -> Result<(), Error>;
-       fn handle_event(&mut self, event: Event) -> Result<(), Error>;
-   }
-
-   // Event handling
-   trait EventHandler {
-       fn process_event(&mut self, event: &Event) -> Result<(), Error>;
-       fn generate_event(&mut self, event_type: EventType) -> Result<Event, Error>;
-   }
-
-   // Action management
-   trait Action {
-       fn execute(&mut self, params: ActionParams) -> Result<(), Error>;
-       fn configure(&mut self) -> Result<ActionConfig, Error>;
-       fn get_description(&self) -> &str;
-   }
-   ```
-
-2. **Plugin Loading**
-   ```rust
-   // Dynamic plugin loading
-   struct PluginLoader {
-       plugins: HashMap<String, Box<dyn Plugin>>,
-       actions: HashMap<String, Box<dyn Action>>,
-   }
-
-   impl PluginLoader {
-       fn load_plugin(&mut self, name: &str) -> Result<(), Error> {
-           // Load plugin dynamically
-           // Register actions
-           // Initialize plugin
-       }
-
-       fn unload_plugin(&mut self, name: &str) -> Result<(), Error> {
-           // Stop plugin
-           // Unregister actions
-           // Clean up resources
-       }
-   }
-   ```
-
-3. **Event Processing**
-   ```rust
-   // Event system integration
-   struct EventSystem {
-       handlers: Vec<Box<dyn EventHandler>>,
-       queue: mpsc::Sender<Event>,
-   }
-
-   impl EventSystem {
-       async fn process_events(&mut self) {
-           while let Some(event) = self.queue.recv().await {
-               for handler in &mut self.handlers {
-                   handler.process_event(&event)?;
-               }
-           }
-       }
-   }
-   ```
-
-4. **Security Considerations**
-   - Plugin isolation
-   - Resource limitations
-   - Permission management
-   - API access control
-
-5. **System Access**
-   - Privilege elevation
-   - API restrictions
-   - Device access
-   - Registry protection
-
-6. **Event Security**
-   - Event validation
-   - Source verification
-   - Payload sanitization
-   - Action authorization
+2. Cross-platform Support
+   - Platform abstraction
+   - Event system portability
+   - Resource management
+   - Plugin compatibility
