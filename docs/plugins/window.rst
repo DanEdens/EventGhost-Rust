@@ -1,145 +1,208 @@
-### 5. Window Plugin (`plugins/Window`)
-Core plugin for window management and control.
+Window Plugin
+============
 
-#### Key Components
-1. **Window Finding**
-   - Process-based search
-   - Window title matching
-   - Class name matching
-   - Child window search
-   - Visibility filtering
-   - Multi-monitor support
+Overview
+--------
+A core plugin providing comprehensive window control and manipulation capabilities. It enables finding specific windows, controlling their state, position, and size, as well as sending messages and keystrokes to them.
+
+Core Components
+-------------
+1. Window Finding System
+   - Pattern-based window search
+   - Process name filtering
+   - Window/class name matching
+   - Child window support
+   - Visibility control
    - Timeout handling
 
-2. **Window Control**
-   - Window positioning
-   - Size management
-   - State control (minimize/maximize)
+2. Window Control System
+   - Window state management
+   - Position and size control
+   - Z-order manipulation
    - Always-on-top handling
-   - Window docking
    - System tray integration
-   - Focus management
+   - Multi-monitor support
 
-3. **Window Information**
+3. Window Interaction
+   - Message sending system
+   - Keystroke simulation
    - Text extraction
+   - Control interaction
+   - Window commands
+   - Event handling
+
+4. Window Information
    - Window properties
    - Process information
    - Window hierarchy
-   - Monitor details
-   - Window dimensions
-   - State information
+   - Control identification
+   - State monitoring
+   - Text content access
 
-4. **System Integration**
-   - Windows API usage
-   - Process memory access
-   - Window messaging
-   - Monitor enumeration
-   - Thread management
-   - Event handling
-
-#### Key Features
-
-1. **Window Search**
-   - Pattern matching with wildcards
-   - Process name filtering
-   - Window/class name matching
-   - Child window search
-   - Visibility options
-   - Match count control
+Key Features
+-----------
+1. Window Search
+   - Wildcard pattern matching
+   - Process-based filtering
+   - Hierarchy traversal
+   - Visibility filtering
+   - Match counting
    - Timeout support
 
-2. **Window Actions**
+2. Window Management
    - Move and resize
    - Minimize/maximize/restore
    - Dock to screen edges
-   - System tray minimize
    - Always-on-top toggle
-   - Window closing
+   - System tray minimize
+   - Multi-monitor positioning
+
+3. Window Interaction
+   - SendMessage/PostMessage
+   - Keystroke sending
+   - Text extraction
+   - Control manipulation
+   - Window commands
    - Focus control
 
-3. **Configuration**
-   - Visual window picker
-   - Pattern matching
-   - Monitor selection
-   - Position control
-   - Size management
-   - State persistence
-   - Action options
+4. Window Information
+   - Window text grabbing
+   - Control state reading
+   - Process information
+   - Window properties
+   - Hierarchy information
+   - State monitoring
 
-4. **Event System**
-   - Window state events
-   - Focus change events
-   - Position updates
-   - Size modifications
-   - State transitions
-   - Error handling
+Migration Considerations
+---------------------
+1. Core Functionality Migration
+   - Port Windows API calls to safe Rust bindings
+   - Implement window handle management
+   - Handle window messaging safely
+   - Maintain process memory safety
+   - Ensure proper cleanup
 
-#### Migration Considerations
+2. Pattern Matching System
+   - Implement safe pattern matching
+   - Handle Unicode properly
+   - Support regular expressions
+   - Optimize search performance
+   - Handle edge cases
 
-1. **Current Implementation**
-   - Windows API dependencies
-   - wxPython UI integration
+3. Resource Management
+   - Safe handle management
    - Process memory access
-   - Window message handling
-   - Monitor management
-   - Thread coordination
+   - Window handle validation
+   - Thread synchronization
+   - Event cleanup
 
-2. **Rust Migration Path**
-   - Windows-rs API bindings
-   - Cross-platform abstractions
-   - Safe memory access
-   - Event system integration
-   - Monitor handling
-   - Thread safety
+Implementation Strategy
+--------------------
+1. Window Management
+   .. code-block:: rust
 
-3. **Key Challenges**
-   - Window message handling
-   - Process memory safety
-   - Event synchronization
-   - Monitor coordination
-   - State management
-   - API compatibility
-
-4. **Implementation Strategy**
-   ```rust
-   // Window management system
-   struct WindowSystem {
+   pub struct WindowManager {
        finder: WindowFinder,
        controller: WindowController,
        state: Arc<Mutex<WindowState>>,
    }
 
-   // Window finding
-   struct WindowFinder {
-       patterns: Vec<WindowPattern>,
-       timeout: Duration,
-       visible_only: bool,
-   }
+   impl WindowManager {
+       pub fn find_window(&self, pattern: WindowPattern) -> Result<HWND, Error> {
+           // Validate pattern
+           // Search windows
+           // Filter results
+           // Handle timeout
+       }
 
-   // Window control
-   impl WindowController {
-       fn set_position(&mut self, hwnd: HWND, x: i32, y: i32) -> Result<(), Error> {
+       pub fn control_window(&mut self, hwnd: HWND, cmd: WindowCommand) -> Result<(), Error> {
            // Validate window handle
-           // Check monitor bounds
-           // Update position
+           // Execute command
            // Handle errors
-       }
-
-       fn set_state(&mut self, hwnd: HWND, state: WindowState) -> Result<(), Error> {
-           // Validate state
-           // Apply changes
-           // Update tracking
-           // Handle events
+           // Monitor state
        }
    }
 
-   // Event handling
-   impl WindowSystem {
-       async fn handle_window_event(&mut self, event: WindowEvent) {
-           match event {
-               WindowEvent::Move(hwnd, x, y) => self.handle_move(hwnd, x, y),
-               WindowEvent::Resize(hwnd, w, h) => self.handle_resize(hwnd, w, h),
-               WindowEvent::State(hwnd, state) => self.handle_state(hwnd, state),
-           }
+2. Window Pattern Matching
+   .. code-block:: rust
+
+   pub struct WindowPattern {
+       process_name: Option<String>,
+       window_class: Option<String>,
+       window_text: Option<String>,
+       child_class: Option<String>,
+       child_text: Option<String>,
+       match_invisible: bool,
+       timeout: Duration,
+   }
+
+   impl WindowFinder {
+       pub fn find_matches(&self, pattern: &WindowPattern) -> Vec<HWND> {
+           // Enumerate windows
+           // Apply filters
+           // Match patterns
+           // Sort results
        }
    }
+
+Testing Strategy
+-------------
+1. Unit Tests
+   - Pattern matching
+   - Window operations
+   - Message handling
+   - State management
+   - Resource cleanup
+
+2. Integration Tests
+   - Window finding
+   - Window control
+   - Multi-monitor scenarios
+   - Process interaction
+   - Event handling
+
+3. Performance Tests
+   - Search optimization
+   - Memory usage
+   - Handle management
+   - Pattern matching
+   - Event processing
+
+Error Handling
+------------
+1. Window Operations
+   - Invalid handles
+   - Access denied
+   - Timeout errors
+   - State conflicts
+   - Resource limits
+
+2. Pattern Matching
+   - Invalid patterns
+   - No matches found
+   - Multiple matches
+   - Timeout handling
+   - Pattern conflicts
+
+3. Resource Management
+   - Handle cleanup
+   - Memory management
+   - Thread safety
+   - Event cleanup
+   - State recovery
+
+Platform Considerations
+--------------------
+1. Windows Integration
+   - Windows API usage
+   - Handle management
+   - Message processing
+   - Process interaction
+   - Event handling
+
+2. Cross-Platform Support
+   - Abstract window operations
+   - Platform-specific implementations
+   - Event system abstraction
+   - Resource management
+   - Error handling

@@ -6,15 +6,9 @@
 - [x] Mouse Plugin
 - [x] Keyboard Plugin
 - [x] System Plugin
+- [x] Window Plugin
 
 ### Plugins Needing RST Format Update
-- [ ] Window Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Expand Rust implementation
-  - Add error handling
-  - Detail testing approach
-
 - [ ] Global Monitor Plugin
   - Initial analysis done
   - Needs RST formatting
