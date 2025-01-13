@@ -1,296 +1,169 @@
 Global Monitor Plugin
-==================
-
-### Global Monitor Plugin
-#### Core Components
-- [ ] System Performance Counters
-- [ ] Resource Usage Tracking
-- [ ] Event Generation Pipeline
-- [ ] Data Collection Services
-
-#### Dependencies
-- Windows Performance APIs
-- System Metrics Interface
-- Event System Integration
-- Configuration Storage
-
-#### Migration Considerations
-- Cross-platform monitoring alternatives
-- Performance impact optimization
-- Data sampling strategies
-- Event throttling mechanisms
+===================
 
 Overview
 --------
-Core plugin providing system performance monitoring and metrics collection.
+The Global Monitor plugin provides a powerful interface for creating, managing, and monitoring global variables within EventGhost. It enables dynamic variable creation, hierarchical organization, and real-time monitoring of variable changes through a user-friendly interface.
 
 Core Components
 --------------
-
-Performance Counter System
-~~~~~~~~~~~~~~~~~~~~~~~~
+Variable Management System
+~~~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct PerformanceCounters {
-        counters: HashMap<CounterType, PDH_HCOUNTER>,
-        query: PDH_HQUERY,
-        sampling_interval: Duration,
+    pub struct GlobalVariable {
+        path: String,
+        value: Value,
+        parent: Option<Arc<GlobalVariable>>,
+        children: HashMap<String, Arc<GlobalVariable>>
     }
 
-    impl PerformanceCounters {
-        fn collect_metrics(&mut self) -> Result<SystemMetrics, Error> {
-            // Safe PDH API usage
-            // Counter collection
-            // Data aggregation
-            // Error handling
-        }
+    pub struct GlobalMonitor {
+        root: Arc<GlobalVariable>,
+        watchers: Vec<Box<dyn Fn(&str, &Value) -> ()>>,
+        ui_handle: Option<Arc<GlobalMonitorUI>>
     }
 
-Resource Monitoring
-~~~~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    pub struct ResourceMonitor {
-        cpu_monitor: CpuMonitor,
-        memory_monitor: MemoryMonitor,
-        disk_monitor: DiskMonitor,
-        network_monitor: NetworkMonitor,
-        state: Arc<Mutex<MonitorState>>,
-    }
-
-    impl ResourceMonitor {
-        async fn monitor_loop(&mut self) {
-            while let Ok(()) = tokio::time::sleep(self.config.interval).await {
-                self.collect_metrics().await?;
-                self.generate_events().await?;
-            }
-        }
-    }
-
-Event Generation Pipeline
-~~~~~~~~~~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    pub enum MonitorEventType {
-        CpuUsage(f64),
-        MemoryUsage(MemoryMetrics),
-        DiskActivity(DiskMetrics),
-        NetworkActivity(NetworkMetrics),
-        SystemAlert(AlertType),
-    }
-
-    impl EventGenerator for GlobalMonitorPlugin {
-        fn generate_metric_event(&self, metric: MonitorEventType) -> Result<(), Error> {
-            // Type-safe event generation
-            // Threshold checking
-            // Alert generation
-            // Event routing
-        }
-    }
-
-Data Collection Services
+Event Generation System
 ~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub trait MetricCollector {
-        type Metric;
-        fn collect(&self) -> Result<Self::Metric, Error>;
-        fn get_thresholds(&self) -> &MetricThresholds;
-        fn check_alerts(&self, metric: &Self::Metric) -> Vec<AlertType>;
-    }
-
-    pub struct CpuCollector {
-        pdh_query: PDH_HQUERY,
-        counters: Vec<PDH_HCOUNTER>,
-        thresholds: CpuThresholds,
-    }
-
-    pub struct MemoryCollector {
-        thresholds: MemoryThresholds,
+    impl GlobalMonitor {
+        pub fn on_variable_change(&self, path: &str, new_value: Value) {
+            // Notify all watchers of the change
+            for watcher in &self.watchers {
+                watcher(path, &new_value);
+            }
+            
+            // Generate EventGhost event
+            self.trigger_event("VariableChanged", format!("{}: {}", path, new_value));
+        }
     }
 
 Key Features
 -----------
+1. Dynamic Variable Creation and Management
+   - Create variables at runtime with any valid path
+   - Delete variables when no longer needed
+   - Support for various data types (strings, numbers, booleans, lists, maps)
 
-Performance Monitoring
-~~~~~~~~~~~~~~~~~~~~
-- CPU usage tracking
-- Memory utilization
-- Disk activity
-- Network statistics
-- Process metrics
-- System resources
+2. Hierarchical Variable Organization
+   - Nested variable structure (e.g., ``eg.globals.Lights.Bedroom.Overhead``)
+   - Automatic parent/child relationship management
+   - Easy iteration over variable groups
 
-Event Generation
-~~~~~~~~~~~~~~
-- Threshold-based alerts
-- Resource usage events
-- System state changes
-- Performance warnings
-- Trend analysis
+3. Real-time Monitoring
+   - UI interface showing current variable values
+   - Change history tracking
+   - Variable change notifications
+   - Event generation on variable modifications
 
-Configuration
-~~~~~~~~~~~~
-- Sampling intervals
-- Alert thresholds
-- Counter selection
-- Event filtering
-- Data aggregation
+4. Variable Grouping
+   - Logical grouping of related variables
+   - Easy access to all variables in a group
+   - Hierarchical navigation of variable trees
 
-Resource Management
-~~~~~~~~~~~~~~~~
-- Counter cleanup
-- Query handling
-- Memory management
-- Thread coordination
-- State persistence
+Migration Considerations
+----------------------
+1. Data Structure Migration
+   - Convert from Python's dynamic structure to Rust's type system
+   - Implement thread-safe variable access
+   - Maintain backward compatibility with existing variable paths
 
-Migration Challenges
-------------------
+2. Event System Integration
+   - Integrate with EventGhost's event system
+   - Maintain consistent event generation patterns
+   - Ensure proper cleanup on plugin shutdown
 
-PDH API Integration
-~~~~~~~~~~~~~~~~~
-- Safe counter management
-- Query lifecycle
-- Error handling
-- Resource cleanup
+Implementation Strategy
+---------------------
+1. Core Variable Management
+   .. code-block:: rust
 
-Performance Impact
-~~~~~~~~~~~~~~~
-- Efficient sampling
-- Resource overhead
-- Thread scheduling
-- Data aggregation
+    impl GlobalMonitor {
+        pub fn set_variable(&mut self, path: &str, value: Value) -> Result<(), Error> {
+            let parts: Vec<&str> = path.split('.').collect();
+            let mut current = self.root.clone();
+            
+            // Create/update path components
+            for part in &parts[..parts.len()-1] {
+                current = current.get_or_create_child(part)?;
+            }
+            
+            // Set final value
+            current.set_value(parts.last().unwrap(), value)?;
+            self.on_variable_change(path, value);
+            Ok(())
+        }
+        
+        pub fn get_variable(&self, path: &str) -> Option<Value> {
+            let parts: Vec<&str> = path.split('.').collect();
+            let mut current = self.root.clone();
+            
+            for part in parts {
+                current = current.get_child(part)?;
+            }
+            
+            Some(current.value.clone())
+        }
+    }
 
-Cross-Platform Support
-~~~~~~~~~~~~~~~~~~~
-- Linux metrics
-- MacOS integration
-- Common interface
-- Platform detection
+2. UI Integration
+   .. code-block:: rust
+
+    pub struct GlobalMonitorUI {
+        tree_view: TreeView,
+        change_history: Vec<ChangeRecord>,
+        update_channel: mpsc::Sender<UIUpdate>
+    }
 
 Testing Strategy
---------------
+---------------
+1. Unit Tests
+   - Variable creation/deletion
+   - Nested path handling
+   - Value type validation
+   - Event generation verification
 
-Unit Tests
-~~~~~~~~~
-.. code-block:: rust
+2. Integration Tests
+   - UI update verification
+   - Event system integration
+   - Performance testing with large variable sets
+   - Concurrent access testing
 
-    #[cfg(test)]
-    mod tests {
-        #[test]
-        fn test_counter_collection() {
-            // Test PDH queries
-            // Verify metrics
-            // Check cleanup
-        }
-
-        #[test]
-        fn test_threshold_alerts() {
-            // Test alert generation
-            // Verify thresholds
-            // Check conditions
-        }
-    }
-
-Integration Tests
-~~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    #[cfg(test)]
-    mod integration_tests {
-        #[test]
-        fn test_monitoring_cycle() {
-            // Test full monitoring
-            // Verify events
-            // Check resources
-        }
-    }
-
-Performance Tests
-~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    #[cfg(test)]
-    mod benchmarks {
-        #[bench]
-        fn bench_metric_collection() {
-            // Measure collection time
-            // Check memory usage
-            // Verify overhead
-        }
-    }
+3. Migration Tests
+   - Compatibility with existing variable paths
+   - Data conversion accuracy
+   - Event pattern matching
 
 Error Handling
-------------
+-------------
+1. Path Validation
+   - Invalid path components
+   - Maximum nesting depth
+   - Reserved names/paths
 
-Counter Errors
-~~~~~~~~~~~~
-.. code-block:: rust
+2. Type Safety
+   - Invalid value types
+   - Type conversion errors
+   - Null/undefined handling
 
-    #[derive(Error, Debug)]
-    pub enum CounterError {
-        #[error("Failed to open counter: {0}")]
-        OpenError(String),
-        #[error("Failed to collect data: {0}")]
-        CollectionError(String),
-        #[error("Invalid counter path: {0}")]
-        InvalidPath(String),
-    }
-
-Recovery Strategy
-~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    impl ResourceMonitor {
-        fn handle_counter_error(&mut self, error: CounterError) -> Result<(), Error> {
-            match error {
-                CounterError::OpenError(_) => self.reinitialize_counter(),
-                CounterError::CollectionError(_) => self.retry_collection(),
-                CounterError::InvalidPath(_) => self.use_fallback_counter(),
-            }
-        }
-    }
+3. Resource Management
+   - Memory usage monitoring
+   - Cleanup of deleted variables
+   - UI resource management
 
 Platform Considerations
---------------------
+---------------------
+1. Windows Integration
+   - Windows-specific UI components
+   - System event handling
+   - Resource management
 
-Windows Implementation
-~~~~~~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    #[cfg(target_os = "windows")]
-    mod windows {
-        use windows::Win32::System::Performance::*;
-        
-        pub struct WindowsCounters {
-            query: PDH_HQUERY,
-            counters: Vec<PDH_HCOUNTER>,
-        }
-    }
-
-Linux Implementation
-~~~~~~~~~~~~~~~~~
-.. code-block:: rust
-
-    #[cfg(target_os = "linux")]
-    mod linux {
-        pub struct LinuxCounters {
-            proc_stat: ProcStat,
-            sys_info: SysInfo,
-        }
-    }
-
-Common Interface
-~~~~~~~~~~~~~
-.. code-block:: rust
-
-    pub trait SystemMetrics {
-        fn cpu_usage(&self) -> Result<f64, Error>;
-        fn memory_usage(&self) -> Result<MemoryMetrics, Error>;
-        fn disk_activity(&self) -> Result<DiskMetrics, Error>;
-        fn network_activity(&self) -> Result<NetworkMetrics, Error>;
-    } 
+2. Cross-platform Support
+   - Abstract UI layer
+   - Platform-agnostic storage
+   - Consistent behavior across systems 
     
     
     
