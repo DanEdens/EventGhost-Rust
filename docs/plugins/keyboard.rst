@@ -1,27 +1,22 @@
-Keyboard Plugin
-==============
 
-Overview
---------
+### 2. Keyboard Plugin (`plugins/Keyboard`)
 Core plugin for keyboard event handling and hotkey management.
 
-Core Components
--------------
+#### Key Features
+1. **Event Generation**
+   - Hotkey detection
+   - Key blocking
+   - Modifier key handling
+   - Universal modifiers support
 
-Key Features
-----------
+2. **Event Processing**
+   - Key code translation
+   - Event filtering
+   - Callback management
+   - State tracking
 
-Migration Considerations
----------------------
-
-Implementation Strategy
---------------------
-
-Testing Strategy
--------------
-
-Error Handling
-------------
-
-Platform Considerations
--------------------- 
+3. **Integration**
+   - Windows hook system
+   - Event system binding
+   - Action triggering
+   - Configuration interface
