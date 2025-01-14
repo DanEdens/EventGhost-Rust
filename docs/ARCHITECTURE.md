@@ -637,17 +637,77 @@ impl HybridStyle {
 
 1. **Log View Implementation**:
 ```rust
+pub struct LogEntry {
+    timestamp: DateTime<Local>,
+    level: LogLevel,
+    source: EventSource,
+    text: String,
+    details: Option<String>,
+    highlight: bool,
+    indent_level: u32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warning,
+    Error,
+}
+
+#[derive(Debug, Clone)]
+pub enum EventSource {
+    System,
+    Plugin(String),
+    Macro(String),
+    Action(String),
+}
+
 pub struct LogView {
     entries: VecDeque<LogEntry>,
     colors: LogColors,
-    timestamp_format: String,
+    filters: LogFilters,
+    max_entries: usize,
+    auto_scroll: bool,
+    selected_entry: Option<usize>,
 }
 
 impl LogView {
+    pub fn handle_event(&mut self, event: &EventGhostEvent) {
+        // Create log entry from event
+        let entry = LogEntry {
+            timestamp: Local::now(),
+            level: event.get_log_level(),
+            source: event.source.clone(),
+            text: event.to_string(),
+            details: event.get_details(),
+            highlight: event.should_highlight(),
+            indent_level: event.get_indent_level(),
+        };
+
+        // Apply filters
+        if self.filters.should_show(&entry) {
+            // Maintain max entries limit
+            if self.entries.len() >= self.max_entries {
+                self.entries.pop_front();
+            }
+            self.entries.push_back(entry);
+        }
+    }
+
     pub fn render(&mut self, ui: &mut egui::Ui) {
-        // Implement virtual scrolling for performance
+        // Toolbar with filter controls
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.auto_scroll, "Auto-scroll");
+            if ui.button("Clear").clicked() {
+                self.entries.clear();
+            }
+            self.filters.ui(ui);
+        });
+
+        // Log entries with virtual scrolling
         egui::ScrollArea::vertical()
-            .stick_to_bottom(true)
+            .stick_to_bottom(self.auto_scroll)
             .show_rows(
                 ui,
                 ui.text_style_height(&TextStyle::Body),
@@ -655,17 +715,112 @@ impl LogView {
                 |ui, row_range| {
                     for i in row_range {
                         let entry = &self.entries[i];
-                        ui.horizontal(|ui| {
-                            // Timestamp with yellow background for specific entries
-                            if entry.highlight {
-                                ui.colored_label(self.colors.highlight_bg, &entry.timestamp);
-                            }
-                            // Event name with appropriate color
-                            ui.colored_label(entry.get_color(&self.colors), &entry.text);
-                        });
+                        self.render_entry(ui, entry, i);
                     }
                 }
             );
+    }
+
+    fn render_entry(&mut self, ui: &mut egui::Ui, entry: &LogEntry, index: usize) {
+        let indent = entry.indent_level as f32 * 20.0;
+        
+        ui.horizontal(|ui| {
+            ui.add_space(indent);
+            
+            // Timestamp with optional highlight
+            let timestamp = entry.timestamp.format(&self.timestamp_format);
+            if entry.highlight {
+                ui.colored_label(self.colors.highlight_bg, timestamp);
+            } else {
+                ui.label(timestamp);
+            }
+
+            // Source indicator
+            match &entry.source {
+                EventSource::System => {
+                    ui.colored_label(self.colors.system_event, "⚙");
+                }
+                EventSource::Plugin(name) => {
+                    ui.colored_label(self.colors.plugin_event, "🔌");
+                    ui.label(name);
+                }
+                EventSource::Macro(name) => {
+                    ui.colored_label(self.colors.macro_event, "📜");
+                    ui.label(name);
+                }
+                EventSource::Action(name) => {
+                    ui.colored_label(self.colors.action_event, "▶");
+                    ui.label(name);
+                }
+            }
+
+            // Main event text with appropriate color
+            let text_color = match entry.level {
+                LogLevel::Error => self.colors.error_event,
+                LogLevel::Warning => self.colors.warning_event,
+                _ => self.colors.normal_text,
+            };
+            let response = ui.colored_label(text_color, &entry.text)
+                .interact(egui::Sense::click());
+
+            // Handle selection
+            if response.clicked() {
+                self.selected_entry = Some(index);
+            }
+        });
+
+        // Show details if selected
+        if Some(index) == self.selected_entry {
+            if let Some(details) = &entry.details {
+                ui.indent("details", |ui| {
+                    ui.label(details);
+                });
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LogFilters {
+    show_debug: bool,
+    show_system: bool,
+    show_plugins: bool,
+    show_macros: bool,
+    text_filter: String,
+}
+
+impl LogFilters {
+    pub fn should_show(&self, entry: &LogEntry) -> bool {
+        // Level filtering
+        if !self.show_debug && entry.level == LogLevel::Debug {
+            return false;
+        }
+
+        // Source filtering
+        match &entry.source {
+            EventSource::System if !self.show_system => return false,
+            EventSource::Plugin(_) if !self.show_plugins => return false,
+            EventSource::Macro(_) if !self.show_macros => return false,
+            _ => {}
+        }
+
+        // Text filtering
+        if !self.text_filter.is_empty() {
+            if !entry.text.to_lowercase().contains(&self.text_filter.to_lowercase()) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
+        ui.checkbox(&mut self.show_debug, "Debug");
+        ui.checkbox(&mut self.show_system, "System");
+        ui.checkbox(&mut self.show_plugins, "Plugins");
+        ui.checkbox(&mut self.show_macros, "Macros");
+        ui.text_edit_singleline(&mut self.text_filter)
+            .on_hover_text("Filter log entries");
     }
 }
 
@@ -674,7 +829,11 @@ struct LogColors {
     highlight_bg: Color32,
     system_event: Color32,
     plugin_event: Color32,
+    macro_event: Color32,
+    action_event: Color32,
     error_event: Color32,
+    warning_event: Color32,
+    normal_text: Color32,
 }
 ```
 
