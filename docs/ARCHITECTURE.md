@@ -336,102 +336,299 @@ mod ui_tests {
 }
 ```
 
-### GUI Framework Integration Details
+### Advanced GUI Framework Integration
 
-1. **egui Integration**:
+1. **Hybrid Window Management**:
 ```rust
-impl ConfigPanel {
-    pub fn render(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Configuration")
-            .resizable(true)
-            .show(ctx, |ui| {
-                // Render standard controls
-                for control in &mut self.controls {
-                    control.render(ui);
-                }
-                
-                // Add bottom button row
-                ui.horizontal(|ui| {
-                    if ui.button("OK").clicked() {
-                        self.on_ok();
-                    }
-                    if ui.button("Cancel").clicked() {
-                        self.on_cancel();
-                    }
-                    if ui.button("Apply").clicked() {
-                        self.on_apply();
+pub struct HybridWindow {
+    // Core window state
+    native_handle: HWND,
+    egui_context: egui::Context,
+    
+    // Rendering state
+    renderer: Renderer,
+    surface: Surface,
+    
+    // Integration state
+    native_controls: Vec<NativeControl>,
+    egui_controls: Vec<EguiControl>,
+    shared_state: Arc<Mutex<SharedState>>,
+}
+
+impl HybridWindow {
+    pub fn new() -> Result<Self, Error> {
+        // Create native window
+        let native_handle = create_native_window()?;
+        
+        // Initialize egui
+        let egui_context = egui::Context::new();
+        
+        // Setup rendering
+        let renderer = Renderer::new(native_handle)?;
+        let surface = Surface::new(&renderer)?;
+        
+        Ok(Self {
+            native_handle,
+            egui_context,
+            renderer,
+            surface,
+            native_controls: Vec::new(),
+            egui_controls: Vec::new(),
+            shared_state: Arc::new(Mutex::new(SharedState::new())),
+        })
+    }
+    
+    pub fn render(&mut self) {
+        // Update native controls
+        for control in &mut self.native_controls {
+            control.update()?;
+        }
+        
+        // Render egui
+        self.egui_context.run(|ctx| {
+            egui::Window::new("Main")
+                .show(ctx, |ui| {
+                    for control in &mut self.egui_controls {
+                        control.render(ui);
                     }
                 });
-            });
+        });
+        
+        // Composite final frame
+        self.renderer.begin_frame();
+        self.renderer.render_native_controls(&self.native_controls);
+        self.renderer.render_egui(self.egui_context.output());
+        self.renderer.end_frame();
+    }
+}
+```
+
+2. **Control Synchronization**:
+```rust
+pub struct SharedState {
+    values: HashMap<String, Value>,
+    dirty_flags: HashSet<String>,
+}
+
+impl SharedState {
+    pub fn notify_change(&mut self, id: &str, value: Value) {
+        self.values.insert(id.to_string(), value);
+        self.dirty_flags.insert(id.to_string());
     }
 }
 
-impl Control for TextCtrl {
-    fn render(&mut self, ui: &mut egui::Ui) {
-        let mut value = self.value.clone();
-        if ui.text_edit_singleline(&mut value).changed() {
-            self.set_value(value);
-            self.emit_change();
+// Native control wrapper
+pub struct NativeControl {
+    hwnd: HWND,
+    id: String,
+    shared_state: Arc<Mutex<SharedState>>,
+}
+
+impl NativeControl {
+    pub fn update(&mut self) -> Result<(), Error> {
+        let mut state = self.shared_state.lock().unwrap();
+        if state.dirty_flags.contains(&self.id) {
+            // Update native control from shared state
+            if let Some(value) = state.values.get(&self.id) {
+                self.set_native_value(value)?;
+            }
+            state.dirty_flags.remove(&self.id);
+        }
+        Ok(())
+    }
+    
+    fn set_native_value(&self, value: &Value) -> Result<(), Error> {
+        unsafe {
+            match value {
+                Value::Text(s) => {
+                    SetWindowTextW(self.hwnd, wide_string(s));
+                }
+                Value::Number(n) => {
+                    SendMessageW(self.hwnd, WM_SETTEXT, 0, n.to_string().as_ptr() as LPARAM);
+                }
+                Value::Bool(b) => {
+                    SendMessageW(
+                        self.hwnd,
+                        BM_SETCHECK,
+                        if *b { BST_CHECKED } else { BST_UNCHECKED } as WPARAM,
+                        0,
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+// Egui control wrapper
+pub struct EguiControl {
+    id: String,
+    shared_state: Arc<Mutex<SharedState>>,
+}
+
+impl EguiControl {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        let mut state = self.shared_state.lock().unwrap();
+        if let Some(value) = state.values.get(&self.id) {
+            match value {
+                Value::Text(s) => {
+                    let mut text = s.clone();
+                    if ui.text_edit_singleline(&mut text).changed() {
+                        state.notify_change(&self.id, Value::Text(text));
+                    }
+                }
+                Value::Number(n) => {
+                    let mut num = *n;
+                    if ui.add(egui::DragValue::new(&mut num)).changed() {
+                        state.notify_change(&self.id, Value::Number(num));
+                    }
+                }
+                Value::Bool(b) => {
+                    let mut checked = *b;
+                    if ui.checkbox(&mut checked, "").changed() {
+                        state.notify_change(&self.id, Value::Bool(checked));
+                    }
+                }
+            }
         }
     }
 }
 ```
 
-2. **Native Windows Integration**:
+3. **Event Integration**:
 ```rust
-impl ConfigPanel {
-    pub fn create_native_dialog(&self) -> Result<NativeDialog, Error> {
-        let dialog = NativeDialog::new()?;
-        
-        // Add native controls
-        for control in &self.controls {
-            match control {
-                Control::TextCtrl(ctrl) => {
-                    dialog.add_text_box(
-                        ctrl.get_id(),
-                        ctrl.get_label(),
-                        ctrl.get_value(),
-                    )?;
+pub struct EventBridge {
+    native_window: HWND,
+    egui_context: egui::Context,
+    shared_state: Arc<Mutex<SharedState>>,
+}
+
+impl EventBridge {
+    pub fn handle_native_event(&mut self, msg: UINT, wparam: WPARAM, lparam: LPARAM) -> bool {
+        match msg {
+            WM_COMMAND => {
+                let control_id = LOWORD(wparam as u32) as i32;
+                if let Some(control) = self.find_native_control(control_id) {
+                    self.handle_native_control_event(control, HIWORD(wparam as u32));
+                    return true;
                 }
-                Control::Checkbox(ctrl) => {
-                    dialog.add_check_box(
-                        ctrl.get_id(),
-                        ctrl.get_label(),
-                        ctrl.is_checked(),
-                    )?;
-                }
-                // ... other control types
             }
+            WM_NOTIFY => {
+                let nmhdr = unsafe { *(lparam as *const NMHDR) };
+                self.handle_native_notification(&nmhdr);
+                return true;
+            }
+            _ => {}
         }
-        
-        Ok(dialog)
+        false
+    }
+    
+    pub fn handle_egui_event(&mut self, event: &egui::Event) {
+        match event {
+            egui::Event::ValueChanged(id) => {
+                if let Some(value) = self.egui_context.memory().data.get_temp(id) {
+                    let mut state = self.shared_state.lock().unwrap();
+                    state.notify_change(id, value);
+                }
+            }
+            egui::Event::FocusGained(id) => {
+                unsafe {
+                    // Remove focus from native controls
+                    SetFocus(null_mut());
+                }
+            }
+            _ => {}
+        }
     }
 }
 ```
 
-3. **Custom Control Rendering**:
+4. **Layout Management**:
 ```rust
-impl ConfigPanel {
-    pub fn render_custom_control(&mut self, control: &mut CustomControl, ctx: &egui::Context) {
-        match control.get_type() {
-            ControlType::ColorPicker => {
-                self.render_color_picker(control, ctx);
+pub struct HybridLayout {
+    native_areas: Vec<NativeArea>,
+    egui_areas: Vec<EguiArea>,
+}
+
+impl HybridLayout {
+    pub fn layout(&mut self, rect: Rect) {
+        // Calculate areas for native and egui controls
+        let (native_rects, egui_rects) = self.calculate_layout(rect);
+        
+        // Position native controls
+        for (area, rect) in self.native_areas.iter_mut().zip(native_rects) {
+            unsafe {
+                SetWindowPos(
+                    area.hwnd,
+                    null_mut(),
+                    rect.x as i32,
+                    rect.y as i32,
+                    rect.width as i32,
+                    rect.height as i32,
+                    SWP_NOZORDER,
+                );
             }
-            ControlType::FileSelect => {
-                self.render_file_select(control, ctx);
-            }
-            ControlType::DeviceList => {
-                self.render_device_list(control, ctx);
-            }
+        }
+        
+        // Update egui areas
+        for (area, rect) in self.egui_areas.iter_mut().zip(egui_rects) {
+            area.rect = rect;
         }
     }
     
-    fn render_color_picker(&mut self, control: &mut CustomControl, ctx: &egui::Context) {
-        let mut color = control.get_value::<Color>();
-        egui::color_picker::color_edit_button_rgb(ctx, &mut color);
-        if color != control.get_value::<Color>() {
-            control.set_value(color);
-            control.emit_change();
-        }
+    fn calculate_layout(&self, rect: Rect) -> (Vec<Rect>, Vec<Rect>) {
+        // Implement layout algorithm that divides space between
+        // native and egui controls while maintaining proper alignment
+        // and respecting minimum sizes
+    }
+}
+```
+
+5. **Style Integration**:
+```rust
+pub struct HybridStyle {
+    native_theme: HTHEME,
+    egui_visuals: egui::Visuals,
+}
+
+impl HybridStyle {
+    pub fn new() -> Result<Self, Error> {
+        // Get native Windows theme
+        let native_theme = unsafe {
+            OpenThemeData(null_mut(), wide_string("WINDOW"))
+        };
+        
+        // Create matching egui visuals
+        let mut egui_visuals = egui::Visuals::default();
+        self.sync_colors_from_native(&mut egui_visuals, native_theme)?;
+        
+        Ok(Self {
+            native_theme,
+            egui_visuals,
+        })
+    }
+    
+    fn sync_colors_from_native(
+        &self,
+        visuals: &mut egui::Visuals,
+        theme: HTHEME,
+    ) -> Result<(), Error> {
+        // Read colors from Windows theme
+        let window_bg = self.get_theme_color(theme, WP_WINDOW, 0, TMT_FILLCOLOR)?;
+        let text_color = self.get_theme_color(theme, WP_WINDOW, 0, TMT_TEXTCOLOR)?;
+        
+        // Update egui visuals to match
+        visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(
+            window_bg.r,
+            window_bg.g,
+            window_bg.b,
+        );
+        visuals.text_color = egui::Color32::from_rgb(
+            text_color.r,
+            text_color.g,
+            text_color.b,
+        );
+        
+        Ok(())
     }
 } 
