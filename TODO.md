@@ -7,53 +7,14 @@
 - [x] Keyboard Plugin
 - [x] System Plugin
 - [x] Window Plugin
-
-### Plugins Needing RST Format Update
-- [ ] Global Monitor Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Expand performance considerations
-  - Add cross-platform strategy
-  - Detail testing approach
-
-- [ ] EventGhost Core Plugin
-  - Initial analysis done
-  - Need detailed component breakdown
-  - Need implementation strategy
-  - Need testing approach
-  - Need platform considerations
+- [x] Global Monitor Plugin
+- [x] EventGhost Core Plugin
   
 ### Plugins Needing Full Analysis
 - [ ] Network Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Expand security considerations
-  - Add protocol details
-  - Document testing approach
-
 - [ ] Task Plugin
-  - Initial analysis done
-  - Needs RST formatting
-  - Add migration strategy
-  - Expand testing section
-  - Detail platform support
-
 - [ ] Directory Watcher Plugin
-  - Basic structure only
-  - Need full component analysis
-  - Need implementation strategy
-  - Need testing approach
-  - Need platform considerations
-
 - [ ] File Operations Plugin
-  - Basic structure only
-  - Need full component analysis
-  - Need implementation strategy
-  - Need testing approach
-  - Need platform considerations
-
-
-### Additional Plugins for Analysis
 - [ ] Google Chrome Plugin
 - [ ] MQTT Plugin
 - [ ] Ping Plugin
@@ -100,8 +61,7 @@
 - [ ] Platform-specific optimizations
 
 ## Next Steps
-1. Complete RST formatting for analyzed plugins
-2. Begin full analysis of remaining plugins
-3. Implement core plugin system
-4. Set up testing infrastructure
-5. Start platform abstraction layer
+1. Begin full analysis of remaining plugins
+2. Implement core plugin system
+3. Set up testing infrastructure
+4. Start platform abstraction layer
