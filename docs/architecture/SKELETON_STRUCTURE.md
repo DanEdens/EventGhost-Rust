@@ -1,52 +1,52 @@
 # EventGhost Rust Skeleton Structure
 
-## Directory Layout
+## Directory Layout [X]
 ```
 src/
-├── core/
-│   ├── mod.rs
-│   ├── event.rs        # Event system with async support
-│   ├── plugin.rs       # Plugin system with property support
-│   ├── gui.rs          # GUI abstractions
-│   ├── init.rs         # Initialization
-│   ├── named_pipe.rs   # IPC
-│   ├── utils.rs        # Utilities
-│   └── error.rs        # Error types
-├── eg/
-│   ├── mod.rs          # Main eg module
-│   ├── bunch.rs        # Thread-safe property storage
-│   ├── globals.rs      # Global state
-│   ├── document.rs     # Tree document management
-│   ├── action/
+├── core/ [X]
+│   ├── mod.rs [X]
+│   ├── event.rs        # Event system with async support [X]
+│   ├── plugin.rs       # Plugin system with property support [X]
+│   ├── gui.rs          # GUI abstractions [X]
+│   ├── init.rs         # Initialization [X]
+│   ├── named_pipe.rs   # IPC [ ]
+│   ├── utils.rs        # Utilities [X]
+│   └── error.rs        # Error types [X]
+├── eg/ [X]
+│   ├── mod.rs          # Main eg module [X]
+│   ├── bunch.rs        # Thread-safe property storage [X]
+│   ├── globals.rs      # Global state [X]
+│   ├── document.rs     # Tree document management [X]
+│   ├── action/ [ ]
 │   │   ├── mod.rs
 │   │   ├── base.rs     # ActionBase trait
 │   │   ├── group.rs    # ActionGroup management
 │   │   └── item.rs     # ActionItem implementation
-│   ├── tree/
-│   │   ├── mod.rs
-│   │   ├── item.rs     # Base TreeItem trait
-│   │   ├── link.rs     # TreeLink for references
-│   │   ├── folder.rs   # FolderItem implementation
-│   │   ├── macro.rs    # MacroItem implementation
-│   │   └── root.rs     # RootItem implementation
-│   ├── winapi/
-│   │   ├── mod.rs
-│   │   └── utils.rs
-│   └── classes/
-│       ├── mod.rs
-│       ├── main_frame.rs
-│       ├── tree_ctrl.rs
-│       ├── log_ctrl.rs
-│       ├── guid.rs
-│       ├── property_grid.rs
-│       ├── plugin_config.rs
-│       └── drag_drop.rs
-└── main.rs
+│   ├── tree/ [X]
+│   │   ├── mod.rs [X]
+│   │   ├── item.rs     # Base TreeItem trait [X]
+│   │   ├── link.rs     # TreeLink for references [X]
+│   │   ├── folder.rs   # FolderItem implementation [X]
+│   │   ├── macro.rs    # MacroItem implementation [X]
+│   │   └── root.rs     # RootItem implementation [X]
+│   ├── winapi/ [X]
+│   │   ├── mod.rs [X]
+│   │   └── utils.rs [X]
+│   └── classes/ [X]
+│       ├── mod.rs [X]
+│       ├── main_frame.rs [X]
+│       ├── tree_ctrl.rs [X]
+│       ├── log_ctrl.rs [X]
+│       ├── guid.rs [X]
+│       ├── property_grid.rs [X]
+│       ├── plugin_config.rs [X]
+│       └── drag_drop.rs [X]
+└── main.rs [X]
 ```
 
 ## Core Traits
 
-### Plugin System
+### Plugin System [X]
 ```rust
 pub trait Plugin: PropertySource + Send + Sync {
     fn get_info(&self) -> PluginInfo;
@@ -66,7 +66,7 @@ pub trait PropertySource {
 }
 ```
 
-### Action System
+### Action System [ ]
 ```rust
 pub trait ActionBase: Send + Sync {
     fn get_name(&self) -> &str;
@@ -86,7 +86,7 @@ pub trait ActionGroup {
 }
 ```
 
-### Tree System
+### Tree System [X]
 ```rust
 pub trait TreeItem: Send + Sync {
     fn get_id(&self) -> Uuid;
@@ -106,7 +106,7 @@ pub trait TreeLink {
 }
 ```
 
-### Document System
+### Document System [X]
 ```rust
 pub struct Document {
     root: Box<dyn TreeItem>,
@@ -129,7 +129,7 @@ impl Document {
 }
 ```
 
-### Event System
+### Event System [X]
 ```rust
 pub trait Event: Send + Sync {
     fn get_id(&self) -> &str;
@@ -157,9 +157,9 @@ impl EventManager {
 }
 ```
 
-### State Management
+### State Management [X]
 
-#### Bunch Implementation
+#### Bunch Implementation [X]
 ```rust
 pub struct Bunch {
     data: Arc<RwLock<HashMap<String, Box<dyn Any + Send + Sync>>>>,
@@ -173,7 +173,7 @@ impl Bunch {
 }
 ```
 
-#### Global State
+#### Global State [X]
 ```rust
 pub struct Globals {
     pub bunch: Bunch,
@@ -191,7 +191,7 @@ impl Globals {
 }
 ```
 
-## Error Handling
+## Error Handling [X]
 ```rust
 #[derive(Debug, Error)]
 pub enum Error {
@@ -221,9 +221,9 @@ pub enum Error {
 }
 ```
 
-## Main Entry Point
+## Main Entry Point [X]
 
-### src/main.rs
+### src/main.rs [X]
 ```rust
 use eg::EventGhost;
 
@@ -245,11 +245,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Next Steps
+## Next Steps [ ]
 
-1. Create the basic directory structure
-2. Add empty files with module declarations
-3. Implement the skeleton structs and traits with `todo!()`
-4. Setup basic error handling
-5. Add initial test framework
-6. Create basic build configuration 
+1. [X] Create the basic directory structure
+2. [X] Implement core error handling
+3. [X] Setup event system
+4. [X] Implement state management (Bunch and Globals)
+5. [X] Create UI component framework
+6. [X] Implement tree system
+7. [ ] Complete action system implementation
+8. [ ] Implement IPC with named pipes
+9. [ ] Add plugin hot-reloading support
+10. [ ] Implement configuration persistence
+11. [ ] Add comprehensive testing suite 
