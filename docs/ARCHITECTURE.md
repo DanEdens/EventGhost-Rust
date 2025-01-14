@@ -1030,4 +1030,258 @@ These implementations specifically address the UI patterns visible in the EventG
 - Multi-section status bar
 - Plugin configuration with tabs and description panel
 
+### Event and Macro Drag and Drop
+
+1. **Drag State Management**:
+```rust
+#[derive(Debug)]
+pub struct DragState {
+    source_type: DragSourceType,
+    source_id: String,
+    preview_data: DragPreviewData,
+    drop_target: Option<DropTarget>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DragSourceType {
+    Event,
+    Macro,
+    Action,
+    Plugin,
+}
+
+#[derive(Debug)]
+struct DragPreviewData {
+    text: String,
+    icon: Icon,
+    color: Color32,
+}
+
+#[derive(Debug)]
+struct DropTarget {
+    target_id: String,
+    position: DropPosition,
+    valid: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum DropPosition {
+    Before,
+    After,
+    Inside,
+}
+```
+
+2. **Tree View Drag and Drop Implementation**:
+```rust
+impl ConfigTreeView {
+    fn handle_drag_and_drop(&mut self, ui: &mut Ui) {
+        // Start drag operation
+        if let Some(response) = ui.memory().drag_and_drop.active {
+            if response.dragged_by(egui::PointerButton::Primary) {
+                if self.drag_state.is_none() {
+                    if let Some(node) = self.find_node_at(response.hover_pos()) {
+                        self.drag_state = Some(DragState {
+                            source_type: node.get_type(),
+                            source_id: node.id.clone(),
+                            preview_data: node.get_preview_data(),
+                            drop_target: None,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Update drag preview
+        if let Some(drag_state) = &mut self.drag_state {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+            
+            // Draw drag preview near cursor
+            let preview_rect = ui.cursor().rect.translate(vec2(15.0, 15.0));
+            ui.painter().rect_filled(
+                preview_rect,
+                2.0,
+                drag_state.preview_data.color.linear_multiply(0.1),
+            );
+            ui.painter().image(
+                drag_state.preview_data.icon.id(),
+                preview_rect,
+                Rect::from_min_size(pos2(0.0, 0.0), vec2(1.0, 1.0)),
+                Color32::WHITE,
+            );
+            ui.painter().text(
+                preview_rect.right_center(),
+                Align2::LEFT_CENTER,
+                &drag_state.preview_data.text,
+                TextStyle::Body.resolve(ui.style()),
+                drag_state.preview_data.color,
+            );
+
+            // Find and validate drop target
+            if let Some(target) = self.find_drop_target(ui.cursor().hover_pos()) {
+                drag_state.drop_target = Some(target);
+            }
+        }
+
+        // Handle drop
+        if ui.memory().drag_and_drop.released {
+            if let Some(drag_state) = self.drag_state.take() {
+                if let Some(target) = drag_state.drop_target {
+                    if target.valid {
+                        self.handle_drop(drag_state, target);
+                    }
+                }
+            }
+        }
+    }
+
+    fn find_drop_target(&self, pos: Pos2) -> Option<DropTarget> {
+        if let Some(node) = self.find_node_at(pos) {
+            // Determine drop position based on relative Y position
+            let node_rect = node.rect;
+            let relative_y = (pos.y - node_rect.top()) / node_rect.height();
+            
+            let position = match relative_y {
+                y if y < 0.25 => DropPosition::Before,
+                y if y > 0.75 => DropPosition::After,
+                _ => DropPosition::Inside,
+            };
+
+            // Validate drop target based on source type
+            let valid = match self.drag_state.as_ref().unwrap().source_type {
+                DragSourceType::Event => {
+                    // Events can only be dropped into macros
+                    node.node_type == NodeType::Macro && position == DropPosition::Inside
+                }
+                DragSourceType::Macro => {
+                    // Macros can be dropped before/after other macros or inside folders
+                    match (node.node_type, position) {
+                        (NodeType::Macro, DropPosition::Before | DropPosition::After) => true,
+                        (NodeType::Folder, DropPosition::Inside) => true,
+                        _ => false,
+                    }
+                }
+                DragSourceType::Action => {
+                    // Actions can only be dropped inside macros
+                    node.node_type == NodeType::Macro && position == DropPosition::Inside
+                }
+                DragSourceType::Plugin => {
+                    // Plugins can't be dragged
+                    false
+                }
+            };
+
+            Some(DropTarget {
+                target_id: node.id.clone(),
+                position,
+                valid,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn handle_drop(&mut self, drag_state: DragState, target: DropTarget) {
+        match drag_state.source_type {
+            DragSourceType::Event => {
+                // Create new action from event
+                let action = Action::from_event(&drag_state.source_id);
+                self.add_action_to_macro(&target.target_id, action);
+            }
+            DragSourceType::Macro => {
+                match target.position {
+                    DropPosition::Before | DropPosition::After => {
+                        // Reorder macro
+                        self.move_macro(&drag_state.source_id, &target.target_id, target.position);
+                    }
+                    DropPosition::Inside => {
+                        // Move macro into folder
+                        self.move_macro_to_folder(&drag_state.source_id, &target.target_id);
+                    }
+                }
+            }
+            DragSourceType::Action => {
+                // Move action between macros
+                self.move_action(&drag_state.source_id, &target.target_id);
+            }
+            _ => {}
+        }
+    }
+
+    fn render_drop_indicator(&self, ui: &mut Ui) {
+        if let Some(drag_state) = &self.drag_state {
+            if let Some(target) = &drag_state.drop_target {
+                if target.valid {
+                    if let Some(node) = self.find_node_by_id(&target.target_id) {
+                        let rect = match target.position {
+                            DropPosition::Before => {
+                                Rect::from_min_max(
+                                    pos2(node.rect.left(), node.rect.top() - 2.0),
+                                    pos2(node.rect.right(), node.rect.top() + 2.0),
+                                )
+                            }
+                            DropPosition::After => {
+                                Rect::from_min_max(
+                                    pos2(node.rect.left(), node.rect.bottom() - 2.0),
+                                    pos2(node.rect.right(), node.rect.bottom() + 2.0),
+                                )
+                            }
+                            DropPosition::Inside => {
+                                node.rect.expand(2.0)
+                            }
+                        };
+
+                        ui.painter().rect_filled(
+                            rect,
+                            2.0,
+                            Color32::from_rgb(0, 120, 215),
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+3. **Event to Macro Conversion**:
+```rust
+impl Action {
+    pub fn from_event(event_id: &str) -> Self {
+        // Create a new action that triggers when the event occurs
+        Self {
+            id: Uuid::new_v4().to_string(),
+            name: format!("On {}", event_id),
+            event_filter: Some(EventFilter {
+                event_id: event_id.to_string(),
+                conditions: Vec::new(),
+            }),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EventFilter {
+    event_id: String,
+    conditions: Vec<FilterCondition>,
+}
+
+#[derive(Debug, Clone)]
+pub enum FilterCondition {
+    Equals(String, String),
+    Contains(String, String),
+    Regex(String, Regex),
+}
+```
+
+This implementation provides:
+- Drag state management for different types of draggable items
+- Visual feedback during drag operations with preview
+- Drop target validation based on source and target types
+- Drop position detection (before/after/inside)
+- Visual indicators for valid drop targets
+- Automatic conversion of events to actions when dropped
+- Support for macro reordering and folder organization
+
 // ... existing code ... 
