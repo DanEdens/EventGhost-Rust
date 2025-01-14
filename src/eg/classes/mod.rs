@@ -6,6 +6,9 @@ pub mod status_bar;
 pub mod toolbar;
 pub mod dialog;
 pub mod menu;
+pub mod drag_drop;
+pub mod property_grid;
+pub mod plugin_config;
 
 pub use main_frame::MainFrame;
 pub use tree_ctrl::TreeCtrl;
@@ -15,6 +18,9 @@ pub use status_bar::StatusBar;
 pub use toolbar::Toolbar;
 pub use dialog::{Dialog, DialogResult, CommonDialogs, FileDialogOptions, MessageBoxStyle};
 pub use menu::{Menu, MenuItem, MenuItemKind, PopupFlags};
+pub use drag_drop::{DragDropManager, DragData, DragEffects, DragSource, DropTarget};
+pub use property_grid::{PropertyGrid, Property, PropertyValue, PropertySource};
+pub use plugin_config::PluginConfigDialog;
 
 use crate::core::Error;
 use windows::Win32::Foundation::HWND;
