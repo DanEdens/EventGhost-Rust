@@ -3,6 +3,7 @@ use crate::core::Error;
 use super::UIComponent;
 use std::any::Any;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub enum PropertyValue {
@@ -12,7 +13,7 @@ pub enum PropertyValue {
     String(String),
     Color(u32),
     Enum(String, Vec<String>),
-    Custom(Box<dyn Any>),
+    Custom(Arc<dyn Any + Send + Sync>),
 }
 
 #[derive(Debug, Clone)]
@@ -22,6 +23,7 @@ pub struct Property {
     description: String,
     value: PropertyValue,
     readonly: bool,
+    validator: Option<Arc<dyn Fn(&PropertyValue) -> Result<(), String> + Send + Sync>>,
 }
 
 impl Property {
@@ -32,6 +34,7 @@ impl Property {
             description: String::new(),
             value,
             readonly: false,
+            validator: None,
         }
     }
 
@@ -43,6 +46,42 @@ impl Property {
     pub fn readonly(mut self, readonly: bool) -> Self {
         self.readonly = readonly;
         self
+    }
+
+    pub fn with_validator<F>(mut self, validator: F) -> Self 
+    where
+        F: Fn(&PropertyValue) -> Result<(), String> + Send + Sync + 'static
+    {
+        self.validator = Some(Arc::new(validator));
+        self
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if let Some(validator) = &self.validator {
+            validator(&self.value)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_category(&self) -> &str {
+        &self.category
+    }
+
+    pub fn get_description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn is_readonly(&self) -> bool {
+        self.readonly
+    }
+
+    pub fn get_value(&self) -> &PropertyValue {
+        &self.value
     }
 }
 

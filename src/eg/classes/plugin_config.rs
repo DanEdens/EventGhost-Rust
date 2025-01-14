@@ -1,13 +1,21 @@
 use windows::Win32::Foundation::HWND;
 use crate::core::Error;
-use super::{Dialog, DialogResult, UIComponent, PropertyGrid, PropertySource};
+use super::{Dialog, DialogResult, UIComponent, PropertyGrid, PropertySource, Property};
+use std::collections::HashMap;
+
+pub struct ConfigPage {
+    title: String,
+    description: String,
+    property_grid: PropertyGrid,
+}
 
 pub struct PluginConfigDialog {
     hwnd: HWND,
-    property_grid: PropertyGrid,
-    description_text: String,
+    pages: Vec<ConfigPage>,
+    current_page: usize,
     is_visible: bool,
     result: DialogResult,
+    changes: HashMap<String, Property>,
 }
 
 impl PluginConfigDialog {
@@ -15,24 +23,65 @@ impl PluginConfigDialog {
         todo!()
     }
 
+    pub fn add_page(&mut self, title: &str, description: &str) -> Result<(), Error> {
+        todo!()
+    }
+
     pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource>) -> Result<(), Error> {
         todo!()
     }
 
+    pub fn set_current_page(&mut self, index: usize) -> Result<(), Error> {
+        if index >= self.pages.len() {
+            return Err(Error::Config("Invalid page index".into()));
+        }
+        self.current_page = index;
+        Ok(())
+    }
+
+    pub fn get_current_page(&self) -> usize {
+        self.current_page
+    }
+
+    pub fn get_page_count(&self) -> usize {
+        self.pages.len()
+    }
+
     pub fn set_description(&mut self, text: &str) {
-        todo!()
+        if let Some(page) = self.pages.get_mut(self.current_page) {
+            page.description = text.to_string();
+        }
     }
 
     pub fn get_description(&self) -> &str {
-        todo!()
+        self.pages.get(self.current_page)
+            .map(|page| &page.description)
+            .unwrap_or("")
+    }
+
+    pub fn validate_changes(&self) -> Result<(), String> {
+        for property in self.changes.values() {
+            property.validate()?;
+        }
+        Ok(())
     }
 
     pub fn apply_changes(&mut self) -> Result<(), Error> {
+        self.validate_changes()
+            .map_err(|e| Error::Config(e))?;
         todo!()
     }
 
     pub fn reset_changes(&mut self) -> Result<(), Error> {
-        todo!()
+        self.changes.clear();
+        for page in &mut self.pages {
+            page.property_grid.refresh()?;
+        }
+        Ok(())
+    }
+
+    fn on_property_changed(&mut self, name: String, value: Property) {
+        self.changes.insert(name, value);
     }
 }
 
@@ -42,7 +91,7 @@ impl Dialog for PluginConfigDialog {
     }
 
     fn end_dialog(&mut self, result: DialogResult) {
-        todo!()
+        self.result = result;
     }
 
     fn on_init(&mut self) -> Result<(), Error> {
@@ -75,7 +124,7 @@ impl UIComponent for PluginConfigDialog {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::property_grid::{Property, PropertyValue};
+    use super::super::property_grid::{PropertyValue};
 
     struct TestPlugin {
         name: String,
@@ -86,7 +135,15 @@ mod tests {
         fn get_properties(&self) -> Vec<Property> {
             vec![
                 Property::new("name", "General", PropertyValue::String(self.name.clone()))
-                    .with_description("Plugin name"),
+                    .with_description("Plugin name")
+                    .with_validator(|value| {
+                        if let PropertyValue::String(s) = value {
+                            if s.is_empty() {
+                                return Err("Name cannot be empty".into());
+                            }
+                        }
+                        Ok(())
+                    }),
                 Property::new("enabled", "State", PropertyValue::Bool(self.enabled))
                     .with_description("Enable/disable plugin"),
             ]
