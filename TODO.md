@@ -23,9 +23,10 @@
 
 ## Documentation Tasks
 - [X] Review and update cross-references between plugins
-- [ ] Verify all code examples are consistent
-- [ ] Add implementation notes for platform-specific features
-- [ ] Document common patterns across plugins
+- [X] Verify all code examples are consistent
+- [X] Add implementation notes for GUI window handling
+- [X] Document common patterns across plugins
+
 
 ## Implementation Tasks
 - [ ] Set up Rust project structure
