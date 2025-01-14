@@ -5,17 +5,30 @@
 src/
 ├── core/
 │   ├── mod.rs
-│   ├── event.rs
-│   ├── plugin.rs
-│   ├── gui.rs
-│   ├── init.rs
-│   ├── named_pipe.rs
-│   ├── utils.rs
-│   └── cli.rs
+│   ├── event.rs        # Event system with async support
+│   ├── plugin.rs       # Plugin system with property support
+│   ├── gui.rs          # GUI abstractions
+│   ├── init.rs         # Initialization
+│   ├── named_pipe.rs   # IPC
+│   ├── utils.rs        # Utilities
+│   └── error.rs        # Error types
 ├── eg/
-│   ├── mod.rs           # Main eg module
-│   ├── bunch.rs         # Bunch implementation
-│   ├── globals.rs       # Global state management
+│   ├── mod.rs          # Main eg module
+│   ├── bunch.rs        # Thread-safe property storage
+│   ├── globals.rs      # Global state
+│   ├── document.rs     # Tree document management
+│   ├── action/
+│   │   ├── mod.rs
+│   │   ├── base.rs     # ActionBase trait
+│   │   ├── group.rs    # ActionGroup management
+│   │   └── item.rs     # ActionItem implementation
+│   ├── tree/
+│   │   ├── mod.rs
+│   │   ├── item.rs     # Base TreeItem trait
+│   │   ├── link.rs     # TreeLink for references
+│   │   ├── folder.rs   # FolderItem implementation
+│   │   ├── macro.rs    # MacroItem implementation
+│   │   └── root.rs     # RootItem implementation
 │   ├── winapi/
 │   │   ├── mod.rs
 │   │   └── utils.rs
@@ -24,172 +37,161 @@ src/
 │       ├── main_frame.rs
 │       ├── tree_ctrl.rs
 │       ├── log_ctrl.rs
-│       └── guid.rs
+│       ├── guid.rs
+│       ├── property_grid.rs
+│       ├── plugin_config.rs
+│       └── drag_drop.rs
 └── main.rs
 ```
 
-## Core Module Skeletons
+## Core Traits
 
-### src/core/mod.rs
+### Plugin System
 ```rust
-pub mod event;
-pub mod plugin;
-pub mod gui;
-pub mod init;
-pub mod named_pipe;
-pub mod utils;
-pub mod cli;
-
-pub use event::*;
-pub use plugin::*;
-pub use gui::*;
-```
-
-### src/core/event.rs
-```rust
-use chrono::{DateTime, Local};
-use uuid::Uuid;
-
-pub trait Event {
-    fn get_id(&self) -> &str;
-    fn get_type(&self) -> EventType;
-    fn get_payload(&self) -> &EventPayload;
-    fn get_timestamp(&self) -> DateTime<Local>;
-}
-
-pub struct EventGhostEvent {
-    id: String,
-    event_type: EventType,
-    payload: EventPayload,
-    timestamp: DateTime<Local>,
-}
-
-impl Event for EventGhostEvent {
-    fn get_id(&self) -> &str { todo!() }
-    fn get_type(&self) -> EventType { todo!() }
-    fn get_payload(&self) -> &EventPayload { todo!() }
-    fn get_timestamp(&self) -> DateTime<Local> { todo!() }
-}
-```
-
-### src/core/plugin.rs
-```rust
-use std::path::Path;
-
-pub trait Plugin {
+pub trait Plugin: PropertySource + Send + Sync {
     fn get_info(&self) -> PluginInfo;
     fn initialize(&mut self) -> Result<(), Error>;
     fn start(&mut self) -> Result<(), Error>;
     fn stop(&mut self) -> Result<(), Error>;
-    fn configure(&mut self) -> Option<ConfigResult>;
+    fn configure(&mut self) -> Option<ConfigDialog>;
+    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
+    fn add_action(&mut self, action: Box<dyn ActionBase>);
+    fn get_actions(&self) -> &[Box<dyn ActionBase>];
 }
 
-pub struct PluginInfo {
-    pub name: String,
-    pub description: String,
-    pub author: String,
-    pub version: String,
-    pub guid: String,
-}
-
-pub struct PluginRegistry {
-    plugins: HashMap<String, Box<dyn Plugin>>,
-}
-
-impl PluginRegistry {
-    pub fn new() -> Self { todo!() }
-    pub fn load_plugin(&mut self, path: &Path) -> Result<(), Error> { todo!() }
-    pub fn start_plugin(&mut self, id: &str) -> Result<(), Error> { todo!() }
-    pub fn stop_plugin(&mut self, id: &str) -> Result<(), Error> { todo!() }
+pub trait PropertySource {
+    fn get_properties(&self) -> Vec<Property>;
+    fn set_property(&mut self, name: &str, value: PropertyValue) -> Result<(), Error>;
+    fn validate_property(&self, name: &str, value: &PropertyValue) -> Result<(), String>;
 }
 ```
 
-### src/eg/mod.rs
+### Action System
 ```rust
-use std::sync::Arc;
-use parking_lot::RwLock;
-
-pub mod bunch;
-pub mod globals;
-pub mod winapi;
-pub mod classes;
-
-pub use bunch::Bunch;
-pub use globals::Globals;
-
-pub struct EventGhost {
-    pub globals: Arc<RwLock<Globals>>,
-    pub plugins: Bunch,
-    pub document: Option<Document>,
-    pub main_frame: Option<MainFrame>,
-    pub event: Option<EventGhostEvent>,
+pub trait ActionBase: Send + Sync {
+    fn get_name(&self) -> &str;
+    fn get_description(&self) -> &str;
+    fn get_plugin(&self) -> &dyn Plugin;
+    fn execute(&mut self, args: &[Value]) -> Result<Value, Error>;
+    fn configure(&mut self) -> Option<ConfigDialog>;
+    fn clone_action(&self) -> Box<dyn ActionBase>;
 }
 
-impl EventGhost {
-    pub fn new() -> Self { todo!() }
-    pub fn initialize(&mut self) -> Result<(), Error> { todo!() }
-    pub fn start(&mut self) -> Result<(), Error> { todo!() }
-    pub fn stop(&mut self) -> Result<(), Error> { todo!() }
+pub trait ActionGroup {
+    fn get_name(&self) -> &str;
+    fn get_description(&self) -> &str;
+    fn get_icon(&self) -> Option<Icon>;
+    fn get_items(&self) -> &[Box<dyn ActionBase>];
+    fn add_item(&mut self, item: Box<dyn ActionBase>);
 }
 ```
 
-### src/eg/bunch.rs
+### Tree System
 ```rust
-use std::collections::HashMap;
-use std::any::Any;
+pub trait TreeItem: Send + Sync {
+    fn get_id(&self) -> Uuid;
+    fn get_parent(&self) -> Option<&dyn TreeItem>;
+    fn get_children(&self) -> &[Box<dyn TreeItem>];
+    fn get_name(&self) -> &str;
+    fn is_enabled(&self) -> bool;
+    fn set_enabled(&mut self, enabled: bool) -> Result<(), Error>;
+    fn execute(&mut self) -> Result<Value, Error>;
+    fn clone_item(&self) -> Box<dyn TreeItem>;
+}
 
+pub trait TreeLink {
+    fn get_target(&self) -> Option<&dyn TreeItem>;
+    fn set_target(&mut self, target: Option<Box<dyn TreeItem>>);
+    fn clone_link(&self) -> Box<dyn TreeLink>;
+}
+```
+
+### Document System
+```rust
+pub struct Document {
+    root: Box<dyn TreeItem>,
+    selection: Option<Box<dyn TreeItem>>,
+    undo_stack: Vec<UndoAction>,
+    redo_stack: Vec<UndoAction>,
+    is_dirty: bool,
+    file_path: Option<PathBuf>,
+}
+
+impl Document {
+    pub fn new() -> Self;
+    pub fn load_file(&mut self, path: &Path) -> Result<(), Error>;
+    pub fn save_file(&self, path: &Path) -> Result<(), Error>;
+    pub fn undo(&mut self) -> Result<(), Error>;
+    pub fn redo(&mut self) -> Result<(), Error>;
+    pub fn is_dirty(&self) -> bool;
+    pub fn get_selection(&self) -> Option<&dyn TreeItem>;
+    pub fn set_selection(&mut self, item: Option<Box<dyn TreeItem>>);
+}
+```
+
+### Event System
+```rust
+pub trait Event: Send + Sync {
+    fn get_id(&self) -> &str;
+    fn get_type(&self) -> EventType;
+    fn get_payload(&self) -> &EventPayload;
+    fn get_timestamp(&self) -> DateTime<Local>;
+    fn get_source(&self) -> Option<&str>;
+}
+
+pub trait EventHandler: Send + Sync {
+    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
+    fn can_handle(&self, event_type: EventType) -> bool;
+}
+
+pub struct EventManager {
+    handlers: Vec<Box<dyn EventHandler>>,
+    event_queue: VecDeque<Box<dyn Event>>,
+}
+
+impl EventManager {
+    pub fn new() -> Self;
+    pub fn register_handler(&mut self, handler: Box<dyn EventHandler>);
+    pub fn unregister_handler(&mut self, id: &str);
+    pub fn process_event(&mut self, event: Box<dyn Event>) -> Result<(), Error>;
+}
+```
+
+### State Management
+
+#### Bunch Implementation
+```rust
 pub struct Bunch {
-    data: HashMap<String, Box<dyn Any + Send + Sync>>,
+    data: Arc<RwLock<HashMap<String, Box<dyn Any + Send + Sync>>>>,
 }
 
 impl Bunch {
-    pub fn new() -> Self { todo!() }
-    pub fn set<T: 'static + Send + Sync>(&mut self, key: &str, value: T) { todo!() }
-    pub fn get<T: 'static>(&self, key: &str) -> Option<&T> { todo!() }
-    pub fn get_mut<T: 'static>(&mut self, key: &str) -> Option<&mut T> { todo!() }
+    pub fn new() -> Self;
+    pub fn set<T: 'static + Send + Sync>(&self, key: &str, value: T) -> Result<(), Error>;
+    pub fn get<T: 'static + Clone>(&self, key: &str) -> Result<Option<T>, Error>;
+    pub fn remove(&self, key: &str) -> Result<(), Error>;
 }
 ```
 
-### src/eg/globals.rs
+#### Global State
 ```rust
-use super::Bunch;
-
 pub struct Globals {
     pub bunch: Bunch,
-    pub debug_level: i32,
-    pub system_encoding: String,
-    pub program_counter: Option<usize>,
-    pub stop_execution_flag: bool,
+    pub plugins: PluginRegistry,
+    pub event_handlers: Vec<Box<dyn EventHandler>>,
+    pub config: Configuration,
+    pub document: Document,
 }
 
 impl Globals {
-    pub fn new() -> Self { todo!() }
-    pub fn initialize(&mut self) -> Result<(), Error> { todo!() }
+    pub fn new() -> Self;
+    pub fn initialize(&mut self) -> Result<(), Error>;
+    pub fn register_event_handler(&mut self, handler: Box<dyn EventHandler>);
+    pub fn dispatch_event(&mut self, event: &Event) -> Result<(), Error>;
 }
 ```
 
-### src/eg/classes/main_frame.rs
-```rust
-use super::tree_ctrl::TreeCtrl;
-use super::log_ctrl::LogCtrl;
-
-pub struct MainFrame {
-    pub tree_ctrl: TreeCtrl,
-    pub log_ctrl: LogCtrl,
-    pub status_bar: StatusBar,
-}
-
-impl MainFrame {
-    pub fn new() -> Self { todo!() }
-    pub fn show(&mut self) { todo!() }
-    pub fn hide(&mut self) { todo!() }
-    pub fn process_event(&mut self, event: WindowEvent) { todo!() }
-}
-```
-
-## Error Types
-
-### src/core/error.rs
+## Error Handling
 ```rust
 #[derive(Debug, Error)]
 pub enum Error {
@@ -202,27 +204,21 @@ pub enum Error {
     #[error("GUI error: {0}")]
     Gui(String),
     
+    #[error("Property error: {0}")]
+    Property(String),
+    
+    #[error("Config error: {0}")]
+    Config(String),
+    
+    #[error("Tree error: {0}")]
+    Tree(String),
+    
+    #[error("Document error: {0}")]
+    Document(String),
+    
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
-    #[error("System error: {0}")]
-    System(String),
 }
-```
-
-## Constants
-
-### src/core/constants.rs
-```rust
-pub const CORE_PLUGIN_GUIDS: &[&str] = &[
-    "{9D499A2C-72B6-40B0-8C8C-995831B10BB4}",  // "EventGhost"
-    "{A21F443B-221D-44E4-8596-E1ED7100E0A4}",  // "System"
-    "{E974D074-B0A3-4D0C-BBD1-992475DDD69D}",  // "Window"
-    "{6B1751BF-F94E-4260-AB7E-64C0693FD959}",  // "Mouse"
-];
-
-pub const DEFAULT_DEBUG_LEVEL: i32 = 0;
-pub const DEFAULT_ENCODING: &str = "utf-8";
 ```
 
 ## Main Entry Point

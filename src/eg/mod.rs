@@ -1,36 +1,38 @@
-use std::sync::Arc;
-use parking_lot::RwLock;
-
+pub mod action;
+pub mod tree;
+pub mod classes;
+pub mod winapi;
 pub mod bunch;
 pub mod globals;
-pub mod winapi;
-pub mod classes;
 
-pub use bunch::Bunch;
-pub use globals::Globals;
+use crate::core::{EventManager, PluginRegistry};
+use crate::core::Error;
+use std::sync::{Arc, RwLock};
 
-pub struct EventGhost {
-    pub globals: Arc<RwLock<Globals>>,
-    pub plugins: Bunch,
-    pub document: Option<Document>,
-    pub main_frame: Option<MainFrame>,
-    pub event: Option<EventGhostEvent>,
+pub struct Globals {
+    events: Arc<RwLock<EventManager>>,
+    plugins: Arc<RwLock<PluginRegistry>>,
+    document: Arc<RwLock<tree::Document>>,
 }
 
-impl EventGhost {
+impl Globals {
     pub fn new() -> Self {
-        todo!()
+        Self {
+            events: Arc::new(RwLock::new(EventManager::new())),
+            plugins: Arc::new(RwLock::new(PluginRegistry::new())),
+            document: Arc::new(RwLock::new(tree::Document::new())),
+        }
     }
-    
-    pub fn initialize(&mut self) -> Result<(), crate::core::Error> {
-        todo!()
+
+    pub fn events(&self) -> Arc<RwLock<EventManager>> {
+        self.events.clone()
     }
-    
-    pub fn start(&mut self) -> Result<(), crate::core::Error> {
-        todo!()
+
+    pub fn plugins(&self) -> Arc<RwLock<PluginRegistry>> {
+        self.plugins.clone()
     }
-    
-    pub fn stop(&mut self) -> Result<(), crate::core::Error> {
-        todo!()
+
+    pub fn document(&self) -> Arc<RwLock<tree::Document>> {
+        self.document.clone()
     }
 } 

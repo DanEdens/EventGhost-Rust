@@ -1,50 +1,68 @@
 use std::collections::HashMap;
 use std::any::Any;
-use std::sync::Arc;
-use parking_lot::RwLock;
+use std::sync::{Arc, RwLock};
+use crate::core::Error;
 
-/// A dynamic property container that can store any type that is Send + Sync
 #[derive(Default)]
 pub struct Bunch {
-    data: HashMap<String, Box<dyn Any + Send + Sync>>,
+    values: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,
 }
 
 impl Bunch {
     pub fn new() -> Self {
         Self {
-            data: HashMap::new(),
+            values: HashMap::new(),
         }
     }
 
-    /// Set a value in the bunch
     pub fn set<T: 'static + Send + Sync>(&mut self, key: &str, value: T) {
-        self.data.insert(key.to_string(), Box::new(value));
+        self.values.insert(
+            key.to_string(),
+            Arc::new(RwLock::new(Box::new(value))),
+        );
     }
 
-    /// Get a reference to a value if it exists and is of the correct type
-    pub fn get<T: 'static>(&self, key: &str) -> Option<&T> {
-        self.data.get(key)
-            .and_then(|value| value.downcast_ref::<T>())
+    pub fn get<T: 'static + Send + Sync>(&self, key: &str) -> Result<Arc<RwLock<Box<dyn Any + Send + Sync>>>, Error> {
+        self.values
+            .get(key)
+            .cloned()
+            .ok_or_else(|| Error::Property(format!("Property not found: {}", key)))
     }
 
-    /// Get a mutable reference to a value if it exists and is of the correct type
-    pub fn get_mut<T: 'static>(&mut self, key: &str) -> Option<&mut T> {
-        self.data.get_mut(key)
-            .and_then(|value| value.downcast_mut::<T>())
+    pub fn remove(&mut self, key: &str) -> Option<Arc<RwLock<Box<dyn Any + Send + Sync>>>> {
+        self.values.remove(key)
     }
 
-    /// Remove a value from the bunch
-    pub fn remove(&mut self, key: &str) -> Option<Box<dyn Any + Send + Sync>> {
-        self.data.remove(key)
-    }
-
-    /// Check if a key exists
     pub fn contains_key(&self, key: &str) -> bool {
-        self.data.contains_key(key)
+        self.values.contains_key(key)
     }
 
-    /// Clear all values
     pub fn clear(&mut self) {
-        self.data.clear();
+        self.values.clear();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bunch_operations() {
+        let mut bunch = Bunch::new();
+        
+        // Test setting and getting values
+        bunch.set("number", 42);
+        bunch.set("text", "Hello".to_string());
+        
+        assert!(bunch.contains_key("number"));
+        assert!(bunch.contains_key("text"));
+        
+        // Test removing values
+        bunch.remove("number");
+        assert!(!bunch.contains_key("number"));
+        
+        // Test clearing
+        bunch.clear();
+        assert!(!bunch.contains_key("text"));
     }
 } 

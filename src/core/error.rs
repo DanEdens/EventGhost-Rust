@@ -1,6 +1,4 @@
-use thiserror::Error;
-
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Plugin error: {0}")]
     Plugin(String),
@@ -11,15 +9,18 @@ pub enum Error {
     #[error("GUI error: {0}")]
     Gui(String),
     
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("Property error: {0}")]
+    Property(String),
     
-    #[error("System error: {0}")]
-    System(String),
-    
-    #[error("Configuration error: {0}")]
+    #[error("Config error: {0}")]
     Config(String),
     
-    #[error("Named pipe error: {0}")]
-    NamedPipe(String),
+    #[error("Tree error: {0}")]
+    Tree(String),
+    
+    #[error("Document error: {0}")]
+    Document(String),
+    
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 } 
