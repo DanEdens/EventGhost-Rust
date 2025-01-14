@@ -300,7 +300,7 @@ mod integration_tests {
 }
 ```
 
-3. **UI Testing**:
+3. **UI Tests**:
 ```rust
 #[cfg(test)]
 mod ui_tests {
@@ -632,3 +632,243 @@ impl HybridStyle {
         Ok(())
     }
 } 
+
+### Specific UI Component Implementations
+
+1. **Log View Implementation**:
+```rust
+pub struct LogView {
+    entries: VecDeque<LogEntry>,
+    colors: LogColors,
+    timestamp_format: String,
+}
+
+impl LogView {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        // Implement virtual scrolling for performance
+        egui::ScrollArea::vertical()
+            .stick_to_bottom(true)
+            .show_rows(
+                ui,
+                ui.text_style_height(&TextStyle::Body),
+                self.entries.len(),
+                |ui, row_range| {
+                    for i in row_range {
+                        let entry = &self.entries[i];
+                        ui.horizontal(|ui| {
+                            // Timestamp with yellow background for specific entries
+                            if entry.highlight {
+                                ui.colored_label(self.colors.highlight_bg, &entry.timestamp);
+                            }
+                            // Event name with appropriate color
+                            ui.colored_label(entry.get_color(&self.colors), &entry.text);
+                        });
+                    }
+                }
+            );
+    }
+}
+
+#[derive(Debug, Clone)]
+struct LogColors {
+    highlight_bg: Color32,
+    system_event: Color32,
+    plugin_event: Color32,
+    error_event: Color32,
+}
+```
+
+2. **Tree View with Icons**:
+```rust
+pub struct ConfigTreeView {
+    root: TreeNode,
+    icons: IconMap,
+    drag_state: Option<DragState>,
+}
+
+impl ConfigTreeView {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            self.render_node(ui, &mut self.root, 0);
+        });
+    }
+    
+    fn render_node(&mut self, ui: &mut egui::Ui, node: &mut TreeNode, depth: u32) {
+        let indent = depth * 20.0;
+        ui.horizontal(|ui| {
+            ui.add_space(indent);
+            
+            // Render expand/collapse icon
+            if node.has_children() {
+                if ui.add(IconButton::new(
+                    if node.expanded {
+                        self.icons.collapse
+                    } else {
+                        self.icons.expand
+                    }
+                )).clicked() {
+                    node.expanded = !node.expanded;
+                }
+            }
+            
+            // Render node icon and label
+            ui.add(IconButton::new(node.get_icon(&self.icons)));
+            let label = ui.add(
+                egui::Label::new(&node.name)
+                    .sense(Sense::click())
+            );
+            
+            // Handle selection
+            if label.clicked() {
+                self.selected = Some(node.id);
+            }
+            
+            // Handle drag and drop
+            if label.dragged() {
+                self.drag_state = Some(DragState::new(node.id));
+            }
+        });
+        
+        // Render children if expanded
+        if node.expanded {
+            for child in &mut node.children {
+                self.render_node(ui, child, depth + 1);
+            }
+        }
+    }
+}
+```
+
+3. **Toolbar Implementation**:
+```rust
+pub struct Toolbar {
+    buttons: Vec<ToolbarButton>,
+    separator_indices: HashSet<usize>,
+}
+
+impl Toolbar {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            for (idx, button) in self.buttons.iter_mut().enumerate() {
+                if self.separator_indices.contains(&idx) {
+                    ui.add(egui::Separator::vertical());
+                }
+                
+                let response = ui.add(
+                    IconButton::new(button.icon)
+                        .enabled(button.enabled)
+                        .tooltip(button.tooltip.as_str())
+                );
+                
+                if response.clicked() {
+                    button.action.execute();
+                }
+            }
+        });
+    }
+}
+
+#[derive(Clone)]
+struct ToolbarButton {
+    icon: Icon,
+    enabled: bool,
+    tooltip: String,
+    action: Action,
+}
+```
+
+4. **Status Bar with Multiple Sections**:
+```rust
+pub struct StatusBar {
+    sections: Vec<StatusSection>,
+    progress: Option<ProgressInfo>,
+}
+
+impl StatusBar {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            // Main status text
+            ui.label(&self.sections[0].text);
+            
+            ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                // Optional progress bar
+                if let Some(progress) = &self.progress {
+                    ui.add(
+                        egui::ProgressBar::new(progress.value)
+                            .show_percentage()
+                            .animate(true)
+                    );
+                }
+                
+                // Right-aligned sections
+                for section in self.sections.iter().skip(1) {
+                    ui.add(egui::Separator::vertical());
+                    if let Some(icon) = &section.icon {
+                        ui.add(IconButton::new(*icon));
+                    }
+                    ui.label(&section.text);
+                }
+            });
+        });
+    }
+}
+```
+
+5. **Plugin Configuration Dialog**:
+```rust
+pub struct PluginConfigDialog {
+    tabs: Vec<ConfigTab>,
+    description: String,
+    button_row: ButtonRow,
+}
+
+impl PluginConfigDialog {
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        egui::TopBottomPanel::bottom("buttons")
+            .show(ui, |ui| self.button_row.render(ui));
+            
+        egui::CentralPanel::default().show(ui, |ui| {
+            ui.horizontal(|ui| {
+                // Left side: Settings tabs
+                ui.vertical(|ui| {
+                    for tab in &mut self.tabs {
+                        if ui.selectable_label(
+                            tab.selected,
+                            &tab.name
+                        ).clicked() {
+                            self.select_tab(tab.id);
+                        }
+                    }
+                });
+                
+                ui.separator();
+                
+                // Right side: Current tab content
+                if let Some(tab) = self.get_selected_tab() {
+                    tab.render(ui);
+                }
+            });
+            
+            // Bottom: Description panel
+            if !self.description.is_empty() {
+                ui.separator();
+                ui.add(
+                    egui::TextEdit::multiline(&mut self.description.as_str())
+                        .desired_width(f32::INFINITY)
+                        .desired_rows(3)
+                        .read_only(true)
+                );
+            }
+        });
+    }
+}
+```
+
+These implementations specifically address the UI patterns visible in the EventGhost screenshot, including:
+- Yellow highlighting in the log view
+- Tree view with proper indentation and icons
+- Toolbar with icon buttons and separators
+- Multi-section status bar
+- Plugin configuration with tabs and description panel
+
+// ... existing code ... 
