@@ -18,41 +18,55 @@ EventGhost's GUI is built on wxPython with a sophisticated multi-pane layout:
    - Custom tree control
    - Configurable logging display
 
-3. **Key Classes**
+3. **Plugin Integration**
+   ```python
+   class PluginItem(ActionItem):
+       def __init__(self, parent, node):
+           # Plugin initialization
+           self.info = info = eg.pluginManager.OpenPlugin(
+               guid,
+               evalName,
+               args,
+               self,
+           )
+           self.name = eg.text.General.pluginLabel % info.label
+           self.executable = info.instance
+   ```
+
+4. **Event System**
+   ```python
+   class LogCtrl(wx.ListCtrl):
+       def __init__(self):
+           # Event logging setup
+           self.logDates = True
+           self.logTimes = True
+           self.data = collections.deque()
+           eg.log.SetCtrl(self)
+           
+       def OnGetItemTextWithDT(self, item, dummyColumn):
+           # Format log entries with timestamps
+           line, _, _, when, indent = self.data[item]
+           return strftime(self._datetime_fmt, localtime(when)) + indent + line
+   ```
+
+5. **Window Management**
    ```python
    class MainFrame(wx.Frame):
        def __init__(self, document):
-           # Core components
+           # Core window setup
+           self.auiManager = wx.aui.AuiManager()
            self.treeCtrl = self.CreateTreeCtrl()
            self.logCtrl = self.CreateLogCtrl()
-           self.toolBar = self.CreateToolBar()
-           self.menuBar = self.CreateMenuBar()
-           self.statusBar = StatusBar(self)
            
-           # Layout management
-           self.auiManager = wx.aui.AuiManager()
-           
-           # Event binding
-           self.Bind(wx.EVT_SIZE, self.OnSize)
-           self.Bind(wx.EVT_MOVE, self.OnMove)
-           self.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self.OnPaneClose)
-   ```
-
-4. **Tree Control Implementation**
-   ```python
-   class TreeCtrl(wx.TreeCtrl):
-       def __init__(self, parent, document):
-           # Drag and drop support
-           self.SetDropTarget(DropTarget(self))
-           
-           # Custom drawing
-           self.SetInsertMark()
-           self.ClearInsertMark()
-           
-           # Node management
-           self.CreateTreeItem()
-           self.EditNodeLabel()
-           self.ExpandAll()
+       def CreateTreeCtrl(self):
+           # Tree control initialization
+           treeCtrl = TreeCtrl(self, document=self.document)
+           self.auiManager.AddPane(
+               treeCtrl,
+               wx.aui.AuiPaneInfo().
+               Name("tree").
+               Center()
+           )
    ```
 
 ## Rust Implementation Strategy
@@ -89,10 +103,8 @@ impl MainWindow {
     }
     
     pub fn update(&mut self, ctx: &Context) {
-        // Update layout
+        // Update layout and components
         self.layout.update(ctx);
-        
-        // Update components
         self.tree_view.update(ctx);
         self.log_view.update(ctx);
         self.toolbar.update(ctx);
@@ -101,62 +113,44 @@ impl MainWindow {
         // Handle events
         self.handle_events();
     }
+}
+
+// Plugin Integration
+pub struct PluginView {
+    info: PluginInfo,
+    instance: Box<dyn Plugin>,
+    config_window: Option<ConfigWindow>,
+}
+
+impl PluginView {
+    pub fn show_config(&mut self, ctx: &Context) {
+        if let Some(window) = &mut self.config_window {
+            window.show(ctx);
+        }
+    }
+}
+
+// Event System
+pub struct LogView {
+    entries: VecDeque<LogEntry>,
+    config: LogConfig,
+    scroll: ScrollArea,
+}
+
+impl LogView {
+    pub fn add_entry(&mut self, entry: LogEntry) {
+        self.entries.push_back(entry);
+        if self.entries.len() > self.config.max_entries {
+            self.entries.pop_front();
+        }
+    }
     
-    fn handle_events(&mut self) {
-        while let Some(event) = self.event_queue.pop() {
-            match event {
-                Event::NodeSelected(node) => self.on_node_selected(node),
-                Event::NodeChanged(node) => self.on_node_changed(node),
-                Event::ConfigChanged(config) => self.on_config_changed(config),
-                // ... other events
+    pub fn show(&mut self, ctx: &Context) {
+        self.scroll.show(ctx, |ui| {
+            for entry in &self.entries {
+                entry.show(ui);
             }
-        }
-    }
-}
-
-pub struct TreeView {
-    // Tree state
-    root: Node,
-    selected: Option<NodeId>,
-    drag_state: Option<DragState>,
-    
-    // Visual state
-    scroll_offset: Vec2,
-    visible_range: Range<usize>,
-    
-    // Rendering
-    node_cache: NodeCache,
-    layout_cache: LayoutCache,
-}
-
-impl TreeView {
-    pub fn update(&mut self, ctx: &Context) {
-        // Handle input
-        self.handle_input(ctx);
-        
-        // Update layout
-        self.update_layout(ctx);
-        
-        // Render visible nodes
-        self.render_nodes(ctx);
-    }
-    
-    fn handle_input(&mut self, ctx: &Context) {
-        // Handle mouse/keyboard input
-        if let Some(pos) = ctx.input().pointer.hover_pos() {
-            self.handle_hover(pos);
-        }
-        
-        if ctx.input().pointer.any_pressed() {
-            self.handle_click(ctx);
-        }
-    }
-    
-    fn render_nodes(&self, ctx: &Context) {
-        // Efficient node rendering
-        for node in self.visible_nodes() {
-            self.render_node(ctx, node);
-        }
+        });
     }
 }
 ```
@@ -182,6 +176,11 @@ impl TreeView {
    - RAII-based cleanup
    - Better memory efficiency
    - Explicit state ownership
+
+5. **Plugin Integration**
+   - Type-safe plugin interface
+   - Async-aware plugin loading
+   - Sandboxed plugin execution
 
 ### Migration Strategy
 
@@ -232,4 +231,20 @@ impl TreeView {
 2. **Performance**
    - Hardware acceleration
    - Efficient state updates
-   - Memory optimization 
+   - Memory optimization
+
+### Lessons Learned
+1. **Keep Plugin UI Simple**
+   - Follow EventGhost's straightforward UI patterns
+   - Avoid over-engineering async patterns
+   - Use direct event handling where possible
+
+2. **Maintain Familiar Workflow**
+   - Preserve EventGhost's intuitive interface
+   - Keep plugin configuration dialogs simple
+   - Focus on reliability over complexity
+
+3. **Resource Management**
+   - Use Rust's ownership model effectively
+   - Clean up resources deterministically
+   - Avoid complex async resource management 
