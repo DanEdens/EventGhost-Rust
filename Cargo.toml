@@ -1,0 +1,24 @@
+[package]
+name = "eventghost"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A Rust implementation of EventGhost"
+
+[dependencies]
+chrono = "0.4"
+uuid = { version = "1.0", features = ["v4"] }
+thiserror = "1.0"
+parking_lot = "0.12"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+log = "0.4"
+env_logger = "0.10"
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+egui = "0.24"
+eframe = "0.24"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.12" 
