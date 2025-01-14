@@ -90,34 +90,108 @@ Migration Considerations
 
 Implementation Strategy
 ---------------------
-1. Network Protocol
-   .. code-block:: rust
 
-    pub trait NetworkProtocol {
-        async fn handle_connection(&mut self, stream: TcpStream) -> Result<(), Error>;
-        async fn authenticate(&mut self) -> Result<(), Error>;
-        async fn process_event(&mut self, event: Event) -> Result<(), Error>;
+Network Plugin Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: rust
+
+    pub struct NetworkPlugin {
+        config: NetworkConfig,
+        sender: Option<NetworkSender>,
+        receiver: Option<NetworkReceiver>,
     }
 
-    impl NetworkProtocol for NetworkSender {
-        async fn authenticate(&mut self) -> Result<(), Error> {
-            // Send "quintessence" handshake
-            // Receive challenge cookie
-            // Calculate MD5 response
-            // Verify acceptance
+    impl Plugin for NetworkPlugin {
+        fn start(&mut self) -> Result<(), Error> {
+            // Simple initialization
+            if self.config.enable_sender {
+                self.sender = Some(NetworkSender::new(self.config.sender_config)?);
+            }
+            if self.config.enable_receiver {
+                self.receiver = Some(NetworkReceiver::new(self.config.receiver_config)?);
+            }
+            Ok(())
+        }
+        
+        fn stop(&mut self) -> Result<(), Error> {
+            // Clean shutdown
+            if let Some(sender) = &mut self.sender {
+                sender.close()?;
+            }
+            if let Some(receiver) = &mut self.receiver {
+                receiver.close()?;
+            }
+            Ok(())
+        }
+        
+        fn handle_event(&mut self, event: &Event) -> Result<(), Error> {
+            // Direct event handling
+            match event {
+                Event::Send(payload) => {
+                    if let Some(sender) = &mut self.sender {
+                        sender.send_event(payload)?;
+                    }
+                }
+                Event::Receive(payload) => {
+                    if let Some(receiver) = &mut self.receiver {
+                        receiver.process_event(payload)?;
+                    }
+                }
+                _ => return Ok(()),
+            }
             Ok(())
         }
     }
 
-2. Event Handling
-   .. code-block:: rust
+Event Processing
+~~~~~~~~~~~~~
+.. code-block:: rust
 
-    impl EventHandler for NetworkReceiver {
-        async fn handle_event(&mut self, event: &Event) -> Result<(), Error> {
-            // Validate event format
-            // Process payload
-            // Route to appropriate handlers
-            // Generate response
+    impl NetworkSender {
+        pub fn send_event(&mut self, payload: &EventPayload) -> Result<(), Error> {
+            // Simple event sending
+            if !self.is_connected() {
+                self.connect()?;
+            }
+            
+            // Format and send
+            let data = self.format_event(payload)?;
+            self.connection.write_all(&data)?;
+            Ok(())
+        }
+    }
+
+    impl NetworkReceiver {
+        pub fn process_event(&mut self, payload: &EventPayload) -> Result<(), Error> {
+            // Direct event processing
+            if self.validate_event(payload)? {
+                self.dispatch_event(payload)?;
+            }
+            Ok(())
+        }
+    }
+
+Connection Management
+~~~~~~~~~~~~~~~~~~
+.. code-block:: rust
+
+    impl NetworkSender {
+        fn connect(&mut self) -> Result<(), Error> {
+            // Simple connection establishment
+            let stream = TcpStream::connect(&self.config.address)?;
+            
+            // Basic authentication
+            self.authenticate(&stream)?;
+            
+            self.connection = Some(stream);
+            Ok(())
+        }
+        
+        fn authenticate(&self, stream: &TcpStream) -> Result<(), Error> {
+            // Simple challenge-response auth
+            let challenge = self.receive_challenge(stream)?;
+            let response = self.calculate_response(&challenge)?;
+            self.send_response(stream, &response)?;
             Ok(())
         }
     }

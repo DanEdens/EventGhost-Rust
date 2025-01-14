@@ -92,78 +92,100 @@ Server Implementation
 ~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct WebServer {
-        port: u16,
-        doc_root: PathBuf,
-        auth_config: Option<AuthConfig>,
-        ssl_config: Option<SslConfig>,
-        ws_clients: HashMap<String, WebSocketClient>,
-        variables: VariableStore,
+    pub struct WebServerPlugin {
+        config: ServerConfig,
+        server: Option<WebServer>,
+        connections: HashMap<ConnectionId, WebSocket>,
     }
 
-    impl WebServer {
-        pub async fn start(&self) -> Result<()> {
-            // Initialize HTTP server
-            // Set up WebSocket handler
-            // Configure SSL if enabled
-            // Start listening for connections
+    impl Plugin for WebServerPlugin {
+        fn start(&mut self) -> Result<(), Error> {
+            // Simple initialization
+            let server = WebServer::new(&self.config)?;
+            
+            // Set up basic handlers
+            server.set_connection_handler(|socket| {
+                self.handle_new_connection(socket)
+            })?;
+            
+            self.server = Some(server);
+            Ok(())
         }
         
-        pub async fn handle_request(&self, req: Request) -> Response {
-            // Process HTTP request
-            // Handle WebSocket upgrade
-            // Manage authentication
-            // Generate response
+        fn stop(&mut self) -> Result<(), Error> {
+            // Clean shutdown
+            if let Some(server) = &mut self.server {
+                server.stop()?;
+            }
+            self.close_all_connections()?;
+            Ok(())
+        }
+        
+        fn handle_event(&mut self, event: &Event) -> Result<(), Error> {
+            // Direct event handling
+            match event {
+                Event::Broadcast(message) => self.broadcast_message(message)?,
+                Event::CloseConnection(id) => self.close_connection(*id)?,
+                _ => return Ok(()),
+            }
+            Ok(())
         }
     }
 
-WebSocket Implementation
-~~~~~~~~~~~~~~~~~~~~~
+Connection Management
+~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct WebSocketHandler {
-        clients: HashMap<String, WebSocketStream>,
-        message_queue: MessageQueue,
-        event_dispatcher: EventDispatcher,
-    }
-
-    impl WebSocketHandler {
-        pub async fn handle_connection(&mut self, stream: WebSocketStream) {
-            // Accept connection
-            // Set up message handling
-            // Monitor connection state
-            // Process messages
+    impl WebServerPlugin {
+        fn handle_new_connection(&mut self, socket: WebSocket) -> Result<(), Error> {
+            // Basic connection handling
+            let id = ConnectionId::new();
+            self.connections.insert(id, socket);
+            Ok(())
         }
         
-        pub async fn broadcast_message(&self, message: Message) {
-            // Send message to all clients
-            // Handle delivery failures
-            // Update client states
+        fn broadcast_message(&mut self, message: &str) -> Result<(), Error> {
+            // Simple broadcasting
+            let mut failed = Vec::new();
+            
+            for (id, socket) in &mut self.connections {
+                if socket.send_text(message).is_err() {
+                    failed.push(*id);
+                }
+            }
+            
+            // Clean up failed connections
+            for id in failed {
+                self.close_connection(id)?;
+            }
+            Ok(())
+        }
+        
+        fn close_connection(&mut self, id: ConnectionId) -> Result<(), Error> {
+            // Direct connection cleanup
+            if let Some(socket) = self.connections.remove(&id) {
+                socket.close()?;
+            }
+            Ok(())
         }
     }
 
-Variable Management
-~~~~~~~~~~~~~~~~
+Message Processing
+~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct VariableStore {
-        temporary: HashMap<String, Value>,
-        persistent: HashMap<String, Value>,
-        change_trackers: Vec<ChangeTracker>,
-    }
-
-    impl VariableStore {
-        pub fn set_value(&mut self, key: String, value: Value, persistent: bool) {
-            // Store value
-            // Track changes
-            // Notify listeners
-            // Handle persistence
-        }
-        
-        pub fn get_value(&self, key: &str) -> Option<&Value> {
-            // Retrieve value
-            // Check persistence
-            // Handle missing values
+    impl WebServerPlugin {
+        fn process_message(&mut self, id: ConnectionId, message: &str) -> Result<(), Error> {
+            // Simple message processing
+            match parse_message(message)? {
+                Message::Event(name, payload) => {
+                    self.event_handler.trigger(&format!("WebSocket.{}", name), payload)?;
+                }
+                Message::Command(cmd) => {
+                    self.handle_command(id, cmd)?;
+                }
+            }
+            Ok(())
         }
     }
 

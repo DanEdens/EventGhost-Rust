@@ -79,27 +79,51 @@ MQTT Client Implementation
 ~~~~~~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct MqttClient {
-        client_id: String,
-        broker: BrokerConfig,
-        security: SecurityConfig,
-        session: SessionConfig,
+    pub struct MqttPlugin {
+        config: MqttConfig,
+        client: Option<MqttClient>,
         event_handler: EventHandler,
     }
 
-    impl MqttClient {
-        pub async fn connect(&mut self) -> Result<()> {
-            // Set up connection
-            // Configure security
-            // Start session
-            // Handle events
+    impl Plugin for MqttPlugin {
+        fn start(&mut self) -> Result<(), Error> {
+            // Simple initialization
+            let client = MqttClient::new(&self.config)?;
+            client.connect()?;
+            
+            // Set up basic handlers
+            client.set_message_handler(|msg| {
+                self.event_handler.trigger("MQTT.Message", msg.payload())
+            })?;
+            
+            self.client = Some(client);
+            Ok(())
         }
         
-        pub async fn subscribe(&mut self, topic: &str, qos: QosLevel) -> Result<()> {
-            // Subscribe to topic
-            // Set QoS level
-            // Handle callbacks
-            // Process messages
+        fn stop(&mut self) -> Result<(), Error> {
+            // Clean shutdown
+            if let Some(client) = &mut self.client {
+                client.disconnect()?;
+            }
+            Ok(())
+        }
+        
+        fn handle_event(&mut self, event: &Event) -> Result<(), Error> {
+            // Direct event handling
+            match event {
+                Event::Subscribe(topic) => {
+                    if let Some(client) = &mut self.client {
+                        client.subscribe(topic, QoS::AtMostOnce)?;
+                    }
+                }
+                Event::Publish { topic, payload } => {
+                    if let Some(client) = &mut self.client {
+                        client.publish(topic, payload, QoS::AtMostOnce)?;
+                    }
+                }
+                _ => return Ok(()),
+            }
+            Ok(())
         }
     }
 
@@ -107,24 +131,19 @@ Message Processing
 ~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct MessageHandler {
-        subscriptions: HashMap<String, Subscription>,
-        processors: Vec<MessageProcessor>,
-        event_dispatcher: EventDispatcher,
-    }
-
-    impl MessageHandler {
-        pub async fn process_message(&mut self, message: Message) -> Result<()> {
-            // Validate message
-            // Process payload
-            // Generate event
-            // Handle errors
+    impl MqttClient {
+        pub fn set_message_handler(&mut self, handler: impl Fn(&Message) -> Result<(), Error>) -> Result<(), Error> {
+            // Simple message handling
+            self.message_handler = Some(Box::new(handler));
+            Ok(())
         }
         
-        pub fn add_processor(&mut self, processor: Box<dyn MessageProcessor>) {
-            // Add processor
-            // Configure filters
-            // Set up callbacks
+        fn process_message(&mut self, message: Message) -> Result<(), Error> {
+            // Direct message processing
+            if let Some(handler) = &self.message_handler {
+                handler(&message)?;
+            }
+            Ok(())
         }
     }
 
@@ -132,24 +151,23 @@ Security Implementation
 ~~~~~~~~~~~~~~~~~~~~
 .. code-block:: rust
 
-    pub struct SecurityManager {
-        tls_config: Option<TlsConfig>,
-        credentials: Option<Credentials>,
-        certificate_store: CertificateStore,
-    }
-
-    impl SecurityManager {
-        pub fn configure_tls(&mut self, config: TlsConfig) -> Result<()> {
-            // Set up TLS
-            // Load certificates
-            // Configure auth
-            // Validate setup
-        }
-        
-        pub fn validate_connection(&self, connection: &Connection) -> Result<()> {
-            // Check certificates
-            // Verify credentials
-            // Validate permissions
+    impl MqttClient {
+        fn connect(&mut self) -> Result<(), Error> {
+            // Basic connection with TLS if configured
+            let mut opts = MqttOptions::new(self.config.client_id, self.config.host, self.config.port);
+            
+            // Configure TLS if enabled
+            if let Some(tls) = &self.config.tls {
+                opts.set_transport(Transport::tls_with_config(tls.into())?);
+            }
+            
+            // Set credentials if configured
+            if let Some(creds) = &self.config.credentials {
+                opts.set_credentials(creds.username.clone(), creds.password.clone());
+            }
+            
+            self.client.connect(opts)?;
+            Ok(())
         }
     }
 
