@@ -1490,3 +1490,62 @@ Modern Async:
 Built-in async/await
 Rich ecosystem of async tools
 Better performance than Python's async
+
+Core Design Principles
+-------------------
+
+EventGhost's architecture is built on several key principles that should be maintained in the Rust implementation:
+
+1. **Event-Driven Simplicity**
+   - Direct event handling without unnecessary complexity
+   - Synchronous processing where possible
+   - Clear and predictable event flow
+
+2. **Plugin Architecture**
+   - Simple plugin lifecycle (start/stop)
+   - Direct event handling methods
+   - Minimal interface requirements
+   - Easy plugin development
+
+3. **Resource Management**
+   - Direct resource acquisition and release
+   - Clear ownership and cleanup patterns
+   - Predictable resource lifecycles
+
+Async Considerations
+------------------
+
+While Rust provides powerful async capabilities, they should be used judiciously:
+
+1. **When to Use Async**:
+   - Network I/O operations
+   - Long-running file operations
+   - External service communication
+   
+2. **When to Avoid Async**:
+   - Simple event handling
+   - Direct system calls
+   - UI interactions
+   - Plugin lifecycle methods
+
+3. **Implementation Guidelines**:
+   - Keep async at the edges (e.g., network boundaries)
+   - Use synchronous core for event processing
+   - Maintain simple plugin interfaces
+   - Avoid unnecessary complexity
+
+Example Plugin Interface:
+```rust
+pub trait Plugin {
+    // Core lifecycle methods
+    fn start(&mut self) -> Result<(), Error>;
+    fn stop(&mut self) -> Result<(), Error>;
+    
+    // Direct event handling
+    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
+    
+    // Optional async operations where necessary
+    #[cfg(feature = "async")]
+    async fn handle_network_io(&mut self) -> Result<(), Error>;
+}
+```
