@@ -4,6 +4,8 @@ pub mod log_ctrl;
 pub mod guid;
 pub mod status_bar;
 pub mod toolbar;
+pub mod dialog;
+pub mod menu;
 
 pub use main_frame::MainFrame;
 pub use tree_ctrl::TreeCtrl;
@@ -11,6 +13,8 @@ pub use log_ctrl::LogCtrl;
 pub use guid::GUID;
 pub use status_bar::StatusBar;
 pub use toolbar::Toolbar;
+pub use dialog::{Dialog, DialogResult, CommonDialogs, FileDialogOptions, MessageBoxStyle};
+pub use menu::{Menu, MenuItem, MenuItemKind, PopupFlags};
 
 use crate::core::Error;
 use windows::Win32::Foundation::HWND;
