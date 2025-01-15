@@ -1,14 +1,10 @@
 0. Use trunk-based development with feature branches
 1. Work on the code problem asked, implementing it without harming existing methods, Ask if unsure.
-2. Run available tests (e.g. 'cargo test') and iterate until successful
-3. Maintain a "Lessons Learned" section in readme.md
-4. Update readme.md with progress after completing features
+3. Maintain a "Lessons Learned.md" file to document what you've learned.
+4. Update readme.md and TODO.md with progress after completing features
 5. Git workflow rules:
-   - Always append '| cat' to commands that might trigger a pager (git diff, git log, etc.)
-   - Use --no-pager flag for git commands when possible
-   - Keep commit messages single-line or use multiple -m flags
-   - Include ticket/issue numbers in commit messages when applicable
-   - Write detailed commit messages for future debugging reference
+   - Avoid using commands that trigger a pager (git diff, git log, etc.) This is a windows machine.
+   - include any information you might need to know later to prevent duplicate work.
 6. Command execution rules:
    - Avoid newlines in command strings
    - Use semicolons or && for multiple commands instead of newlines
