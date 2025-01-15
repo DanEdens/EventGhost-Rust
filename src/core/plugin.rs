@@ -3,14 +3,14 @@ use crate::core::Error;
 use crate::core::event::Event;
 use crate::eg::classes::plugin_config::ConfigDialog;
 use crate::eg::action::base::ActionBase;
+use crate::eg::classes::PropertyValue;
 
-#[derive(Debug, Clone)]
 pub struct PluginInfo {
     pub name: String,
     pub description: String,
     pub author: String,
     pub version: String,
-    pub guid: Uuid,
+    pub id: Uuid,
 }
 
 pub trait PropertySource {
@@ -25,9 +25,16 @@ pub trait Plugin: PropertySource + Send + Sync {
     fn start(&mut self) -> Result<(), Error>;
     fn stop(&mut self) -> Result<(), Error>;
     fn configure(&mut self) -> Option<ConfigDialog>;
-    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
+    fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error>;
     fn add_action(&mut self, action: Box<dyn ActionBase>);
     fn get_actions(&self) -> &[Box<dyn ActionBase>];
+}
+
+pub struct Property {
+    pub name: String,
+    pub description: String,
+    pub value: PropertyValue,
+    pub default: PropertyValue,
 }
 
 pub struct PluginRegistry {

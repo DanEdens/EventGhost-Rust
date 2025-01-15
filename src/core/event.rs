@@ -29,7 +29,7 @@ pub trait Event: Send + Sync {
 }
 
 pub trait EventHandler: Send + Sync {
-    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
+    fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error>;
     fn can_handle(&self, event_type: EventType) -> bool;
 }
 

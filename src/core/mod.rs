@@ -1,12 +1,13 @@
+pub mod error;
 pub mod event;
 pub mod plugin;
 pub mod gui;
 pub mod init;
 pub mod named_pipe;
 pub mod utils;
-pub mod error;
 
 pub use error::Error;
-pub use event::{Event, EventHandler, EventManager, EventType, EventPayload};
-pub use plugin::{Plugin, PluginInfo, PluginRegistry};
-pub use gui::{UIComponent, Dialog, DialogResult}; 
+pub use event::{Event, EventType, EventHandler};
+pub use plugin::{Plugin, PluginInfo, PropertySource};
+pub use gui::{Window, WindowConfig};
+pub use named_pipe::{NamedPipeServer, NamedPipeClient, PipeError}; 
