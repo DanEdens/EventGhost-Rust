@@ -7,6 +7,7 @@ pub enum Error {
     Gui(String),
     Action(String),
     Pipe(String),
+    Config(String),
     Io(std::io::Error),
 }
 
@@ -18,6 +19,7 @@ impl fmt::Display for Error {
             Error::Gui(msg) => write!(f, "GUI error: {}", msg),
             Error::Action(msg) => write!(f, "Action error: {}", msg),
             Error::Pipe(msg) => write!(f, "Pipe error: {}", msg),
+            Error::Config(msg) => write!(f, "Config error: {}", msg),
             Error::Io(err) => write!(f, "IO error: {}", err),
         }
     }
