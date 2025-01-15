@@ -1,73 +1,135 @@
-# EventGhost
+# EventGhost-Rust
 
+A modern, fast, and extensible automation tool written in Rust. This is a reimplementation of the original [EventGhost](http://www.eventghost.net/) project.
 
-This is a test version of EventGhost. It is a work in progress.
-This test version runs on Python 3.5 x64
+## Project Status
 
+We are currently in the early development phase, focusing on building a robust plugin system. Here's our current progress:
 
-## build requirements
+### Completed
+- ✅ Project foundation and architecture
+- ✅ Core plugin system design
+- ✅ Documentation framework
+- ✅ Basic test infrastructure
 
-* visual c >= 14.0 \*
-* winows sdk >= 8.1
-* cx_Freeze >= 5.1.1
-* requests >= 2.19.1
-* agithub >= 2.1
-* pycurl >= 7.43.0.2
-* qrcode >= 6.0
-* tornado >= 5.1
-* psutil >= 5.4.7
-* websocket-client-py3 >= 0.15.0
-* CommonMark >= 0.7.5
-* comtypes >= 1.1.7
-* future >= 0.16.0
-* Pillow >= 5.2.0
-* PyCrypto >= 2.6.1
-* Sphinx >= 1.8.0b1
-* wxPython >= 4.0.3
-* pywin32 >= 223
-* setuptools >= 40.2
+### In Progress
+We are implementing the plugin system in phases:
 
-\* Visual C is also comes with Visual Studio. You will need Visual Studio >= 2015
+1. **Current Phase: Plugin Loading & Metadata**
+   - Plugin manifest format
+   - Dynamic library loading
+   - Plugin registry system
+   - Metadata management
 
+2. **Upcoming: Plugin Discovery & Hot-Reloading**
+   - File system monitoring
+   - Hot-reload support
+   - Version management
+   - Plugin validation
 
-## build command
+3. **Future: Dependencies & Communication**
+   - Dependency resolution
+   - Inter-plugin messaging
+   - Resource management
+   - Plugin isolation
 
-    python setup.py build_exe
+4. **Final Phase: Configuration & UI**
+   - Configuration system
+   - Plugin UI integration
+   - Management interface
+   - Settings persistence
 
-Lessons Learned
---------------
+## Getting Started
 
-Async Implementation Considerations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When porting EventGhost plugins to Rust, we learned that maintaining the original design philosophy is crucial:
+### Prerequisites
+- Rust 1.75+ (we use the latest stable features)
+- Cargo
+- Windows 10/11 
 
-1. **Simplicity Over Complexity**: 
-   - EventGhost's original design favors straightforward, synchronous event handling
-   - Avoid over-engineering with complex async patterns unless absolutely necessary
-   - Keep plugin interfaces simple and predictable
+### Building
+```bash
+# Clone the repository
+git clone https://github.com/DanEdens/EventGhost-Rust
+cd EventGhost-Rust
 
-2. **Plugin Design Principles**:
-   - Maintain simple start/stop lifecycle methods
-   - Use direct event handling rather than complex async event chains
-   - Focus on immediate event processing rather than queuing/pooling
+# Build the project
+cargo build
 
-3. **Resource Management**:
-   - Prefer simple, direct resource handling over complex pooling
-   - Use straightforward cleanup methods
-   - Maintain EventGhost's original resource lifecycle patterns
-
-4. **When to Use Async**:
-   - Only introduce async when dealing with inherently async operations (e.g., network I/O)
-   - Keep async boundaries at the edges of the system
-   - Don't force async patterns where synchronous code would be clearer
-
-Example of Simplified Plugin Structure:
-```rust
-pub trait Plugin {
-    fn start(&mut self) -> Result<(), Error>;
-    fn stop(&mut self) -> Result<(), Error>;
-    fn handle_event(&mut self, event: &Event) -> Result<(), Error>;
-}
+# Run tests
+cargo test
 ```
 
-This approach better matches EventGhost's original design while still allowing for Rust's safety and performance benefits.
+## Project Goals
+
+1. **Modern Architecture**
+   - Async-first design
+   - Strong type safety
+   - Robust error handling
+   - Comprehensive testing
+
+2. **Enhanced Plugin System**
+   - Hot-reloading support
+   - Dependency management
+   - Resource isolation
+   - Version control
+
+3. **Improved Performance**
+   - Fast event processing
+   - Low resource usage
+   - Quick startup time
+   - Efficient plugin loading
+
+4. **Developer Experience**
+   - Clear documentation
+   - Type-safe plugin API
+   - Development tools
+   - Testing utilities
+
+## Contributing
+
+We welcome contributions! While we're in early development, here's how you can help:
+
+1. **Code Contributions**
+   - Check our [Implementation Plan](docs/architecture/IMPLEMENTATION_PLAN.md)
+   - Review open issues
+   - Submit pull requests
+   - Discuss design
+
+
+2. **Documentation**
+   - Improve existing docs
+   - Add examples
+   - Write tutorials
+   - Report unclear sections
+
+3. **Testing**
+   - Report bugs
+   - Suggest features
+   - Test on different platforms
+   - Performance testing
+
+## Documentation
+
+- [Architecture Overview](docs/architecture/OVERVIEW.md)
+- [Implementation Plan](docs/architecture/IMPLEMENTATION_PLAN.md)
+- [Plugin Development](docs/guides/developer/README.md) (OLD)
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Original EventGhost team for their pioneering work
+- Rust community for excellent tools and libraries
+
+
+## Roadmap
+
+See our [Implementation Plan](docs/architecture/IMPLEMENTATION_PLAN.md) for detailed development phases and milestones.
+
+## Contact
+
+- GitHub Issues: For bug reports and feature requests
+- Discussions: For questions and community interaction
