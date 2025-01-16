@@ -5,7 +5,7 @@
 ### Completed
 - [x] Project setup and initial structure
 - [x] Basic documentation framework
-- [x] Plugin system architecture and wireframe
+- [x] System architecture and wireframe
   - [x] Core plugin traits and interfaces
   - [x] Plugin discovery system skeleton
   - [x] Dependency management design
