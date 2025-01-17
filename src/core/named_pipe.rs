@@ -162,7 +162,7 @@ impl NamedPipeClient {
         unsafe {
             let handle = CreateFileA(
                 PCSTR::from_raw(pipe_name.as_ptr()),
-                FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+                (FILE_GENERIC_READ | FILE_GENERIC_WRITE).0,
                 FILE_SHARE_NONE,
                 None,
                 OPEN_EXISTING,

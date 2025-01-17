@@ -36,6 +36,8 @@ pub enum Error {
     Pipe(String),
     Config(String),
     Io(std::io::Error),
+    Tree(String),
+    Property(String),
 }
 
 /// Error report for logging and user feedback
@@ -81,6 +83,8 @@ impl fmt::Display for Error {
             Error::Pipe(msg) => write!(f, "Pipe error: {}", msg),
             Error::Config(msg) => write!(f, "Config error: {}", msg),
             Error::Io(err) => write!(f, "IO error: {}", err),
+            Error::Tree(msg) => write!(f, "Tree error: {}", msg),
+            Error::Property(msg) => write!(f, "Property error: {}", msg),
         }
     }
 }

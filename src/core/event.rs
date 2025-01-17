@@ -1,6 +1,8 @@
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;
 use crate::core::Error;
+use std::fmt::Debug;
+use std::any::Any;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EventType {
@@ -20,12 +22,15 @@ pub enum EventPayload {
     Custom(Box<dyn std::any::Any + Send + Sync>),
 }
 
-pub trait Event: Send + Sync {
+pub trait Event: Any + Send + Sync + Debug {
     fn get_id(&self) -> &str;
     fn get_type(&self) -> EventType;
     fn get_payload(&self) -> &EventPayload;
     fn get_timestamp(&self) -> DateTime<Local>;
     fn get_source(&self) -> Option<&str>;
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn clone_event(&self) -> Box<dyn Event>;
 }
 
 pub trait EventHandler: Send + Sync {

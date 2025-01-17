@@ -4,13 +4,13 @@ use super::item::{TreeItem, TreeItemInfo};
 use crate::core::event::Event;
 
 #[derive(Debug)]
-pub struct Macro {
+pub struct Macro_ {
     info: TreeItemInfo,
     actions: Vec<Arc<RwLock<dyn TreeItem>>>,
     trigger_event: Option<Box<dyn Event>>,
 }
 
-impl Macro {
+impl Macro_ {
     pub fn new(name: &str) -> Self {
         Self {
             info: TreeItemInfo {
@@ -60,7 +60,7 @@ impl Macro {
     }
 }
 
-impl TreeItem for Macro {
+impl TreeItem for Macro_ {
     fn get_id(&self) -> uuid::Uuid {
         self.info.id
     }
@@ -121,20 +121,18 @@ impl TreeItem for Macro {
         }
     }
 
-    fn clone_item(&self) -> Box<dyn TreeItem> {
-        let mut macro_ = Macro::new(&self.info.name);
-        macro_.info = self.info.clone();
-        macro_.actions = self.actions.iter().map(|a| {
-            if let Ok(action) = a.read() {
-                Arc::new(RwLock::new(action.clone_item()))
-            } else {
-                panic!("Failed to read action")
-            }
-        }).collect();
-        if let Some(trigger) = &self.trigger_event {
-            // TODO: Implement event cloning
-        }
-        Box::new(macro_)
+    fn clone_item(&self) -> Arc<RwLock<dyn TreeItem>> {
+        Arc::new(RwLock::new(Macro_ {
+            info: self.info.clone(),
+            actions: self.actions.iter().map(|a| {
+                if let Ok(action) = a.read() {
+                    action.clone_item()
+                } else {
+                    panic!("Failed to read action")
+                }
+            }).collect(),
+            trigger_event: self.trigger_event.clone(),
+        }))
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

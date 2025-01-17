@@ -2,8 +2,10 @@ use uuid::Uuid;
 use crate::core::Error;
 use crate::core::event::Event;
 use std::any::Any;
+use std::fmt::Debug;
+use std::sync::{Arc, RwLock};
 
-pub trait TreeItem: Any + Send + Sync {
+pub trait TreeItem: Any + Send + Sync + Debug {
     fn get_id(&self) -> Uuid;
     fn get_name(&self) -> &str;
     fn set_name(&mut self, name: &str);
@@ -15,7 +17,7 @@ pub trait TreeItem: Any + Send + Sync {
     fn execute(&mut self, event: Option<&dyn Event>) -> Result<(), Error>;
     fn can_execute(&self, event: Option<&dyn Event>) -> bool;
     
-    fn clone_item(&self) -> Box<dyn TreeItem>;
+    fn clone_item(&self) -> Arc<RwLock<dyn TreeItem>>;
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }

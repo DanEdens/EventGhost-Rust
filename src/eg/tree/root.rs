@@ -110,17 +110,17 @@ impl TreeItem for Root {
         })
     }
 
-    fn clone_item(&self) -> Box<dyn TreeItem> {
-        let mut root = Root::new();
-        root.info = self.info.clone();
-        root.children = self.children.iter().map(|c| {
-            if let Ok(child) = c.read() {
-                Arc::new(RwLock::new(child.clone_item()))
-            } else {
-                panic!("Failed to read child")
-            }
-        }).collect();
-        Box::new(root)
+    fn clone_item(&self) -> Arc<RwLock<dyn TreeItem>> {
+        Arc::new(RwLock::new(Root {
+            info: self.info.clone(),
+            children: self.children.iter().map(|c| {
+                if let Ok(child) = c.read() {
+                    child.clone_item()
+                } else {
+                    panic!("Failed to read child")
+                }
+            }).collect(),
+        }))
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

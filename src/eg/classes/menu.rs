@@ -20,6 +20,7 @@ pub enum MenuItemKind {
     SubMenu(Menu),
 }
 
+#[derive(Debug, Clone)]
 pub struct Menu {
     hmenu: HWND,
     items: Vec<MenuItem>,
