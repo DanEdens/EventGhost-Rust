@@ -88,6 +88,18 @@ pub trait Plugin: Send + Sync {
     
     /// Get plugin state as Any for downcasting
     fn as_any(&self) -> &dyn Any;
+
+    /// Get plugin name
+    fn get_name(&self) -> &str;
+    
+    /// Get plugin description
+    fn get_description(&self) -> &str;
+    
+    /// Get plugin author
+    fn get_author(&self) -> &str;
+    
+    /// Get plugin version
+    fn get_version(&self) -> &str;
 }
 
 /// Trait for plugins that can generate events
@@ -136,5 +148,22 @@ mod tests {
     async fn test_plugin_lifecycle() {
         // TODO: Test plugin lifecycle
         unimplemented!()
+    }
+
+    // Basic tests that don't require cloning
+    #[test]
+    fn test_plugin_basics() {
+        // Basic plugin tests here
+    }
+
+    // Tests requiring clone support are disabled
+    #[cfg(feature = "phase2_plugin_clone")]
+    mod clone_tests {
+        use super::*;
+        
+        #[test]
+        fn test_plugin_clone() {
+            // Clone tests will be implemented in Phase 2
+        }
     }
 } 

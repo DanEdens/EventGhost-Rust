@@ -1,0 +1,143 @@
+error[E0597]: `temp_loader.plugins` does not live long enough
+   --> src\core\plugin_loader.rs:171:35
+    |
+167 |             let temp_loader = Self::new(path.parent().unwrap().to_owned())?;
+    |                 ----------- binding `temp_loader` declared here
+...
+171 |             if let Some(loaded) = temp_loader.plugins.write().await.pop() {
+    |                                   ^^^^^^^^^^^^^^^^^^^--------------
+    |                                   |
+    |                                   borrowed value does not live long enough
+    |                                   a temporary with access to the borrow is created here ...
+...
+174 |         }
+    |         -
+    |         |
+    |         `temp_loader.plugins` dropped here while still borrowed
+    |         ... and the borrow might be used here, when that temporary is dropped and runs the `Drop` code for type `tokio::sync::RwLockWriteGuard`
+    |
+help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
+    |
+173 |             };
+    |              +
+
+error[E0599]: the method `clone` exists for struct `Box<dyn Plugin>`, but its trait bounds were not satisfied
+   --> src\core\plugin_loader.rs:192:40
+    |
+192 |               .map(|p| Box::new(p.plugin.clone()))
+    |                                          ^^^^^ method cannot be called on `Box<dyn Plugin>` due to unsatisfied trait bounds
+    |
+   ::: src\core\plugin\traits.rs:61:1
+    |
+61  |   pub trait Plugin: Send + Sync {
+    |   -----------------------------
+    |   |
+    |   doesn't satisfy `dyn Plugin: Clone`
+    |   doesn't satisfy `dyn Plugin: Sized`
+    |
+   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\alloc\src\boxed.rs:195:1
+    |
+195 | / pub struct Box<
+196 | |     T: ?Sized,
+197 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
+198 | | >(Unique<T>, A);
+    | |_- doesn't satisfy `Box<dyn Plugin>: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `dyn Plugin: Sized`
+            which is required by `Box<dyn Plugin>: Clone`
+            `dyn Plugin: Clone`
+            which is required by `Box<dyn Plugin>: Clone`
+
+warning: unused variable: `config`
+  --> src\core\logging.rs:64:39
+   |
+64 |     pub async fn update_config(&self, config: LogConfig) -> Result<(), std::io::Error> {
+   |                                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+
+error[E0046]: not all trait items implemented, missing: `as_any`, `as_any_mut`, `clone_event`
+  --> src\eg\action\tests.rs:11:1
+   |
+11 | impl Event for TestEvent {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^ missing `as_any`, `as_any_mut`, `clone_event` in implementation
+   |
+  ::: src\core\event.rs:31:5
+   |
+31 |     fn as_any(&self) -> &dyn Any;
+   |     ----------------------------- `as_any` from trait
+32 |     fn as_any_mut(&mut self) -> &mut dyn Any;
+   |     ----------------------------------------- `as_any_mut` from trait
+33 |     fn clone_event(&self) -> Box<dyn Event>;
+   |     ---------------------------------------- `clone_event` from trait
+
+error[E0277]: the trait bound `dyn std::any::Any + Send + Sync: Clone` is not satisfied
+  --> src\core\event.rs:22:12
+   |
+15 | #[derive(Debug, Clone)]
+   |                 ----- in this derive macro expansion
+...
+22 |     Custom(Box<dyn std::any::Any + Send + Sync>),
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `dyn std::any::Any + Send + Sync`
+   |
+   = note: required for `Box<dyn std::any::Any + Send + Sync>` to implement `Clone`
+   = note: this error originates in the derive macro `Clone` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `clone` exists for enum `Option<Box<dyn Event>>`, but its trait bounds were not satisfied
+   --> src\eg\tree\macro_.rs:134:47
+    |
+134 |               trigger_event: self.trigger_event.clone(),
+    |                                                 ^^^^^ method cannot be called on `Option<Box<dyn Event>>` due to unsatisfied trait bounds
+    |
+   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\core\src\option.rs:563:1
+    |
+563 |   pub enum Option<T> {
+    |   ------------------ doesn't satisfy `_: Clone`
+    |
+   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\alloc\src\boxed.rs:195:1
+    |
+195 | / pub struct Box<
+196 | |     T: ?Sized,
+197 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
+198 | | >(Unique<T>, A);
+    | |_- doesn't satisfy `Box<dyn core::event::Event>: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `Box<dyn core::event::Event>: Clone`
+            which is required by `std::option::Option<Box<dyn core::event::Event>>: Clone`
+
+error[E0308]: mismatched types
+   --> src\eg\classes\plugin_config.rs:59:24
+    |
+59  |             .unwrap_or("")
+    |              --------- ^^ expected `&String`, found `&str`
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected reference `&std::string::String`
+               found reference `&'static str`
+help: the return type of this call is `&'static str` due to the type of the argument passed
+   --> src\eg\classes\plugin_config.rs:57:9
+    |
+57  | /         self.pages.get(self.current_page)
+58  | |             .map(|page| &page.description)
+59  | |             .unwrap_or("")
+    | |________________________--^
+    |                          |
+    |                          this argument influences the return type of `unwrap_or`
+note: method defined here
+   --> C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\core\src\option.rs:955:12
+    |
+955 |     pub fn unwrap_or(self, default: T) -> T {
+    |            ^^^^^^^^^
+
+error[E0277]: `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)` doesn't implement `std::fmt::Debug`
+  --> src\eg\classes\property_grid.rs:26:5
+   |
+19 | #[derive(Debug, Clone)]
+   |          ----- in this derive macro expansion
+...
+26 |     validator: Option<Arc<dyn Fn(&PropertyValue) -> Result<(), String> + Send + Sync>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)` cannot be formatted using `{:?}` because it doesn't implement `std::fmt::Debug`
+   |
+   = help: the trait `std::fmt::Debug` is not implemented for `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)`
+   = note: this error originates in the derive macro `Debug` (in Nightly builds, run with -Z macro-backtrace for more info)

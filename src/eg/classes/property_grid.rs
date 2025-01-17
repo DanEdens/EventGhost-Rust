@@ -5,15 +5,24 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
-pub enum PropertyValue {
-    Bool(bool),
-    Int(i32),
-    Float(f64),
-    String(String),
-    Color(u32),
-    Enum(String, Vec<String>),
-    Custom(Arc<dyn Any + Send + Sync>),
+#[derive(Clone)]
+pub struct PropertyValue {
+    name: String,
+    description: String,
+    value: Arc<dyn Any + Send + Sync>,
+    value_type: PropertyValueType,
+    validator: Option<Arc<dyn Fn(&PropertyValue) -> Result<(), String> + Send + Sync>>,
+}
+
+impl std::fmt::Debug for PropertyValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PropertyValue")
+            .field("name", &self.name)
+            .field("description", &self.description)
+            .field("value_type", &self.value_type)
+            .field("validator", &"<validator_fn>")
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone)]
