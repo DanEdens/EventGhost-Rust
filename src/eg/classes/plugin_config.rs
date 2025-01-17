@@ -56,7 +56,7 @@ impl PluginConfigDialog {
     pub fn get_description(&self) -> &str {
         self.pages.get(self.current_page)
             .map(|page| &page.description)
-            .unwrap_or("")
+            .unwrap_or(&String::new())
     }
 
     pub fn validate_changes(&self) -> Result<(), String> {

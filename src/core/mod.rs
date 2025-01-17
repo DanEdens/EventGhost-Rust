@@ -11,20 +11,16 @@
 
 pub mod error;
 pub mod event;
-pub mod plugin;
-pub mod gui;
-pub mod init;
-pub mod named_pipe;
-pub mod plugin_loader;
 pub mod config;
+pub mod plugin;
 pub mod logging;
-pub mod utils;
+pub mod named_pipe;
 
 pub use error::Error;
-pub use event::{Event, EventType, EventHandler};
-pub use plugin::{Plugin, PluginInfo, PropertySource};
-pub use gui::{Window, WindowConfig};
-pub use named_pipe::{NamedPipeServer, NamedPipeClient, PipeError};
-pub use plugin_loader::{PluginLoader, PluginLoadError};
-pub use config::{Config, ConfigManager, ConfigStore, ConfigError};
-pub use logging::{Logger, LogConfig, LogTarget, LogEntry}; 
+pub use event::{Event, EventType, EventPayload, EventHandler, EventManager};
+pub use plugin::{Plugin, PluginInfo};
+pub use crate::eg::classes::PropertySource;
+
+// Re-export commonly used types
+pub use plugin::registry::PluginRegistry;
+pub use plugin::loader::PluginLoader; 

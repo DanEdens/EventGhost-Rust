@@ -140,20 +140,82 @@ mod tests {
 
     #[async_trait]
     impl Plugin for TestPlugin {
-        // TODO: Implement test plugin
-        unimplemented!()
-    }
+        fn get_info(&self) -> PluginInfo {
+            self.info.clone()
+        }
 
-    #[tokio::test]
-    async fn test_plugin_lifecycle() {
-        // TODO: Test plugin lifecycle
-        unimplemented!()
+        fn get_capabilities(&self) -> Vec<PluginCapability> {
+            vec![]
+        }
+
+        fn get_state(&self) -> PluginState {
+            self.state
+        }
+
+        async fn initialize(&mut self) -> Result<(), Error> {
+            unimplemented!();
+        }
+
+        async fn start(&mut self) -> Result<(), Error> {
+            unimplemented!();
+        }
+
+        async fn stop(&mut self) -> Result<(), Error> {
+            unimplemented!();
+        }
+
+        async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), Error> {
+            unimplemented!();
+        }
+
+        fn get_config(&self) -> Option<&Config> {
+            unimplemented!();
+        }
+
+        async fn update_config(&mut self, _config: Config) -> Result<(), Error> {
+            unimplemented!();
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn get_name(&self) -> &str {
+            &self.info.name
+        }
+
+        fn get_description(&self) -> &str {
+            &self.info.description
+        }
+
+        fn get_author(&self) -> &str {
+            &self.info.author
+        }
+
+        fn get_version(&self) -> &str {
+            &self.info.version
+        }
     }
 
     // Basic tests that don't require cloning
     #[test]
     fn test_plugin_basics() {
-        // Basic plugin tests here
+        let plugin = TestPlugin {
+            info: PluginInfo {
+                id: Uuid::new_v4(),
+                name: "Test Plugin".to_string(),
+                description: "A test plugin".to_string(),
+                version: "0.1.0".to_string(),
+                author: "Test Author".to_string(),
+                homepage: None,
+                platforms: vec![],
+                capabilities: vec![],
+            },
+            state: PluginState::Created,
+        };
+
+        assert_eq!(plugin.get_name(), "Test Plugin");
+        assert_eq!(plugin.get_state(), PluginState::Created);
     }
 
     // Tests requiring clone support are disabled
