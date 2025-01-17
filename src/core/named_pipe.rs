@@ -1,9 +1,17 @@
-use std::io::{self, Read, Write};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use windows::Win32::Foundation::*;
-use windows::Win32::System::Pipes::*;
-use windows::core::*;
+use std::io;
+use windows::Win32::Foundation::{HANDLE, BOOL};
+use windows::Win32::Storage::FileSystem::{
+    CreateFileA, ReadFile, WriteFile,
+    FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_NONE,
+    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_OVERLAPPED,
+};
+use windows::Win32::System::Pipes::{
+    CreateNamedPipeA, ConnectNamedPipe, DisconnectNamedPipe,
+    PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, PIPE_READMODE_MESSAGE,
+    PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,
+};
+use windows::core::{PCSTR, Result as WinResult};
+
 use crate::core::Error;
 
 const PIPE_BUFFER_SIZE: u32 = 4096;
@@ -47,7 +55,7 @@ impl From<PipeError> for Error {
 /// A named pipe server that can accept multiple client connections
 pub struct NamedPipeServer {
     pipe_name: String,
-    handle: Arc<Mutex<HANDLE>>,
+    handle: HANDLE,
 }
 
 impl NamedPipeServer {
@@ -65,42 +73,29 @@ impl NamedPipeServer {
                 PIPE_BUFFER_SIZE,
                 PIPE_TIMEOUT,
                 None,
-            );
-
-            if handle.is_invalid() {
-                return Err(PipeError::Creation(format!(
-                    "Failed to create pipe: {}",
-                    io::Error::last_os_error()
-                )));
-            }
+            ).map_err(|e| PipeError::Creation(e.to_string()))?;
 
             Ok(Self {
                 pipe_name,
-                handle: Arc::new(Mutex::new(handle)),
+                handle,
             })
         }
     }
 
     /// Wait for a client to connect
-    pub async fn wait_for_client(&self) -> Result<NamedPipeConnection, PipeError> {
-        let mut handle = self.handle.lock().await;
-        
+    pub fn wait_for_client(&mut self) -> Result<NamedPipeConnection, PipeError> {
         unsafe {
-            if !ConnectNamedPipe(*handle, None).as_bool() {
-                let error = io::Error::last_os_error();
-                if error.raw_os_error() != Some(ERROR_PIPE_CONNECTED.0 as i32) {
-                    return Err(PipeError::Connection(error.to_string()));
-                }
-            }
+            ConnectNamedPipe(self.handle, None)
+                .map_err(|e| PipeError::Connection(e.to_string()))?;
         }
 
         Ok(NamedPipeConnection {
-            handle: *handle,
+            handle: self.handle,
         })
     }
 
     /// Create a new instance of the pipe for another client
-    pub async fn create_instance(&self) -> Result<Self, PipeError> {
+    pub fn create_instance(&self) -> Result<Self, PipeError> {
         Self::new(&self.pipe_name)
     }
 }
@@ -117,17 +112,12 @@ impl NamedPipeConnection {
         let mut bytes_read = 0;
 
         unsafe {
-            if !ReadFile(
+            ReadFile(
                 self.handle,
-                buffer.as_mut_ptr() as *mut _,
-                PIPE_BUFFER_SIZE,
+                Some(&mut buffer),
                 Some(&mut bytes_read),
                 None,
-            ).as_bool() {
-                return Err(PipeError::Read(
-                    io::Error::last_os_error().to_string()
-                ));
-            }
+            ).map_err(|e| PipeError::Read(e.to_string()))?;
         }
 
         buffer.truncate(bytes_read as usize);
@@ -139,17 +129,12 @@ impl NamedPipeConnection {
         let mut bytes_written = 0;
 
         unsafe {
-            if !WriteFile(
+            WriteFile(
                 self.handle,
-                data.as_ptr() as *const _,
-                data.len() as u32,
+                Some(data),
                 Some(&mut bytes_written),
                 None,
-            ).as_bool() {
-                return Err(PipeError::Write(
-                    io::Error::last_os_error().to_string()
-                ));
-            }
+            ).map_err(|e| PipeError::Write(e.to_string()))?;
         }
 
         Ok(())
@@ -159,8 +144,7 @@ impl NamedPipeConnection {
 impl Drop for NamedPipeConnection {
     fn drop(&mut self) {
         unsafe {
-            DisconnectNamedPipe(self.handle);
-            CloseHandle(self.handle);
+            let _ = DisconnectNamedPipe(self.handle);
         }
     }
 }
@@ -184,14 +168,7 @@ impl NamedPipeClient {
                 OPEN_EXISTING,
                 FILE_ATTRIBUTE_NORMAL,
                 None,
-            );
-
-            if handle.is_invalid() {
-                return Err(PipeError::Connection(format!(
-                    "Failed to connect to pipe: {}",
-                    io::Error::last_os_error()
-                )));
-            }
+            ).map_err(|e| PipeError::Connection(e.to_string()))?;
 
             Ok(Self { handle })
         }
@@ -203,17 +180,12 @@ impl NamedPipeClient {
         let mut bytes_read = 0;
 
         unsafe {
-            if !ReadFile(
+            ReadFile(
                 self.handle,
-                buffer.as_mut_ptr() as *mut _,
-                PIPE_BUFFER_SIZE,
+                Some(&mut buffer),
                 Some(&mut bytes_read),
                 None,
-            ).as_bool() {
-                return Err(PipeError::Read(
-                    io::Error::last_os_error().to_string()
-                ));
-            }
+            ).map_err(|e| PipeError::Read(e.to_string()))?;
         }
 
         buffer.truncate(bytes_read as usize);
@@ -225,17 +197,12 @@ impl NamedPipeClient {
         let mut bytes_written = 0;
 
         unsafe {
-            if !WriteFile(
+            WriteFile(
                 self.handle,
-                data.as_ptr() as *const _,
-                data.len() as u32,
+                Some(data),
                 Some(&mut bytes_written),
                 None,
-            ).as_bool() {
-                return Err(PipeError::Write(
-                    io::Error::last_os_error().to_string()
-                ));
-            }
+            ).map_err(|e| PipeError::Write(e.to_string()))?;
         }
 
         Ok(())
@@ -245,7 +212,7 @@ impl NamedPipeClient {
 impl Drop for NamedPipeClient {
     fn drop(&mut self) {
         unsafe {
-            CloseHandle(self.handle);
+            let _ = DisconnectNamedPipe(self.handle);
         }
     }
 }
@@ -257,7 +224,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_pipe_communication() {
-        let server = NamedPipeServer::new("test_pipe").unwrap();
+        let mut server = NamedPipeServer::new("test_pipe").unwrap();
         
         // Spawn client in separate task
         let client_handle = tokio::spawn(async move {
@@ -272,7 +239,7 @@ mod tests {
         });
 
         // Handle server connection
-        let mut conn = server.wait_for_client().await.unwrap();
+        let mut conn = server.wait_for_client().unwrap();
         let message = conn.read().unwrap();
         assert_eq!(&message, b"Hello from client!");
         
