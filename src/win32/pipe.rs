@@ -6,7 +6,7 @@ use windows::Win32::Storage::FileSystem::{
     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_OVERLAPPED,
 };
 use windows::Win32::System::Pipes::{
-    CreateNamedPipeA, ConnectNamedPipe,
+    CreateNamedPipeA, ConnectNamedPipe, DisconnectNamedPipe,
     PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE, PIPE_READMODE_BYTE,
     PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,
 };
@@ -44,37 +44,36 @@ impl WindowsHandle for RealPipe {
 impl NamedPipeOps for RealPipe {
     fn connect(&mut self) -> Result<BOOL, Error> {
         unsafe {
-            let result = ConnectNamedPipe(self.handle, None);
+            let result = ConnectNamedPipe(self.handle, None)?;
             self.connected = result.as_bool();
             Ok(result)
         }
     }
 
     fn disconnect(&mut self) -> Result<(), Error> {
+        unsafe {
+            DisconnectNamedPipe(self.handle)?;
+        }
         self.connected = false;
         Ok(())
     }
 
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
         if !self.connected {
-            return Err(Error::Pipe(io::Error::new(
+            return Err(Error::Pipe(PipeError::Read(io::Error::new(
                 io::ErrorKind::NotConnected,
                 "Pipe not connected"
-            )));
+            ))));
         }
 
         let mut bytes_read = 0u32;
         unsafe {
-            let result = ReadFile(
+            ReadFile(
                 self.handle,
                 Some(buf),
                 Some(&mut bytes_read),
                 None,
-            );
-            
-            if !result.as_bool() {
-                return Err(Error::Pipe(io::Error::last_os_error()));
-            }
+            )?;
         }
 
         Ok(bytes_read as usize)
@@ -82,31 +81,28 @@ impl NamedPipeOps for RealPipe {
 
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
         if !self.connected {
-            return Err(Error::Pipe(io::Error::new(
+            return Err(Error::Pipe(PipeError::Write(io::Error::new(
                 io::ErrorKind::NotConnected,
                 "Pipe not connected"
-            )));
+            ))));
         }
 
         let mut bytes_written = 0u32;
         unsafe {
-            let result = WriteFile(
+            WriteFile(
                 self.handle,
                 Some(buf),
                 Some(&mut bytes_written),
                 None,
-            );
-            
-            if !result.as_bool() {
-                return Err(Error::Pipe(io::Error::last_os_error()));
-            }
+            )?;
         }
 
         Ok(bytes_written as usize)
     }
 
     fn wait_for_client(&mut self) -> Result<(), Error> {
-        self.connect().map(|_| ())
+        self.connect()?;
+        Ok(())
     }
 }
 
@@ -127,11 +123,7 @@ impl NamedPipeFactory for RealPipeFactory {
                 4096,
                 0,
                 None,
-            );
-
-            if handle == INVALID_HANDLE_VALUE {
-                return Err(Error::Pipe(io::Error::last_os_error()));
-            }
+            )?;
 
             Ok(RealPipe {
                 handle,
@@ -146,17 +138,13 @@ impl NamedPipeFactory for RealPipeFactory {
         unsafe {
             let handle = CreateFileA(
                 PCSTR::from_raw(pipe_name.as_ptr()),
-                FILE_GENERIC_READ.0 | FILE_GENERIC_WRITE.0,
+                FILE_GENERIC_READ | FILE_GENERIC_WRITE,
                 FILE_SHARE_NONE,
                 None,
                 OPEN_EXISTING,
                 FILE_ATTRIBUTE_NORMAL,
                 None,
-            );
-
-            if handle == INVALID_HANDLE_VALUE {
-                return Err(Error::Pipe(io::Error::last_os_error()));
-            }
+            )?;
 
             Ok(RealPipe {
                 handle,
