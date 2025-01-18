@@ -1,142 +1,35 @@
-# EventGhost-Rust TODO List
+# TODO List
 
-## Core Implementation Progress
+## Current Focus: Basic GUI Implementation
 
-### Completed
-- [x] Project setup and initial structure
-- [x] Basic documentation framework
-- [x] System architecture and wireframe
-  - [x] Core plugin traits and interfaces
-  - [x] Plugin discovery system skeleton
-  - [x] Dependency management design
-  - [x] Plugin lifecycle management
+### Error Handling
+- [ ] Implement `From<core::error::Error>` for `win32::Error`
+- [ ] Add `Win32` variant to `core::Error`
+- [ ] Consolidate error types between core and win32 modules
 
-### In Progress - Phase 1: Plugin Loading & Metadata
-- [ ] Plugin File Format
-  - [ ] Define plugin manifest format
-  - [ ] Create plugin file structure
-  - [ ] Implement metadata extraction
-  - [ ] Add version parsing
-- [ ] Dynamic Loading
-  - [ ] Safe library loading
-  - [ ] Symbol resolution
-  - [ ] Plugin initialization
-  - [ ] Error handling
-- [ ] Plugin Registry Enhancement
-  - [ ] Metadata caching
-  - [ ] State tracking
-  - [ ] Health monitoring
-  - [ ] Registry persistence
+### Window API Fixes
+- [ ] Fix imports for Windows API types (WNDCLASSA, RegisterClassA)
+- [ ] Implement proper string handling for window text (PCSTR conversion)
+- [ ] Fix result handling for Windows API calls
+- [ ] Remove duplicate window management code between eg/winapi and win32 modules
 
-### Pending - Phase 2: Discovery & Hot-Reloading
-- [ ] File System Integration
-  - [ ] Directory watching
-  - [ ] Change detection
-  - [ ] File validation
-  - [ ] Recursive scanning
-- [ ] Hot-Reloading
-  - [ ] Safe unloading
-  - [ ] State transfer
-  - [ ] Reload coordination
-  - [ ] Rollback mechanism
-- [ ] Version Management
-  - [ ] Semantic version parsing
-  - [ ] Requirement checking
-  - [ ] Conflict resolution
-  - [ ] Upgrade handling
-
-### Future - Phase 3: Dependencies & Communication
-- [ ] Dependency Resolution
-  - [ ] Graph building
-  - [ ] Circular detection
-  - [ ] Optional dependencies
-  - [ ] Version constraints
-- [ ] Inter-Plugin Communication
-  - [ ] Message system
-  - [ ] Event routing
-  - [ ] Capability negotiation
-  - [ ] Resource management
-- [ ] Plugin Isolation
-  - [ ] Sandboxing
-  - [ ] Resource limits
-  - [ ] Error isolation
-  - [ ] Cleanup mechanisms
-
-### Future - Phase 4: Configuration & UI
-- [ ] Configuration System
-  - [ ] Schema system
-  - [ ] Validation
-  - [ ] Persistence
-  - [ ] Migration tools
-- [ ] Plugin UI Integration
-  - [ ] Framework integration
-  - [ ] Settings panels
-  - [ ] Dynamic updates
-  - [ ] State persistence
-- [ ] Plugin Management UI
-  - [ ] Plugin browser
-  - [ ] Installation UI
-  - [ ] Update management
-  - [ ] Dependency viewer
-
-## Testing Infrastructure
-- [x] Test utilities and helpers
-- [x] Mock implementations
-- [x] Integration test framework
-- [ ] Plugin test framework
-- [ ] Unit test coverage
-- [ ] Performance benchmarks
-- [ ] Platform-specific tests
-
-## Documentation Tasks
-- [x] Documentation structure
-- [x] API documentation skeleton
-- [ ] Plugin development guide
-- [ ] User guide
-- [ ] Architecture documentation
-- [ ] Migration guide
-
-## Next Steps
-1. Begin with plugin manifest format design
-2. Implement basic metadata extraction
-3. Create initial loading mechanism
-4. Add basic version validation
-
-## Current Error Resolution Plan
-
-### Completed Tasks ✓
-- [x] Fix struct field errors (plugin_dir in PluginRegistry)
-- [x] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
-- [x] Fix imports in globals.rs (Bunch)
-- [x] Fix imports in tree/mod.rs (Macro_)
-- [x] Fix ConfigDialog imports and implementation
-- [x] Fix error trait implementations for RegistryError and LoaderError
-- [x] Fix error trait implementations for ConfigError and ActionError
-- [x] Fix ConditionalAction implementation and closure issues
+### Control Implementation
+- [ ] Update control constructors to handle HINSTANCE properly:
+  - [ ] TreeCtrl
+  - [ ] LogCtrl
+  - [ ] StatusBar
+  - [ ] Toolbar
+- [ ] Implement control layout in MainFrame
+- [ ] Add window resizing handling
 
 ### Code Cleanup
-- [ ] Fix unused imports (154 warnings)
-- [ ] Fix naming conventions for enum variants (ALIGN_RIGHT -> AlignRight, etc.)
-- [ ] Add underscore prefix to intentionally unused variables
-- [ ] Remove or implement unused methods and structs
+- [ ] Remove unused imports
+- [ ] Fix unused variable warnings in plugin registry
+- [ ] Fix unused variable warnings in logging code
+- [ ] Clean up and document window creation code
 
-### Next Implementation Priority
-1. Plugin Loading System
-   - [ ] Implement plugin loading from directory
-   - [ ] Add plugin unloading support
-   - [ ] Add plugin configuration handling
-
-2. Event System
-   - [ ] Implement event dispatching
-   - [ ] Add event filtering
-   - [ ] Support custom event types
-
-3. Action System
-   - [ ] Complete action execution pipeline
-   - [ ] Add action configuration support
-   - [ ] Implement action validation
-
-4. Configuration System
-   - [ ] Implement ConfigDialog functionality
-   - [ ] Add property grid support
-   - [ ] Support plugin configuration
+### Testing
+- [ ] Add basic window creation tests
+- [ ] Test window message handling
+- [ ] Test control creation and layout
+- [ ] Test window cleanup on drop
