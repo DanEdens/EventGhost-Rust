@@ -104,39 +104,50 @@
 
 ## Current Error Resolution Plan
 
-### Immediate Code Fixes (Miswritten Code)
+## Completed
+- [X] Add proper PIPE_ACCESS_DUPLEX and related constants in named_pipe.rs
+- [X] Fix Windows API type conversions for FILE_FLAGS_AND_ATTRIBUTES and NAMED_PIPE_MODE
 - [X] Fix RwLock usage in PluginRegistry
-  - [X] Replace `HashMap::new()` with proper `Arc<RwLock<HashMap>>` initialization
-  - [X] Fix `clear()` method usage on Arc<RwLock>
-- [ ] Fix Event trait bounds consistency
-  - [ ] Align `Event` trait bounds between `macro_.rs` and `event.rs`
-  - [ ] Fix type mismatch in `get_trigger_event()` return type
-- [X] Fix struct field errors
-  - [X] Add missing `plugin_dir` field to `PluginRegistry`
-  - [X] Update constructor to properly initialize fields
+- [X] Add missing plugin_dir field to PluginRegistry
 
-### Next Implementation Priority
-- [X] Fix Windows API imports
-  - [X] Add proper PIPE_ACCESS_DUPLEX and related constants in named_pipe.rs
-  - [X] Update imports to use correct paths from windows-rs
-- [ ] Fix ConfigDialog imports
-  - [ ] Export ConfigDialog trait from plugin_config module
-  - [ ] Update imports in action modules (base.rs, group.rs, item.rs, common.rs)
-- [ ] Implement error conversions
-  - [ ] Add From<RegistryError> for core::Error
-  - [ ] Add From<LoaderError> for core::Error
+## Immediate Code Fixes (Miswritten Code)
+- [ ] Fix ConfigDialog imports in action modules:
+  - src/eg/action/base.rs
+  - src/eg/action/group.rs
+  - src/eg/action/item.rs
+  - src/eg/action/common.rs
+- [ ] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
+- [ ] Implement From<RegistryError> for core::error::Error
+- [ ] Implement From<LoaderError> for core::error::Error
+- [ ] Fix Bunch import in globals.rs
 
-### Planned for Future Phases
-- [ ] Plugin Loading System (Phase 1)
-  - [X] Implement `load_all()` in PluginRegistry (commented out)
-  - [X] Implement `unload_all()` with proper cleanup (commented out)
-  - [ ] Add proper error conversion between RegistryError and core::Error
-- [ ] Plugin Configuration (Phase 4)
-  - [X] Complete ConfigDialog implementation (commented out)
-  - [ ] Add proper property validation
-  - [ ] Implement configuration persistence
+## Next Implementation Priority
+- [ ] Implement ConfigDialog in plugin_config module
+- [ ] Add proper error conversion traits between different error types
+- [ ] Complete plugin loading system implementation
 
-### Code Cleanup
+## Planned for Future Phases
+### Phase 1: Plugin System
+- [ ] Complete plugin loading from directory
+- [ ] Implement plugin lifecycle management
+- [ ] Add plugin configuration handling
+
+### Phase 2: Event System
+- [ ] Complete event handling system
+- [ ] Add event routing and dispatch
+- [ ] Implement event filtering
+
+### Phase 3: Action System
+- [ ] Complete action execution framework
+- [ ] Add action configuration support
+- [ ] Implement action chaining
+
+### Phase 4: Configuration System
+- [ ] Implement ConfigDialog
+- [ ] Add configuration persistence
+- [ ] Support plugin-specific configurations
+
+## Code Cleanup
+- [ ] Fix unused variable warnings in plugin registry
 - [ ] Fix unused import warnings
-- [ ] Fix unused variable warnings
-- [ ] Fix non-camel-case enum variants
+- [ ] Update naming conventions for constants in types.rs
