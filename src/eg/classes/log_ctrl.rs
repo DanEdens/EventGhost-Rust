@@ -1,4 +1,4 @@
-use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::{HWND, HINSTANCE};
 use chrono::{DateTime, Local};
 use crate::core::Error;
 use super::UIComponent;
@@ -22,13 +22,20 @@ pub enum LogLevel {
 pub struct LogCtrl {
     hwnd: HWND,
     parent: HWND,
+    instance: HINSTANCE,
     is_visible: bool,
     max_entries: usize,
 }
 
 impl LogCtrl {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
+        Ok(Self {
+            hwnd: HWND::default(),
+            parent,
+            instance,
+            is_visible: false,
+            max_entries: 1000, // Default max entries
+        })
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {

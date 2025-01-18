@@ -1,4 +1,4 @@
-use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::{HWND, HINSTANCE};
 use crate::core::Error;
 use super::UIComponent;
 
@@ -19,13 +19,20 @@ pub enum StatusPartStyle {
 pub struct StatusBar {
     hwnd: HWND,
     parent: HWND,
+    instance: HINSTANCE,
     is_visible: bool,
     parts: Vec<StatusPart>,
 }
 
 impl StatusBar {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
+        Ok(Self {
+            hwnd: HWND::default(),
+            parent,
+            instance,
+            is_visible: false,
+            parts: Vec::new(),
+        })
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {

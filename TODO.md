@@ -14,11 +14,11 @@
 - [x] Remove duplicate window management code between eg/winapi and win32 modules
 
 ### Control Implementation
-- [ ] Update control constructors to handle HINSTANCE properly:
-  - [ ] TreeCtrl
-  - [ ] LogCtrl
-  - [ ] StatusBar
-  - [ ] Toolbar
+- [x] Update control constructors to handle HINSTANCE properly:
+  - [x] TreeCtrl
+  - [x] LogCtrl
+  - [x] StatusBar
+  - [x] Toolbar
 - [ ] Implement control layout in MainFrame
 - [ ] Add window resizing handling
 

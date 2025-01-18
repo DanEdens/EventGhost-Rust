@@ -1,4 +1,4 @@
-use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::{HWND, HINSTANCE};
 use crate::core::Error;
 use super::UIComponent;
 
@@ -32,14 +32,22 @@ pub enum ButtonState {
 pub struct Toolbar {
     hwnd: HWND,
     parent: HWND,
+    instance: HINSTANCE,
     is_visible: bool,
     buttons: Vec<ToolbarButton>,
     image_list: Option<HWND>,
 }
 
 impl Toolbar {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
+        Ok(Self {
+            hwnd: HWND::default(),
+            parent,
+            instance,
+            is_visible: false,
+            buttons: Vec::new(),
+            image_list: None,
+        })
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
