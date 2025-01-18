@@ -109,6 +109,7 @@
 - [X] Fix Windows API type conversions for FILE_FLAGS_AND_ATTRIBUTES and NAMED_PIPE_MODE
 - [X] Fix RwLock usage in PluginRegistry
 - [X] Add missing plugin_dir field to PluginRegistry
+- [X] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
 
 ## Immediate Code Fixes (Miswritten Code)
 - [ ] Fix ConfigDialog imports in action modules:
@@ -116,7 +117,6 @@
   - src/eg/action/group.rs
   - src/eg/action/item.rs
   - src/eg/action/common.rs
-- [ ] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
 - [ ] Implement From<RegistryError> for core::error::Error
 - [ ] Implement From<LoaderError> for core::error::Error
 - [ ] Fix Bunch import in globals.rs

@@ -55,7 +55,7 @@ impl Macro_ {
         self.trigger_event = event;
     }
 
-    pub fn get_trigger_event(&self) -> Option<&dyn Event> {
+    pub fn get_trigger_event(&self) -> Option<&(dyn Event + Send + Sync)> {
         self.trigger_event.as_deref()
     }
 }
