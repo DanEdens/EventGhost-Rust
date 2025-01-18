@@ -8,10 +8,15 @@ use windows::Win32::Storage::FileSystem::{
 };
 use windows::Win32::System::Pipes::{
     CreateNamedPipeA, ConnectNamedPipe, DisconnectNamedPipe,
-    PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, PIPE_READMODE_MESSAGE,
-    PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, NAMED_PIPE_MODE,
+    NAMED_PIPE_MODE,
 };
 use windows::core::{PCSTR, Result as WinResult, Error as WinError};
+
+const PIPE_ACCESS_DUPLEX: u32 = 0x00000003;
+const PIPE_TYPE_MESSAGE: u32 = 0x00000004;
+const PIPE_READMODE_MESSAGE: u32 = 0x00000002;
+const PIPE_WAIT: u32 = 0x00000000;
+const PIPE_UNLIMITED_INSTANCES: u32 = 255;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PipeError {
@@ -41,8 +46,8 @@ impl NamedPipe {
         unsafe {
             let handle = CreateNamedPipeA(
                 PCSTR::from_raw(pipe_name.as_ptr()),
-                FILE_FLAGS_AND_ATTRIBUTES(PIPE_ACCESS_DUPLEX.0 | FILE_FLAG_OVERLAPPED.0),
-                NAMED_PIPE_MODE(PIPE_TYPE_MESSAGE.0 | PIPE_READMODE_MESSAGE.0 | PIPE_WAIT.0),
+                FILE_FLAGS_AND_ATTRIBUTES(PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED.0),
+                NAMED_PIPE_MODE(PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT),
                 PIPE_UNLIMITED_INSTANCES,
                 4096,
                 4096,
