@@ -1,19 +1,6 @@
 use std::fmt;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DragEffects {
-    NONE = 0,
-    COPY = 1,
-    MOVE = 2,
-    LINK = 4,
-    SCROLL = 0x80000000,
-}
-
-impl DragEffects {
-    pub const ALL: DragEffects = DragEffects::COPY;
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PropertyValue {
     String(String),
@@ -39,11 +26,11 @@ impl fmt::Display for PropertyValue {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PopupFlags {
-    NONE = 0,
-    RIGHT = 0x0002,
-    ALIGN_RIGHT = 0x0008,
-    ALIGN_BOTTOM = 0x0020,
-    RETURN_CMD = 0x0100,
+    None = 0,
+    Right = 0x0002,
+    AlignRight = 0x0008,
+    AlignBottom = 0x0020,
+    ReturnCmd = 0x0100,
 } 
  
  

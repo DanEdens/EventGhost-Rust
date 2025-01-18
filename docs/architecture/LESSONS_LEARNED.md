@@ -48,19 +48,31 @@ This approach better matches EventGhost's original design while still allowing f
 - Implemented state transfer between versions
 - Used atomic operations for updates
 - Maintained backwards compatibility
-- Provided rollback mechanisms
 
-### 3. Dependency Management
-- Adopted semantic versioning
-- Implemented dependency graph validation
-- Supported optional dependencies
-- Added conflict resolution
+## Rust Best Practices and Learnings
 
-### 4. Error Handling
-- Created detailed error types
-- Added context to error messages
-- Implemented error recovery
-- Provided debugging information
+### 1. Naming Conventions
+- Follow Rust's standard naming conventions:
+  - Use upper camel case for enum variants (e.g., `AlignRight` not `ALIGN_RIGHT`)
+  - Exception: When using `bitflags!` macro, use uppercase with underscores (e.g., `const ALIGN_RIGHT = 0x0008`)
+  - This helps distinguish between regular enums and bitflag constants
+
+### 2. Bitflags vs Enums
+- Use `bitflags!` macro when:
+  - Values need to be combined with bitwise operations
+  - Interfacing with C/Windows APIs that use bit flags
+  - Working with hardware flags or system interfaces
+- Use regular enums when:
+  - Values are mutually exclusive
+  - No need for bitwise operations
+  - Representing distinct states or variants
+
+### 3. Avoiding Duplicate Type Definitions
+- Be careful not to define the same type in multiple places
+- When porting from C/C++, choose the most appropriate Rust representation:
+  - Consider using `bitflags!` for C-style flag enums
+  - Use regular enums for simple value enumerations
+  - Document the reasoning behind the choice
 
 ## Performance Optimizations
 
