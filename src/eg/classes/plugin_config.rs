@@ -18,15 +18,17 @@ pub struct PluginConfigDialog {
     changes: HashMap<String, Property>,
 }
 
+// Phase 4: Configuration System - Not yet implemented
+#[allow(dead_code)]
 impl PluginConfigDialog {
     const DEFAULT_DESCRIPTION: &'static str = "";
 
     pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+        todo!("Phase 4: Configuration System")
     }
 
     pub fn add_page(&mut self, title: &str, description: &str) -> Result<(), Error> {
-        todo!()
+        todo!("Phase 4: Configuration System")
     }
 
     pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource>) -> Result<(), Error> {

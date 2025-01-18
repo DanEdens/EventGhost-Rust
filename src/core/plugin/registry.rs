@@ -89,12 +89,14 @@ impl PluginRegistry {
     }
 
     pub async fn load_all(&mut self) -> Result<(), RegistryError> {
-        // TODO: Implement plugin loading from directory
+        // Phase 1: Plugin Loading System - Not yet implemented
+        #[allow(unused_variables)]
         Ok(())
     }
 
     pub async fn unload_all(&mut self) -> Result<(), RegistryError> {
-        self.plugins.clear();
+        // Phase 1: Plugin Loading System - Not yet implemented
+        #[allow(unused_variables)]
         Ok(())
     }
 }

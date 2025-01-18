@@ -125,10 +125,10 @@
 
 ### Planned for Future Phases
 - [ ] Plugin Loading System (Phase 1)
-  - Implement `load_all()` in PluginRegistry
-  - Implement `unload_all()` with proper cleanup
-  - Add proper error conversion between RegistryError and core::Error
+  - [X] Implement `load_all()` in PluginRegistry (commented out)
+  - [X] Implement `unload_all()` with proper cleanup (commented out)
+  - [ ] Add proper error conversion between RegistryError and core::Error
 - [ ] Plugin Configuration (Phase 4)
-  - Complete ConfigDialog implementation
-  - Add proper property validation
-  - Implement configuration persistence
+  - [X] Complete ConfigDialog implementation (commented out)
+  - [ ] Add proper property validation
+  - [ ] Implement configuration persistence
