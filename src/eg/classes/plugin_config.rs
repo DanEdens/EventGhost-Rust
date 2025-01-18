@@ -74,7 +74,7 @@ impl ConfigDialog {
 
     pub fn apply_changes(&mut self) -> Result<(), Error> {
         self.validate_changes()
-            .map_err(|e| Error::Config(e))?;
+            .map_err(|e| Error::Config(e.into()))?;
         todo!()
     }
 

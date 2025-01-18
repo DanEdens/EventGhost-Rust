@@ -114,14 +114,13 @@
 - [x] Fix macro_::Macro vs Macro_ naming mismatch
 - [x] Add Registry and Loader error variants to Error enum
 - [x] Implement From traits for Registry and Loader errors
-
-#### In Progress
-- [ ] Fix remaining conflicting implementations for ConfigError and ActionError
-  - Removed manual From impl for ConfigError
-  - Need to clean up ActionError implementation
+- [x] Fix conflicting implementations for ConfigError and ActionError
+- [x] Add proper string conversion support for ConfigError
 
 #### Next Implementation Priority
-- [ ] Clean up unused imports and variables (26 warnings)
+- [ ] Clean up unused imports and variables (154 warnings)
+  - [ ] Add underscore prefix to intentionally unused variables
+  - [ ] Remove unnecessary imports
 - [ ] Fix naming conventions for enum variants (ALIGN_RIGHT, ALIGN_BOTTOM, RETURN_CMD)
 
 #### Planned for Future Phases

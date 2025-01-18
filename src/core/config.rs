@@ -12,6 +12,20 @@ pub enum ConfigError {
     Invalid(String),
     #[error("Missing field: {0}")]
     MissingField(String),
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<String> for ConfigError {
+    fn from(s: String) -> Self {
+        ConfigError::Other(s)
+    }
+}
+
+impl From<&str> for ConfigError {
+    fn from(s: &str) -> Self {
+        ConfigError::Other(s.to_string())
+    }
 }
 
 /// Base trait for configuration storage

@@ -95,7 +95,7 @@ impl DragDropManager {
         })?;
 
         if current_data.is_some() {
-            return Err(Error::Config(DragDropError::AlreadyDragging.to_string()));
+            return Err(Error::Config(DragDropError::AlreadyDragging.to_string().into()));
         }
 
         *current_data = Some(data);
