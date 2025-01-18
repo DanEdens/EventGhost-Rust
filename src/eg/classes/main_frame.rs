@@ -1,4 +1,4 @@
-use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE, RECT};
+use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE, RECT, CREATESTRUCTA};
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCSTR;
 
@@ -49,6 +49,11 @@ impl MainFrame {
             toolbar: Toolbar::new(hwnd, instance)?,
             is_visible: false,
         };
+
+        // Store the MainFrame instance pointer in the window's user data
+        unsafe {
+            SetWindowLongPtrA(hwnd, GWLP_USERDATA, &mut frame as *mut _ as isize);
+        }
 
         frame.initialize()?;
         Ok(frame)
@@ -160,7 +165,22 @@ impl MainFrame {
                 LRESULT(0)
             }
             WM_SIZE => {
-                // TODO: Handle window resizing
+                // Retrieve the MainFrame instance associated with this window
+                let frame_ptr = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut MainFrame;
+                
+                if !frame_ptr.is_null() {
+                    let frame = &mut *frame_ptr;
+                    frame.layout_controls();
+                }
+                
+                LRESULT(0)
+            }
+            WM_CREATE => {
+                // Store the MainFrame instance pointer when the window is created
+                let create_struct = lparam.0 as *const CREATESTRUCTA;
+                if !create_struct.is_null() {
+                    SetWindowLongPtrA(hwnd, GWLP_USERDATA, (*create_struct).lpCreateParams as isize);
+                }
                 LRESULT(0)
             }
             _ => unsafe { DefWindowProcA(hwnd, msg, wparam, lparam) }

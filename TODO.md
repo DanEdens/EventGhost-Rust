@@ -20,7 +20,7 @@
   - [x] StatusBar
   - [x] Toolbar
 - [x] Implement control layout in MainFrame
-- [ ] Add window resizing handling
+- [x] Add window resizing handling
 
 ### Code Cleanup
 - [ ] Remove unused imports
