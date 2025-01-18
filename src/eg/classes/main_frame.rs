@@ -1,4 +1,4 @@
-use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE, RECT, CREATESTRUCTA};
+use windows::Win32::Foundation::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCSTR;
 
@@ -8,8 +8,6 @@ use super::log_ctrl::LogCtrl;
 use super::status_bar::StatusBar;
 use super::toolbar::Toolbar;
 
-const MAIN_WINDOW_CLASS: &[u8] = b"EventGhostMainWindow\0";
-
 pub struct MainFrame {
     hwnd: HWND,
     tree_ctrl: TreeCtrl,
@@ -17,7 +15,7 @@ pub struct MainFrame {
     status_bar: StatusBar,
     toolbar: Toolbar,
     is_visible: bool,
-}
+} 
 
 impl MainFrame {
     pub fn new(instance: HINSTANCE) -> Result<Self, Win32Error> {
@@ -82,20 +80,46 @@ impl MainFrame {
         let width = client_rect.right - client_rect.left;
         let height = client_rect.bottom - client_rect.top;
 
-        // Toolbar height (typical height is around 30 pixels)
-        let toolbar_height = 30;
+        // Define heights for toolbar and status bar
+        let toolbar_height = 40; // Example height
+        let status_bar_height = 20; // Example height
 
-        // Status bar height (typical height is around 22 pixels)
-        let status_bar_height = 22;
+        // Calculate tree and log control widths
+        let tree_width = (width as f32 / 3.0) as i32;
+        let log_width = width - tree_width;
 
         // Layout toolbar at the top
         unsafe {
             MoveWindow(
-                self.toolbar.get_hwnd(), 
-                0, 
-                0, 
-                width, 
-                toolbar_height, 
+                self.toolbar.get_hwnd(),
+                0,
+                0,
+                width,
+                toolbar_height,
+                true
+            );
+        }
+
+        // Layout tree control on the left side
+        unsafe {
+            MoveWindow(
+                self.tree_ctrl.get_hwnd(),
+                0,
+                toolbar_height,
+                tree_width,
+                height - toolbar_height - status_bar_height,
+                true
+            );
+        }
+
+        // Layout log control on the right side
+        unsafe {
+            MoveWindow(
+                self.log_ctrl.get_hwnd(),
+                tree_width,
+                toolbar_height,
+                log_width,
+                height - toolbar_height - status_bar_height,
                 true
             );
         }
@@ -103,53 +127,14 @@ impl MainFrame {
         // Layout status bar at the bottom
         unsafe {
             MoveWindow(
-                self.status_bar.get_hwnd(), 
-                0, 
-                height - status_bar_height, 
-                width, 
-                status_bar_height, 
+                self.status_bar.get_hwnd(),
+                0,
+                height - status_bar_height,
+                width,
+                status_bar_height,
                 true
             );
         }
-
-        // Layout tree control on the left side (1/3 of the width)
-        let tree_width = width / 3;
-        unsafe {
-            MoveWindow(
-                self.tree_ctrl.get_hwnd(), 
-                0, 
-                toolbar_height, 
-                tree_width, 
-                height - toolbar_height - status_bar_height, 
-                true
-            );
-        }
-
-        // Layout log control on the right side (2/3 of the width)
-        unsafe {
-            MoveWindow(
-                self.log_ctrl.get_hwnd(), 
-                tree_width, 
-                toolbar_height, 
-                width - tree_width, 
-                height - toolbar_height - status_bar_height, 
-                true
-            );
-        }
-    }
-
-    pub fn show(&mut self) {
-        win32::show_window(self.hwnd, SW_SHOW);
-        self.is_visible = true;
-    }
-
-    pub fn hide(&mut self) {
-        win32::show_window(self.hwnd, SW_HIDE);
-        self.is_visible = false;
-    }
-
-    pub fn set_title(&self, title: &str) -> Result<(), Win32Error> {
-        win32::set_window_text(self.hwnd, title)
     }
 
     unsafe extern "system" fn window_proc(
@@ -167,12 +152,12 @@ impl MainFrame {
             WM_SIZE => {
                 // Retrieve the MainFrame instance associated with this window
                 let frame_ptr = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut MainFrame;
-                
+
                 if !frame_ptr.is_null() {
                     let frame = &mut *frame_ptr;
                     frame.layout_controls();
                 }
-                
+
                 LRESULT(0)
             }
             WM_CREATE => {
