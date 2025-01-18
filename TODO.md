@@ -116,9 +116,9 @@
   - [X] Update constructor to properly initialize fields
 
 ### Next Implementation Priority
-- [ ] Fix Windows API imports
-  - [ ] Add proper PIPE_ACCESS_DUPLEX and related constants in named_pipe.rs
-  - [ ] Update imports to use correct paths from windows-rs
+- [X] Fix Windows API imports
+  - [X] Add proper PIPE_ACCESS_DUPLEX and related constants in named_pipe.rs
+  - [X] Update imports to use correct paths from windows-rs
 - [ ] Fix ConfigDialog imports
   - [ ] Export ConfigDialog trait from plugin_config module
   - [ ] Update imports in action modules (base.rs, group.rs, item.rs, common.rs)
