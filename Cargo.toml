@@ -39,10 +39,11 @@ tracing-appender = "0.2"
 bitflags = "2.4"
 
 [dev-dependencies]
-tokio-test = "0.4" [features]
-# Existing features...
-+ mainframe-test = []
-+ toolbar-test = []
-+ statusbar-test = []
-+ treectrl-test = []
-+ logctrl-test = [] 
+tokio-test = "0.4" 
+
+[features]
+mainframe-test = []
+toolbar-test = []
+statusbar-test = []
+treectrl-test = []
+logctrl-test = [] 
