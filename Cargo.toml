@@ -3,6 +3,10 @@ name = "eventghost"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "eventghost-bin"
+path = "src/bin/eventghost.rs"
+
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }

@@ -1,0 +1,550 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 744b4fe..9a9000a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -3,6 +3,10 @@ name = "eventghost"
+ version = "0.1.0"
+ edition = "2021"
+ 
++[[bin]]
++name = "eventghost-bin"
++path = "src/bin/eventghost.rs"
++
+ [dependencies]
+ tokio = { version = "1.0", features = ["full"] }
+ uuid = { version = "1.0", features = ["v4", "serde"] }
+diff --git a/src/eg/classes/main_frame.rs b/src/eg/classes/main_frame.rs
+index 2a7ef0e..6d3a55e 100644
+--- a/src/eg/classes/main_frame.rs
++++ b/src/eg/classes/main_frame.rs
+@@ -1,7 +1,14 @@
+-use windows::Win32::Foundation::HWND;
+-use crate::core::Error;
+-use crate::eg::winapi;
+-use super::{UIComponent, TreeCtrl, LogCtrl, StatusBar, Toolbar};
++use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
++use windows::Win32::UI::WindowsAndMessaging::*;
++use windows::core::PCSTR;
++
++use crate::win32::{self, Error as Win32Error};
++use super::tree_ctrl::TreeCtrl;
++use super::log_ctrl::LogCtrl;
++use super::status_bar::StatusBar;
++use super::toolbar::Toolbar;
++
++const MAIN_WINDOW_CLASS: &[u8] = b"EventGhostMainWindow\0";
+ 
+ pub struct MainFrame {
+     hwnd: HWND,
+@@ -13,57 +20,97 @@ pub struct MainFrame {
+ }
+ 
+ impl MainFrame {
+-    pub fn new() -> Result<Self, Error> {
+-        todo!()
+-    }
++    pub fn new(instance: HINSTANCE) -> Result<Self, Win32Error> {
++        // Register window class
++        win32::register_window_class(
++            PCSTR::from_raw(MAIN_WINDOW_CLASS.as_ptr()),
++            Some(Self::window_proc),
++            instance,
++        )?;
+ 
+-    pub fn initialize(&mut self) -> Result<(), Error> {
+-        todo!()
+-    }
++        // Create main window
++        let hwnd = win32::create_window(
++            PCSTR::from_raw(MAIN_WINDOW_CLASS.as_ptr()),
++            PCSTR::from_raw(b"EventGhost\0".as_ptr()),
++            WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
++            CW_USEDEFAULT,
++            CW_USEDEFAULT,
++            800,
++            600,
++            None,
++            instance,
++        )?;
+ 
+-    pub fn process_message(&mut self, msg: u32, wparam: usize, lparam: isize) -> Result<(), Error> {
+-        todo!()
+-    }
++        let mut frame = Self {
++            hwnd,
++            tree_ctrl: TreeCtrl::new(hwnd, instance)?,
++            log_ctrl: LogCtrl::new(hwnd, instance)?,
++            status_bar: StatusBar::new(hwnd, instance)?,
++            toolbar: Toolbar::new(hwnd, instance)?,
++            is_visible: false,
++        };
+ 
+-    pub fn create_window(&mut self) -> Result<(), Error> {
+-        todo!()
++        frame.initialize()?;
++        Ok(frame)
+     }
+ 
+-    pub fn set_title(&mut self, title: &str) -> Result<(), Error> {
+-        todo!()
+-    }
++    fn initialize(&mut self) -> Result<(), Win32Error> {
++        // Initialize child controls
++        self.tree_ctrl.initialize()?;
++        self.log_ctrl.initialize()?;
++        self.status_bar.initialize()?;
++        self.toolbar.initialize()?;
+ 
+-    pub fn get_tree_ctrl(&self) -> &TreeCtrl {
+-        &self.tree_ctrl
+-    }
++        // Layout controls
++        self.layout_controls();
+ 
+-    pub fn get_tree_ctrl_mut(&mut self) -> &mut TreeCtrl {
+-        &mut self.tree_ctrl
++        Ok(())
+     }
+ 
+-    pub fn get_log_ctrl(&self) -> &LogCtrl {
+-        &self.log_ctrl
++    fn layout_controls(&mut self) {
++        // TODO: Implement control layout
+     }
+ 
+-    pub fn get_log_ctrl_mut(&mut self) -> &mut LogCtrl {
+-        &mut self.log_ctrl
++    pub fn show(&mut self) {
++        win32::show_window(self.hwnd, SW_SHOW);
++        self.is_visible = true;
+     }
+-}
+ 
+-impl UIComponent for MainFrame {
+-    fn get_hwnd(&self) -> HWND {
+-        self.hwnd
++    pub fn hide(&mut self) {
++        win32::show_window(self.hwnd, SW_HIDE);
++        self.is_visible = false;
+     }
+ 
+-    fn show(&mut self) -> Result<(), Error> {
+-        todo!()
++    pub fn set_title(&self, title: &str) -> Result<(), Win32Error> {
++        win32::set_window_text(self.hwnd, title)
+     }
+ 
+-    fn hide(&mut self) -> Result<(), Error> {
+-        todo!()
++    unsafe extern "system" fn window_proc(
++        hwnd: HWND,
++        msg: u32,
++        wparam: WPARAM,
++        lparam: LPARAM,
++    ) -> LRESULT {
++        match msg {
++            WM_DESTROY => {
++                win32::post_message(hwnd, WM_QUIT, WPARAM(0), LPARAM(0))
++                    .expect("Failed to post quit message");
++                LRESULT(0)
++            }
++            WM_SIZE => {
++                // TODO: Handle window resizing
++                LRESULT(0)
++            }
++            _ => unsafe { DefWindowProcA(hwnd, msg, wparam, lparam) }
++        }
+     }
++}
+ 
+-    fn is_visible(&self) -> bool {
+-        self.is_visible
++impl Drop for MainFrame {
++    fn drop(&mut self) {
++        // Child controls will be destroyed automatically when parent window is destroyed
++        unsafe {
++            DestroyWindow(self.hwnd);
++        }
+     }
+ } 
+\ No newline at end of file
+diff --git a/src/eg/winapi/mod.rs b/src/eg/winapi/mod.rs
+index d1e9295..57b47f6 100644
+--- a/src/eg/winapi/mod.rs
++++ b/src/eg/winapi/mod.rs
+@@ -1,5 +1,6 @@
+-use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT};
++use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
+ use windows::Win32::UI::WindowsAndMessaging::*;
++use windows::core::PCSTR;
+ use crate::core::Error;
+ 
+ pub mod utils;
+@@ -9,7 +10,22 @@ pub type WindowProc = unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LR
+ 
+ /// Register a window class with the given name and window procedure
+ pub fn register_window_class(class_name: &str, window_proc: WindowProc) -> Result<(), Error> {
+-    todo!()
++    let class_name = format!("{}\0", class_name);
++    let wc = WNDCLASSA {
++        lpfnWndProc: Some(window_proc),
++        hInstance: HINSTANCE(0), // Current module
++        lpszClassName: PCSTR::from_raw(class_name.as_ptr()),
++        style: CS_HREDRAW | CS_VREDRAW,
++        ..Default::default()
++    };
++
++    unsafe {
++        if RegisterClassA(&wc).0 == 0 {
++            Err(Error::Win32("Failed to register window class".into()))
++        } else {
++            Ok(())
++        }
++    }
+ }
+ 
+ /// Create a window with the given class name and window name
+@@ -23,7 +39,31 @@ pub fn create_window(
+     height: i32,
+     parent: Option<HWND>,
+ ) -> Result<HWND, Error> {
+-    todo!()
++    let class_name = format!("{}\0", class_name);
++    let window_name = format!("{}\0", window_name);
++
++    unsafe {
++        let hwnd = CreateWindowExA(
++            WINDOW_EX_STYLE(0),
++            PCSTR::from_raw(class_name.as_ptr()),
++            PCSTR::from_raw(window_name.as_ptr()),
++            WINDOW_STYLE(style),
++            x,
++            y,
++            width,
++            height,
++            parent.unwrap_or(HWND(0)),
++            None,
++            HINSTANCE(0),
++            None,
++        );
++
++        if hwnd.0 == 0 {
++            Err(Error::Win32("Failed to create window".into()))
++        } else {
++            Ok(hwnd)
++        }
++    }
+ }
+ 
+ /// Send a message to a window
+diff --git a/src/win32/window.rs b/src/win32/window.rs
+index 76cb824..e4c24b5 100644
+--- a/src/win32/window.rs
++++ b/src/win32/window.rs
+@@ -1,243 +1,68 @@
+-use std::mem;
+-use std::ptr;
+-use std::ffi::c_void;
+-use windows::Win32::Foundation::{
+-    HWND, BOOL, LPARAM, WPARAM, RECT, POINT,
+-    GetLastError, HANDLE,
+-};
+-use windows::Win32::UI::WindowsAndMessaging::{
+-    FindWindowW, FindWindowExW,
+-    GetWindowTextW, GetClassNameW,
+-    GetWindowRect, IsWindowVisible, IsWindowEnabled,
+-    SetForegroundWindow, ShowWindow, MoveWindow,
+-    SendMessageW, PostMessageW,
+-    GetForegroundWindow, GetDesktopWindow,
+-    EnumWindows, EnumChildWindows,
+-    SW_SHOW, SW_HIDE, SW_MAXIMIZE, SW_MINIMIZE, SW_RESTORE,
+-};
+-use windows::Win32::System::Threading::{
+-    GetWindowThreadProcessId,
+-};
+-use windows::core::{PCWSTR, Error as WinError};
+-
+-use super::error::Error;
+-use super::traits::{WindowInfo, WindowOps, WindowManager};
+-
+-pub struct RealWindow {
+-    handle: HWND,
++use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
++use windows::Win32::UI::WindowsAndMessaging::*;
++use windows::core::PCSTR;
++use super::Error;
++
++pub fn register_window_class(
++    class_name: PCSTR,
++    window_proc: WNDPROC,
++    instance: HINSTANCE,
++) -> Result<(), Error> {
++    let wc = WNDCLASSA {
++        lpfnWndProc: window_proc,
++        hInstance: instance,
++        lpszClassName: class_name,
++        style: CS_HREDRAW | CS_VREDRAW,
++        ..Default::default()
++    };
++
++    unsafe {
++        if RegisterClassA(&wc) == 0 {
++            return Err(Error::Win32("Failed to register window class".into()));
++        }
++    }
++
++    Ok(())
+ }
+ 
+-impl RealWindow {
+-    pub fn new(handle: HWND) -> Self {
+-        Self { handle }
+-    }
+-
+-    fn get_window_text(&self) -> Result<String, Error> {
+-        let mut text = [0u16; 512];
+-        unsafe {
+-            let len = GetWindowTextW(self.handle, &mut text);
+-            if len == 0 && GetLastError() != 0 {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-            Ok(String::from_utf16_lossy(&text[..len as usize]))
+-        }
+-    }
+-
+-    fn get_class_name(&self) -> Result<String, Error> {
+-        let mut class_name = [0u16; 256];
+-        unsafe {
+-            let len = GetClassNameW(self.handle, &mut class_name);
+-            if len == 0 {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-            Ok(String::from_utf16_lossy(&class_name[..len as usize]))
+-        }
+-    }
++pub fn create_window(
++    class_name: PCSTR,
++    window_name: PCSTR,
++    style: WINDOW_STYLE,
++    x: i32,
++    y: i32,
++    width: i32,
++    height: i32,
++    parent: Option<HWND>,
++    instance: HINSTANCE,
++) -> Result<HWND, Error> {
++    let hwnd = unsafe {
++        CreateWindowExA(
++            WINDOW_EX_STYLE::default(),
++            class_name,
++            window_name,
++            style,
++            x,
++            y,
++            width,
++            height,
++            parent.unwrap_or(HWND(0)),
++            None,
++            instance,
++            None,
++        )
++    };
++
++    if hwnd.0 == 0 {
++        return Err(Error::Win32("Failed to create window".into()));
++    }
++
++    Ok(hwnd)
+ }
+ 
+-impl WindowOps for RealWindow {
+-    fn get_info(&self) -> Result<WindowInfo, Error> {
+-        let mut rect = RECT::default();
+-        let mut pid = 0u32;
+-
+-        unsafe {
+-            if !GetWindowRect(self.handle, &mut rect).as_bool() {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-            GetWindowThreadProcessId(self.handle, Some(&mut pid));
+-        }
+-
+-        Ok(WindowInfo {
+-            handle: self.handle,
+-            title: self.get_window_text()?,
+-            class_name: self.get_class_name()?,
+-            rect,
+-            visible: unsafe { IsWindowVisible(self.handle).as_bool() },
+-            enabled: unsafe { IsWindowEnabled(self.handle).as_bool() },
+-            pid,
+-        })
+-    }
+-
+-    fn set_foreground(&self) -> Result<(), Error> {
+-        unsafe {
+-            if !SetForegroundWindow(self.handle).as_bool() {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-        }
+-        Ok(())
+-    }
+-
+-    fn show(&self) -> Result<(), Error> {
+-        unsafe {
+-            ShowWindow(self.handle, SW_SHOW);
+-        }
+-        Ok(())
+-    }
+-
+-    fn hide(&self) -> Result<(), Error> {
+-        unsafe {
+-            ShowWindow(self.handle, SW_HIDE);
+-        }
+-        Ok(())
+-    }
+-
+-    fn maximize(&self) -> Result<(), Error> {
+-        unsafe {
+-            ShowWindow(self.handle, SW_MAXIMIZE);
+-        }
+-        Ok(())
+-    }
+-
+-    fn minimize(&self) -> Result<(), Error> {
+-        unsafe {
+-            ShowWindow(self.handle, SW_MINIMIZE);
+-        }
+-        Ok(())
+-    }
+-
+-    fn restore(&self) -> Result<(), Error> {
+-        unsafe {
+-            ShowWindow(self.handle, SW_RESTORE);
+-        }
+-        Ok(())
+-    }
+-
+-    fn move_window(&self, x: i32, y: i32, width: i32, height: i32) -> Result<(), Error> {
+-        unsafe {
+-            if !MoveWindow(self.handle, x, y, width, height, true).as_bool() {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-        }
+-        Ok(())
++pub fn show_window(hwnd: HWND, cmd_show: SHOW_WINDOW_CMD) {
++    unsafe {
++        ShowWindow(hwnd, cmd_show);
++        UpdateWindow(hwnd);
+     }
+-
+-    fn send_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) -> Result<isize, Error> {
+-        unsafe {
+-            Ok(SendMessageW(self.handle, msg, wparam, lparam))
+-        }
+-    }
+-
+-    fn post_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) -> Result<(), Error> {
+-        unsafe {
+-            if !PostMessageW(self.handle, msg, wparam, lparam).as_bool() {
+-                return Err(Error::Windows(io::Error::last_os_error()));
+-            }
+-        }
+-        Ok(())
+-    }
+-}
+-
+-pub struct RealWindowManager;
+-
+-impl RealWindowManager {
+-    pub fn new() -> Self {
+-        Self
+-    }
+-}
+-
+-impl WindowManager for RealWindowManager {
+-    type Window = RealWindow;
+-
+-    fn find_window(&self, class_name: Option<&str>, window_name: Option<&str>) -> Result<Option<Self::Window>, Error> {
+-        unsafe {
+-            let class = class_name.map(|s| s.encode_utf16().collect::<Vec<_>>());
+-            let title = window_name.map(|s| s.encode_utf16().collect::<Vec<_>>());
+-            
+-            let hwnd = FindWindowW(
+-                class.as_ref().map(|s| PCWSTR::from_raw(s.as_ptr())).unwrap_or(PCWSTR::null()),
+-                title.as_ref().map(|s| PCWSTR::from_raw(s.as_ptr())).unwrap_or(PCWSTR::null()),
+-            );
+-            
+-            if hwnd.0 == 0 {
+-                Ok(None)
+-            } else {
+-                Ok(Some(RealWindow::new(hwnd)))
+-            }
+-        }
+-    }
+-
+-    fn find_window_ex(&self, parent: Option<HWND>, child: Option<HWND>, class: Option<&str>, title: Option<&str>) -> Result<Option<Self::Window>, Error> {
+-        unsafe {
+-            let class_str = class.map(|s| s.encode_utf16().collect::<Vec<_>>());
+-            let title_str = title.map(|s| s.encode_utf16().collect::<Vec<_>>());
+-            
+-            let hwnd = FindWindowExW(
+-                parent.unwrap_or(HWND(0)),
+-                child.unwrap_or(HWND(0)),
+-                class_str.as_ref().map(|s| PCWSTR::from_raw(s.as_ptr())).unwrap_or(PCWSTR::null()),
+-                title_str.as_ref().map(|s| PCWSTR::from_raw(s.as_ptr())).unwrap_or(PCWSTR::null()),
+-            );
+-            
+-            if hwnd.0 == 0 {
+-                Ok(None)
+-            } else {
+-                Ok(Some(RealWindow::new(hwnd)))
+-            }
+-        }
+-    }
+-
+-    fn enum_windows(&self) -> Result<Vec<Self::Window>, Error> {
+-        unsafe {
+-            let mut windows = Vec::new();
+-            let windows_ptr = &mut windows as *mut Vec<RealWindow> as *mut c_void;
+-            
+-            EnumWindows(Some(enum_window_proc), LPARAM(windows_ptr as isize));
+-            
+-            Ok(windows)
+-        }
+-    }
+-
+-    fn enum_child_windows(&self, parent: HWND) -> Result<Vec<Self::Window>, Error> {
+-        unsafe {
+-            let mut windows = Vec::new();
+-            let windows_ptr = &mut windows as *mut Vec<RealWindow> as *mut c_void;
+-            
+-            EnumChildWindows(parent, Some(enum_window_proc), LPARAM(windows_ptr as isize));
+-            
+-            Ok(windows)
+-        }
+-    }
+-
+-    fn get_foreground_window(&self) -> Result<Option<Self::Window>, Error> {
+-        unsafe {
+-            let hwnd = GetForegroundWindow();
+-            if hwnd.0 == 0 {
+-                Ok(None)
+-            } else {
+-                Ok(Some(RealWindow::new(hwnd)))
+-            }
+-        }
+-    }
+-
+-    fn get_desktop_window(&self) -> Result<Self::Window, Error> {
+-        unsafe {
+-            Ok(RealWindow::new(GetDesktopWindow()))
+-        }
+-    }
+-}
+-
+-unsafe extern "system" fn enum_window_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+-    let windows = &mut *(lparam.0 as *mut Vec<RealWindow>);
+-    windows.push(RealWindow::new(hwnd));
+-    BOOL(1)
+ } 
+\ No newline at end of file
