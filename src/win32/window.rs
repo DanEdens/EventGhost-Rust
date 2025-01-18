@@ -1,6 +1,6 @@
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
 use windows::Win32::UI::WindowsAndMessaging::*;
-use windows::core::PCSTR;
+use windows::core::{PCSTR, Error as WindowsError};
 use super::Error;
 
 pub fn register_window_class(
@@ -17,12 +17,8 @@ pub fn register_window_class(
     };
 
     unsafe {
-        if RegisterClassA(&wc) == 0 {
-            return Err(Error::Win32("Failed to register window class".into()));
-        }
+        RegisterClassA(&wc).map_err(|e| Error::Win32(format!("Failed to register window class: {}", e)))
     }
-
-    Ok(())
 }
 
 pub fn create_window(
@@ -54,15 +50,15 @@ pub fn create_window(
     };
 
     if hwnd.0 == 0 {
-        return Err(Error::Win32("Failed to create window".into()));
+        Err(Error::Win32("Failed to create window".into()))
+    } else {
+        Ok(hwnd)
     }
-
-    Ok(hwnd)
 }
 
-pub fn show_window(hwnd: HWND, cmd_show: SHOW_WINDOW_CMD) {
+pub fn show_window(hwnd: HWND, cmd_show: SHOW_WINDOW_CMD) -> Result<(), Error> {
     unsafe {
         ShowWindow(hwnd, cmd_show);
-        UpdateWindow(hwnd);
+        UpdateWindow(hwnd).map_err(|e| Error::Win32(format!("Failed to update window: {}", e)))
     }
 } 

@@ -3,6 +3,7 @@ use std::fmt;
 use crate::core::config::ConfigError;
 use crate::eg::action::ActionError;
 use crate::core::plugin::{RegistryError, LoaderError};
+use crate::win32;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -26,6 +27,9 @@ pub enum Error {
     
     #[error("Tree error: {0}")]
     Tree(String),
+
+    #[error("Windows error: {0}")]
+    Win32(#[from] win32::Error),
 }
 
 impl From<RegistryError> for Error {

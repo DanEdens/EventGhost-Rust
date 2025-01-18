@@ -3,9 +3,9 @@
 ## Current Focus: Basic GUI Implementation
 
 ### Error Handling
-- [ ] Implement `From<core::error::Error>` for `win32::Error`
-- [ ] Add `Win32` variant to `core::Error`
-- [ ] Consolidate error types between core and win32 modules
+- [x] Implement `From<core::error::Error>` for `win32::Error`
+- [x] Add `Win32` variant to `core::Error`
+- [x] Consolidate error types between core and win32 modules
 
 ### Window API Fixes
 - [ ] Fix imports for Windows API types (WNDCLASSA, RegisterClassA)
