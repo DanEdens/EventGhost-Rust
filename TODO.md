@@ -19,7 +19,7 @@
   - [x] LogCtrl
   - [x] StatusBar
   - [x] Toolbar
-- [ ] Implement control layout in MainFrame
+- [x] Implement control layout in MainFrame
 - [ ] Add window resizing handling
 
 ### Code Cleanup
