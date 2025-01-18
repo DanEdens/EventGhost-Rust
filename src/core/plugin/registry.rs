@@ -29,13 +29,17 @@ pub struct PluginRegistry {
     loader: PluginLoader,
     /// Plugin configurations
     configs: Arc<RwLock<HashMap<Uuid, Config>>>,
+    /// Plugin directory
+    plugin_dir: PathBuf,
 }
 
 impl PluginRegistry {
     /// Create a new plugin registry
     pub fn new(plugin_dir: PathBuf) -> Result<Self, Error> {
         Ok(Self {
-            plugins: HashMap::new(),
+            plugins: Arc::new(RwLock::new(HashMap::new())),
+            loader: PluginLoader::new(plugin_dir.clone())?,
+            configs: Arc::new(RwLock::new(HashMap::new())),
             plugin_dir,
         })
     }

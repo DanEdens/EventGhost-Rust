@@ -105,23 +105,26 @@
 ## Current Error Resolution Plan
 
 ### Immediate Code Fixes (Miswritten Code)
-- [ ] Fix RwLock usage in PluginRegistry
-  - Replace `HashMap::new()` with proper `Arc<RwLock<HashMap>>` initialization
-  - Fix `clear()` method usage on Arc<RwLock>
+- [X] Fix RwLock usage in PluginRegistry
+  - [X] Replace `HashMap::new()` with proper `Arc<RwLock<HashMap>>` initialization
+  - [X] Fix `clear()` method usage on Arc<RwLock>
 - [ ] Fix Event trait bounds consistency
-  - Align `Event` trait bounds between `macro_.rs` and `event.rs`
-  - Fix type mismatch in `get_trigger_event()` return type
-- [ ] Fix struct field errors
-  - Add missing `plugin_dir` field to `PluginRegistry`
-  - Update constructor to properly initialize fields
+  - [ ] Align `Event` trait bounds between `macro_.rs` and `event.rs`
+  - [ ] Fix type mismatch in `get_trigger_event()` return type
+- [X] Fix struct field errors
+  - [X] Add missing `plugin_dir` field to `PluginRegistry`
+  - [X] Update constructor to properly initialize fields
 
 ### Next Implementation Priority
-- [ ] Implement ConfigDialog in plugin_config module
-  - Add proper exports
-  - Fix imports in action modules
-- [ ] Implement Windows API imports
-  - Add proper PIPE_ACCESS_DUPLEX and related constants
-  - Update named_pipe.rs to use correct imports
+- [ ] Fix Windows API imports
+  - [ ] Add proper PIPE_ACCESS_DUPLEX and related constants in named_pipe.rs
+  - [ ] Update imports to use correct paths from windows-rs
+- [ ] Fix ConfigDialog imports
+  - [ ] Export ConfigDialog trait from plugin_config module
+  - [ ] Update imports in action modules (base.rs, group.rs, item.rs, common.rs)
+- [ ] Implement error conversions
+  - [ ] Add From<RegistryError> for core::Error
+  - [ ] Add From<LoaderError> for core::Error
 
 ### Planned for Future Phases
 - [ ] Plugin Loading System (Phase 1)
@@ -132,3 +135,8 @@
   - [X] Complete ConfigDialog implementation (commented out)
   - [ ] Add proper property validation
   - [ ] Implement configuration persistence
+
+### Code Cleanup
+- [ ] Fix unused import warnings
+- [ ] Fix unused variable warnings
+- [ ] Fix non-camel-case enum variants
