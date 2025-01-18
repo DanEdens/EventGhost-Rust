@@ -1,54 +1,5 @@
-error[E0432]: unresolved import `windows::Win32::System::Pipes::PIPE_ACCESS_DUPLEX`
-  --> src\core\named_pipe.rs:10:5
-   |
-10 |     PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, PIPE_READMODE_MESSAGE,
-   |     ^^^^^^^^^^^^^^^^^^ no `PIPE_ACCESS_DUPLEX` in `Win32::System::Pipes`
-
-error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
- --> src\eg\action\base.rs:3:5
-  |
-3 | use crate::eg::classes::plugin_config::ConfigDialog;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
-
-error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
- --> src\eg\action\group.rs:4:5
-  |
-4 | use crate::eg::classes::plugin_config::ConfigDialog;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
-
-error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
- --> src\eg\action\item.rs:4:5
-  |
-4 | use crate::eg::classes::plugin_config::ConfigDialog;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
-
-error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
- --> src\eg\action\common.rs:5:5
-  |
-5 | use crate::eg::classes::plugin_config::ConfigDialog;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
-
-error[E0432]: unresolved import `super::Bunch`
- --> src\eg\globals.rs:1:5
-  |
-1 | use super::Bunch;
-  |     ^^^^^^^^^^^^ no `Bunch` in `eg`
-  |
-help: a similar name exists in the module
-  |
-1 | use super::bunch;
-  |            ~~~~~
-help: consider importing this struct instead
-  |
-1 | use crate::eg::bunch::Bunch;
-  |     ~~~~~~~~~~~~~~~~~~~~~~~
-
-error[E0432]: unresolved import `crate::core::constants`
- --> src\eg\globals.rs:2:18
-  |
-2 | use crate::core::constants::{DEFAULT_DEBUG_LEVEL, DEFAULT_ENCODING};
-  |                  ^^^^^^^^^ could not find `constants` in `core`
-
+C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust>cargo check |CLIP
+    Checking eventghost v0.1.0 (C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust)
 error[E0432]: unresolved import `macro_::Macro`
   --> src\eg\tree\mod.rs:11:9
    |
@@ -57,6 +8,16 @@ error[E0432]: unresolved import `macro_::Macro`
    |         |       |
    |         |       help: a similar name exists in the module: `Macro_`
    |         no `Macro` in `eg::tree::macro_`
+
+
+error[E0432]: unresolved import `plugin_config::PluginConfigDialog`
+  --> src\eg\classes\mod.rs:29:9
+   |
+29 | pub use plugin_config::PluginConfigDialog;
+   |         ^^^^^^^^^^^^^^^------------------
+   |         |              |
+   |         |              help: a similar name exists in the module: `ConfigDialog`
+   |         no `PluginConfigDialog` in `eg::classes::plugin_config`
 
 warning: unused import: `Path`
  --> src\core\config.rs:1:17
@@ -87,7 +48,7 @@ warning: unused import: `BOOL`
 warning: unused import: `Result as WinResult`
   --> src\core\named_pipe.rs:13:28
    |
-13 | use windows::core::{PCSTR, Result as WinResult};
+13 | use windows::core::{PCSTR, Result as WinResult, Error as WinError};
    |                            ^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `ActionInfo`
@@ -101,6 +62,12 @@ warning: unused import: `crate::core::Error`
   |
 3 | use crate::core::Error;
   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::eg::classes::ConfigDialog`
+ --> src\eg\action\common.rs:5:5
+  |
+5 | use crate::eg::classes::ConfigDialog;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `crate::eg::winapi`
  --> src\eg\classes\main_frame.rs:3:5
@@ -161,58 +128,52 @@ warning: unused variable: `strategy`
     |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_strategy`
 
 warning: unused variable: `path`
-  --> src\core\plugin\registry.rs:44:37
+  --> src\core\plugin\registry.rs:48:37
    |
-44 | ...sync fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+48 | ...sync fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
    |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:50:39
+  --> src\core\plugin\registry.rs:54:39
    |
-50 |     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+54 |     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
    |                                       ^^ help: if this is intentional, prefix it with an underscore: `_id`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:56:36
+  --> src\core\plugin\registry.rs:60:36
    |
-56 | ...async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin...
+60 | ...async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin...
    |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:68:38
+  --> src\core\plugin\registry.rs:72:38
    |
-68 |     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+72 |     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
    |                                      ^^ help: if this is intentional, prefix it with an underscore: `_id`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:74:37
+  --> src\core\plugin\registry.rs:78:37
    |
-74 |     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+78 |     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
    |                                     ^^ help: if this is intentional, prefix it with an underscore: `_id`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:80:46
+  --> src\core\plugin\registry.rs:84:46
    |
-80 | ...pdate_plugin_config(&self, id: Uuid, config: Config) -> Result<(), Regis...
+84 | ...pdate_plugin_config(&self, id: Uuid, config: Config) -> Result<(), Regis...
    |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
 
 warning: unused variable: `config`
-  --> src\core\plugin\registry.rs:80:56
+  --> src\core\plugin\registry.rs:84:56
    |
-80 | ...in_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
+84 | ...in_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
    |                               ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
 
 warning: unused variable: `id`
-  --> src\core\plugin\registry.rs:86:43
+  --> src\core\plugin\registry.rs:90:43
    |
-86 | ...n get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
+90 | ...n get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
    |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
-
-error[E0599]: no method named `clear` found for struct `Arc<tokio::sync::RwLock<HashMap<Uuid, Box<(dyn traits::Plugin + 'static)>>>>` in the current scope
-  --> src\core\plugin\registry.rs:97:22
-   |
-97 |         self.plugins.clear();
-   |                      ^^^^^ method not found in `Arc<RwLock<HashMap<Uuid, Box<dyn Plugin>>>>`
 
 warning: unused variable: `config`
   --> src\core\logging.rs:64:39
@@ -229,7 +190,6 @@ error[E0277]: `?` couldn't convert the error to `core::error::Error`
    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
    = help: the following other types implement trait `From<T>`:
              <core::error::Error as From<ConfigError>>
-             <core::error::Error as From<PipeError>>
              <core::error::Error as From<ActionError>>
              <core::error::Error as From<futures_io::Error>>
    = note: required for `Result<(), core::error::Error>` to implement `FromResidual<Result<Infallible, RegistryError>>`
@@ -243,40 +203,37 @@ error[E0277]: `?` couldn't convert the error to `core::error::Error`
    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
    = help: the following other types implement trait `From<T>`:
              <core::error::Error as From<ConfigError>>
-             <core::error::Error as From<PipeError>>
              <core::error::Error as From<ActionError>>
              <core::error::Error as From<futures_io::Error>>
    = note: required for `Result<(), core::error::Error>` to implement `FromResidual<Result<Infallible, RegistryError>>`
 
-error[E0308]: mismatched types
-  --> src\core\plugin\registry.rs:38:22
+error[E0277]: `?` couldn't convert the error to `core::error::Error`
+  --> src\core\plugin\registry.rs:41:58
    |
-38 |             plugins: HashMap::new(),
-   |                      ^^^^^^^^^^^^^^ expected `Arc<RwLock<...>>`, found `HashMap<_, _>`
+41 |             loader: PluginLoader::new(plugin_dir.clone())?,
+   |                                                          ^ the trait `From<LoaderError>` is not implemented for `core::error::Error`
    |
-   = note: expected struct `Arc<tokio::sync::RwLock<HashMap<Uuid, Box<(dyn traits::Plugin + 'static)>>>>`
-              found struct `HashMap<_, _>`
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: the following other types implement trait `From<T>`:
+             <core::error::Error as From<ConfigError>>
+             <core::error::Error as From<ActionError>>
+             <core::error::Error as From<futures_io::Error>>
+   = note: required for `Result<PluginRegistry, core::error::Error>` to implement `FromResidual<Result<Infallible, LoaderError>>`
 
-error[E0560]: struct `PluginRegistry` has no field named `plugin_dir`
-  --> src\core\plugin\registry.rs:39:13
+error[E0277]: `PropertyGrid` doesn't implement `std::fmt::Debug`
+  --> src\eg\classes\plugin_config.rs:10:5
    |
-39 |             plugin_dir,
-   |             ^^^^^^^^^^ `PluginRegistry` does not have this field
+6  | #[derive(Debug)]
+   |          ----- in this derive macro expansion
+...
+10 |     property_grid: PropertyGrid,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `PropertyGrid` cannot be formatted using `{:?}`
    |
-   = note: available fields are: `loader`, `configs`
+   = help: the trait `std::fmt::Debug` is not implemented for `PropertyGrid`
+   = note: add `#[derive(Debug)]` to `PropertyGrid` or manually `impl std::fmt::Debug for PropertyGrid`
+   = note: this error originates in the derive macro `Debug` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0308]: mismatched types
-  --> src\eg\tree\macro_.rs:59:9
-   |
-58 |     pub fn get_trigger_event(&self) -> Option<&dyn Event> {
-   |                                        ------------------ expected `std::option::Option<&(dyn event::Event + 'static)>` because of return type
-59 |         self.trigger_event.as_deref()
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected trait `event::Event`, found trait `event::Event + Send + Sync`
-   |
-   = note: expected enum `std::option::Option<&(dyn event::Event + 'static)>`
-              found enum `std::option::Option<&dyn event::Event + Send + Sync>`
-
-Some errors have detailed explanations: E0277, E0308, E0432, E0560, E0599.
+Some errors have detailed explanations: E0277, E0432.
 For more information about an error, try `rustc --explain E0277`.
-warning: `eventghost` (bin "eventghost") generated 25 warnings
-error: could not compile `eventghost` (bin "eventghost") due to 14 previous errors; 25 warnings emitted
+warning: `eventghost` (bin "eventghost") generated 26 warnings
+error: could not compile `eventghost` (bin "eventghost") due to 6 previous errors; 26 warnings emitted

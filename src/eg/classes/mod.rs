@@ -4,7 +4,6 @@ pub mod log_ctrl;
 pub mod main_frame;
 pub mod menu;
 pub mod plugin_config;
-pub use plugin_config::ConfigDialog;
 pub mod property_grid;
 pub mod tree_ctrl;
 pub mod types;
@@ -26,7 +25,7 @@ pub use dialog::{Dialog, DialogResult, CommonDialogs, FileDialogOptions, Message
 pub use menu::{Menu, MenuItem, MenuItemKind};
 pub use drag_drop::{DragDropManager, DragData, DragSource, DropTarget};
 pub use property_grid::{PropertyGrid, Property, PropertySource};
-pub use plugin_config::PluginConfigDialog;
+pub use plugin_config::ConfigDialog;
 
 use crate::core::Error;
 use windows::Win32::Foundation::HWND;

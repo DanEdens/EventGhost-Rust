@@ -4,6 +4,7 @@ use super::UIComponent;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub enum PropertyValueType {
@@ -149,11 +150,13 @@ impl Property {
     }
 }
 
-pub trait PropertySource {
+pub trait PropertySource: Send + Sync + Debug {
+    fn get_property(&self, name: &str) -> Option<Property>;
+    fn set_property(&mut self, name: &str, value: Property) -> Result<(), Error>;
     fn get_properties(&self) -> Vec<Property>;
-    fn set_property(&mut self, name: &str, value: PropertyValue) -> Result<(), Error>;
 }
 
+#[derive(Debug)]
 pub struct PropertyGrid {
     hwnd: HWND,
     properties: HashMap<String, Property>,

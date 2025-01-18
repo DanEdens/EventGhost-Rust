@@ -51,7 +51,7 @@ impl Globals {
     }
 
     /// Get a global variable
-    pub fn get_var<T: 'static + Send + Sync>(&self, name: &str) -> Option<T> {
+    pub fn get_var<T: 'static + Send + Sync + Clone>(&self, name: &str) -> Option<T> {
         self.bunch.get::<T>(name).ok().and_then(|val| {
             if let Ok(guard) = val.read() {
                 guard.downcast_ref::<T>().cloned()

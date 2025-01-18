@@ -15,6 +15,7 @@ pub mod config;
 pub mod plugin;
 pub mod logging;
 pub mod named_pipe;
+pub mod constants;
 
 pub use error::Error;
 pub use event::{Event, EventType, EventPayload, EventHandler, EventManager};
