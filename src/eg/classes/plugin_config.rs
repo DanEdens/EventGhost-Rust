@@ -19,6 +19,8 @@ pub struct PluginConfigDialog {
 }
 
 impl PluginConfigDialog {
+    const DEFAULT_DESCRIPTION: &'static str = "";
+
     pub fn new(parent: HWND) -> Result<Self, Error> {
         todo!()
     }
@@ -53,10 +55,10 @@ impl PluginConfigDialog {
         }
     }
 
-    pub fn get_description(&self) -> &str {
+    pub fn get_description(&self) -> String {
         self.pages.get(self.current_page)
-            .map(|page| &page.description)
-            .unwrap_or(&String::new())
+            .map(|page| page.description.clone())
+            .unwrap_or_else(String::new)
     }
 
     pub fn validate_changes(&self) -> Result<(), String> {

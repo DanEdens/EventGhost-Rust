@@ -83,10 +83,12 @@ impl std::fmt::Debug for Property {
             .field("description", &self.description)
             .field("value", &self.value)
             .field("readonly", &self.readonly)
-            .field("validator", &self.validator.as_ref().map(|_| "<validator_fn>"))
+            // .field("validator", &self.validator.as_ref().map(|_| "<validator_fn>"))
+            .field("validator", &"<validator_fn>")
             .finish()
     }
 }
+
 
 impl Property {
     pub fn new(name: &str, category: &str, value: PropertyValue) -> Self {

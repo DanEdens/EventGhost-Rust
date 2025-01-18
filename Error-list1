@@ -1,143 +1,282 @@
-error[E0597]: `temp_loader.plugins` does not live long enough
-   --> src\core\plugin_loader.rs:171:35
-    |
-167 |             let temp_loader = Self::new(path.parent().unwrap().to_owned())?;
-    |                 ----------- binding `temp_loader` declared here
-...
-171 |             if let Some(loaded) = temp_loader.plugins.write().await.pop() {
-    |                                   ^^^^^^^^^^^^^^^^^^^--------------
-    |                                   |
-    |                                   borrowed value does not live long enough
-    |                                   a temporary with access to the borrow is created here ...
-...
-174 |         }
-    |         -
-    |         |
-    |         `temp_loader.plugins` dropped here while still borrowed
-    |         ... and the borrow might be used here, when that temporary is dropped and runs the `Drop` code for type `tokio::sync::RwLockWriteGuard`
-    |
-help: consider adding semicolon after the expression so its temporaries are dropped sooner, before the local variables declared by the block are dropped
-    |
-173 |             };
-    |              +
+error[E0432]: unresolved import `windows::Win32::System::Pipes::PIPE_ACCESS_DUPLEX`
+  --> src\core\named_pipe.rs:10:5
+   |
+10 |     PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, PIPE_READMODE_MESSAGE,
+   |     ^^^^^^^^^^^^^^^^^^ no `PIPE_ACCESS_DUPLEX` in `Win32::System::Pipes`
 
-error[E0599]: the method `clone` exists for struct `Box<dyn Plugin>`, but its trait bounds were not satisfied
-   --> src\core\plugin_loader.rs:192:40
+error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
+ --> src\eg\action\base.rs:3:5
+  |
+3 | use crate::eg::classes::plugin_config::ConfigDialog;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
+
+error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
+ --> src\eg\action\group.rs:4:5
+  |
+4 | use crate::eg::classes::plugin_config::ConfigDialog;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
+
+error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
+ --> src\eg\action\item.rs:4:5
+  |
+4 | use crate::eg::classes::plugin_config::ConfigDialog;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
+
+error[E0432]: unresolved import `crate::eg::classes::plugin_config::ConfigDialog`
+ --> src\eg\action\common.rs:5:5
+  |
+5 | use crate::eg::classes::plugin_config::ConfigDialog;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ConfigDialog` in `eg::classes::plugin_config`
+
+error[E0432]: unresolved import `super::Bunch`
+ --> src\eg\globals.rs:1:5
+  |
+1 | use super::Bunch;
+  |     ^^^^^^^^^^^^ no `Bunch` in `eg`
+  |
+help: a similar name exists in the module
+  |
+1 | use super::bunch;
+  |            ~~~~~
+help: consider importing this struct instead
+  |
+1 | use crate::eg::bunch::Bunch;
+  |     ~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0432]: unresolved import `crate::core::constants`
+ --> src\eg\globals.rs:2:18
+  |
+2 | use crate::core::constants::{DEFAULT_DEBUG_LEVEL, DEFAULT_ENCODING};
+  |                  ^^^^^^^^^ could not find `constants` in `core`
+
+error[E0432]: unresolved import `macro_::Macro`
+  --> src\eg\tree\mod.rs:11:9
+   |
+11 | pub use macro_::Macro;
+   |         ^^^^^^^^-----
+   |         |       |
+   |         |       help: a similar name exists in the module: `Macro_`
+   |         no `Macro` in `eg::tree::macro_`
+
+warning: unused import: `Path`
+ --> src\core\config.rs:1:17
+  |
+1 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `LevelFilter`
+ --> src\core\logging.rs:4:18
+  |
+4 | use log::{Level, LevelFilter, Record};
+  |                  ^^^^^^^^^^^
+
+warning: unused import: `std::io`
+ --> src\core\named_pipe.rs:1:5
+  |
+1 | use std::io;
+  |     ^^^^^^^
+
+warning: unused import: `BOOL`
+ --> src\core\named_pipe.rs:2:42
+  |
+2 | use windows::Win32::Foundation::{HANDLE, BOOL};
+  |                                          ^^^^
+
+warning: unused import: `Result as WinResult`
+  --> src\core\named_pipe.rs:13:28
+   |
+13 | use windows::core::{PCSTR, Result as WinResult};
+   |                            ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ActionInfo`
+ --> src\eg\action\common.rs:1:31
+  |
+1 | use super::base::{ActionBase, ActionInfo, ActionError};
+  |                               ^^^^^^^^^^
+
+warning: unused import: `crate::core::Error`
+ --> src\eg\action\common.rs:3:5
+  |
+3 | use crate::core::Error;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::eg::winapi`
+ --> src\eg\classes\main_frame.rs:3:5
+  |
+3 | use crate::eg::winapi;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: variant `ALIGN_RIGHT` should have an upper camel case name
+  --> src\eg\classes\types.rs:44:5
+   |
+44 |     ALIGN_RIGHT = 0x0008,
+   |     ^^^^^^^^^^^ help: convert the identifier to upper camel case: `AlignRight`
+   |
+   = note: `#[warn(non_camel_case_types)]` on by default
+
+warning: variant `ALIGN_BOTTOM` should have an upper camel case name
+  --> src\eg\classes\types.rs:45:5
+   |
+45 |     ALIGN_BOTTOM = 0x0020,
+   |     ^^^^^^^^^^^^ help: convert the identifier to upper camel case: `AlignBottom`
+
+warning: variant `RETURN_CMD` should have an upper camel case name
+  --> src\eg\classes\types.rs:46:5
+   |
+46 |     RETURN_CMD = 0x0100,
+   |     ^^^^^^^^^^ help: convert the identifier to upper camel case: `ReturnCmd`
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\eg\winapi\mod.rs:2:5
+  |
+2 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\eg\winapi\utils.rs:2:5
+  |
+2 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `op`
+   --> src\core\error.rs:113:9
     |
-192 |               .map(|p| Box::new(p.plugin.clone()))
-    |                                          ^^^^^ method cannot be called on `Box<dyn Plugin>` due to unsatisfied trait bounds
+113 |         op: F,
+    |         ^^ help: if this is intentional, prefix it with an underscore: `_op`
     |
-   ::: src\core\plugin\traits.rs:61:1
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `context`
+   --> src\core\error.rs:114:9
     |
-61  |   pub trait Plugin: Send + Sync {
-    |   -----------------------------
-    |   |
-    |   doesn't satisfy `dyn Plugin: Clone`
-    |   doesn't satisfy `dyn Plugin: Sized`
+114 |         context: ErrorContext,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `strategy`
+   --> src\core\error.rs:115:9
     |
-   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\alloc\src\boxed.rs:195:1
-    |
-195 | / pub struct Box<
-196 | |     T: ?Sized,
-197 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
-198 | | >(Unique<T>, A);
-    | |_- doesn't satisfy `Box<dyn Plugin>: Clone`
-    |
-    = note: the following trait bounds were not satisfied:
-            `dyn Plugin: Sized`
-            which is required by `Box<dyn Plugin>: Clone`
-            `dyn Plugin: Clone`
-            which is required by `Box<dyn Plugin>: Clone`
+115 |         strategy: RecoveryStrategy,
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_strategy`
+
+warning: unused variable: `path`
+  --> src\core\plugin\registry.rs:44:37
+   |
+44 | ...sync fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+   |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:50:39
+   |
+50 |     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                       ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:56:36
+   |
+56 | ...async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin...
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:68:38
+   |
+68 |     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                      ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:74:37
+   |
+74 |     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                     ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:80:46
+   |
+80 | ...pdate_plugin_config(&self, id: Uuid, config: Config) -> Result<(), Regis...
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `config`
+  --> src\core\plugin\registry.rs:80:56
+   |
+80 | ...in_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
+   |                               ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:86:43
+   |
+86 | ...n get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+error[E0599]: no method named `clear` found for struct `Arc<tokio::sync::RwLock<HashMap<Uuid, Box<(dyn traits::Plugin + 'static)>>>>` in the current scope
+  --> src\core\plugin\registry.rs:97:22
+   |
+97 |         self.plugins.clear();
+   |                      ^^^^^ method not found in `Arc<RwLock<HashMap<Uuid, Box<dyn Plugin>>>>`
 
 warning: unused variable: `config`
   --> src\core\logging.rs:64:39
    |
-64 |     pub async fn update_config(&self, config: LogConfig) -> Result<(), std::io::Error> {
-   |                                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+64 | ...nc fn update_config(&self, config: LogConfig) -> Result<(), std::io::Err...
+   |                               ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
 
-error[E0046]: not all trait items implemented, missing: `as_any`, `as_any_mut`, `clone_event`
-  --> src\eg\action\tests.rs:11:1
+error[E0277]: `?` couldn't convert the error to `core::error::Error`
+  --> src\eg\mod.rs:32:33
    |
-11 | impl Event for TestEvent {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^ missing `as_any`, `as_any_mut`, `clone_event` in implementation
+32 |         plugins.load_all().await?;
+   |                                 ^ the trait `From<RegistryError>` is not implemented for `core::error::Error`
    |
-  ::: src\core\event.rs:31:5
-   |
-31 |     fn as_any(&self) -> &dyn Any;
-   |     ----------------------------- `as_any` from trait
-32 |     fn as_any_mut(&mut self) -> &mut dyn Any;
-   |     ----------------------------------------- `as_any_mut` from trait
-33 |     fn clone_event(&self) -> Box<dyn Event>;
-   |     ---------------------------------------- `clone_event` from trait
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: the following other types implement trait `From<T>`:
+             <core::error::Error as From<ConfigError>>
+             <core::error::Error as From<PipeError>>
+             <core::error::Error as From<ActionError>>
+             <core::error::Error as From<futures_io::Error>>
+   = note: required for `Result<(), core::error::Error>` to implement `FromResidual<Result<Infallible, RegistryError>>`
 
-error[E0277]: the trait bound `dyn std::any::Any + Send + Sync: Clone` is not satisfied
-  --> src\core\event.rs:22:12
+error[E0277]: `?` couldn't convert the error to `core::error::Error`
+  --> src\eg\mod.rs:39:35
    |
-15 | #[derive(Debug, Clone)]
-   |                 ----- in this derive macro expansion
-...
-22 |     Custom(Box<dyn std::any::Any + Send + Sync>),
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `dyn std::any::Any + Send + Sync`
+39 |         plugins.unload_all().await?;
+   |                                   ^ the trait `From<RegistryError>` is not implemented for `core::error::Error`
    |
-   = note: required for `Box<dyn std::any::Any + Send + Sync>` to implement `Clone`
-   = note: this error originates in the derive macro `Clone` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0599]: the method `clone` exists for enum `Option<Box<dyn Event>>`, but its trait bounds were not satisfied
-   --> src\eg\tree\macro_.rs:134:47
-    |
-134 |               trigger_event: self.trigger_event.clone(),
-    |                                                 ^^^^^ method cannot be called on `Option<Box<dyn Event>>` due to unsatisfied trait bounds
-    |
-   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\core\src\option.rs:563:1
-    |
-563 |   pub enum Option<T> {
-    |   ------------------ doesn't satisfy `_: Clone`
-    |
-   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\alloc\src\boxed.rs:195:1
-    |
-195 | / pub struct Box<
-196 | |     T: ?Sized,
-197 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
-198 | | >(Unique<T>, A);
-    | |_- doesn't satisfy `Box<dyn core::event::Event>: Clone`
-    |
-    = note: the following trait bounds were not satisfied:
-            `Box<dyn core::event::Event>: Clone`
-            which is required by `std::option::Option<Box<dyn core::event::Event>>: Clone`
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: the following other types implement trait `From<T>`:
+             <core::error::Error as From<ConfigError>>
+             <core::error::Error as From<PipeError>>
+             <core::error::Error as From<ActionError>>
+             <core::error::Error as From<futures_io::Error>>
+   = note: required for `Result<(), core::error::Error>` to implement `FromResidual<Result<Infallible, RegistryError>>`
 
 error[E0308]: mismatched types
-   --> src\eg\classes\plugin_config.rs:59:24
-    |
-59  |             .unwrap_or("")
-    |              --------- ^^ expected `&String`, found `&str`
-    |              |
-    |              arguments to this method are incorrect
-    |
-    = note: expected reference `&std::string::String`
-               found reference `&'static str`
-help: the return type of this call is `&'static str` due to the type of the argument passed
-   --> src\eg\classes\plugin_config.rs:57:9
-    |
-57  | /         self.pages.get(self.current_page)
-58  | |             .map(|page| &page.description)
-59  | |             .unwrap_or("")
-    | |________________________--^
-    |                          |
-    |                          this argument influences the return type of `unwrap_or`
-note: method defined here
-   --> C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\core\src\option.rs:955:12
-    |
-955 |     pub fn unwrap_or(self, default: T) -> T {
-    |            ^^^^^^^^^
+  --> src\core\plugin\registry.rs:38:22
+   |
+38 |             plugins: HashMap::new(),
+   |                      ^^^^^^^^^^^^^^ expected `Arc<RwLock<...>>`, found `HashMap<_, _>`
+   |
+   = note: expected struct `Arc<tokio::sync::RwLock<HashMap<Uuid, Box<(dyn traits::Plugin + 'static)>>>>`
+              found struct `HashMap<_, _>`
 
-error[E0277]: `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)` doesn't implement `std::fmt::Debug`
-  --> src\eg\classes\property_grid.rs:26:5
+error[E0560]: struct `PluginRegistry` has no field named `plugin_dir`
+  --> src\core\plugin\registry.rs:39:13
    |
-19 | #[derive(Debug, Clone)]
-   |          ----- in this derive macro expansion
-...
-26 |     validator: Option<Arc<dyn Fn(&PropertyValue) -> Result<(), String> + Send + Sync>>,
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)` cannot be formatted using `{:?}` because it doesn't implement `std::fmt::Debug`
+39 |             plugin_dir,
+   |             ^^^^^^^^^^ `PluginRegistry` does not have this field
    |
-   = help: the trait `std::fmt::Debug` is not implemented for `(dyn for<'a> Fn(&'a property_grid::PropertyValue) -> Result<(), std::string::String> + Send + Sync + 'static)`
-   = note: this error originates in the derive macro `Debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: available fields are: `loader`, `configs`
+
+error[E0308]: mismatched types
+  --> src\eg\tree\macro_.rs:59:9
+   |
+58 |     pub fn get_trigger_event(&self) -> Option<&dyn Event> {
+   |                                        ------------------ expected `std::option::Option<&(dyn event::Event + 'static)>` because of return type
+59 |         self.trigger_event.as_deref()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected trait `event::Event`, found trait `event::Event + Send + Sync`
+   |
+   = note: expected enum `std::option::Option<&(dyn event::Event + 'static)>`
+              found enum `std::option::Option<&dyn event::Event + Send + Sync>`
+
+Some errors have detailed explanations: E0277, E0308, E0432, E0560, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `eventghost` (bin "eventghost") generated 25 warnings
+error: could not compile `eventghost` (bin "eventghost") due to 14 previous errors; 25 warnings emitted

@@ -34,8 +34,10 @@ pub struct PluginRegistry {
 impl PluginRegistry {
     /// Create a new plugin registry
     pub fn new(plugin_dir: PathBuf) -> Result<Self, Error> {
-        // TODO: Implement registry creation
-        unimplemented!()
+        Ok(Self {
+            plugins: HashMap::new(),
+            plugin_dir,
+        })
     }
 
     /// Load a plugin from a file
@@ -84,6 +86,16 @@ impl PluginRegistry {
     pub async fn get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
         // TODO: Implement config retrieval
         unimplemented!()
+    }
+
+    pub async fn load_all(&mut self) -> Result<(), RegistryError> {
+        // TODO: Implement plugin loading from directory
+        Ok(())
+    }
+
+    pub async fn unload_all(&mut self) -> Result<(), RegistryError> {
+        self.plugins.clear();
+        Ok(())
     }
 }
 
