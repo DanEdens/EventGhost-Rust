@@ -1,19 +1,26 @@
 # TODO List
 
-## Current Focus: Basic GUI Implementation
+## Current Focus: Fix Build Errors
 
-### Error Handling
-- [x] Implement `From<core::error::Error>` for `win32::Error`
-- [x] Add `Win32` variant to `core::Error`
-- [x] Consolidate error types between core and win32 modules
+### Import Fixes
+- [ ] Fix CREATESTRUCTA import (move from Foundation to WindowsAndMessaging)
+- [ ] Fix win32 module import path in winapi/mod.rs
+- [ ] Add missing Windows API type imports (WNDCLASSA, BOOL)
+- [ ] Add missing Windows API function imports (RegisterClassA, UpdateWindow, etc.)
 
-### Window API Fixes
-- [x] Fix imports for Windows API types (WNDCLASSA, RegisterClassA)
-- [x] Implement proper string handling for window text (PCSTR conversion)
-- [x] Fix result handling for Windows API calls
-- [x] Remove duplicate window management code between eg/winapi and win32 modules
+### Trait Implementation Fixes
+- [ ] Implement UIComponent trait properly for:
+  - [ ] Toolbar
+  - [ ] StatusBar
+  - [ ] TreeCtrl
+  - [ ] LogCtrl
 
-### Control Implementation
+### Error Handling Fixes
+- [ ] Fix LRESULT error handling (map_err issue)
+- [ ] Fix i32 error handling in Windows API calls
+- [ ] Fix type casting issue in window enumeration callback
+
+### Previous Tasks (In Progress)
 - [x] Update control constructors to handle HINSTANCE properly:
   - [x] TreeCtrl
   - [x] LogCtrl
@@ -21,12 +28,6 @@
   - [x] Toolbar
 - [x] Implement control layout in MainFrame
 - [x] Add window resizing handling
-
-### Code Cleanup
-- [ ] Remove unused imports
-- [ ] Fix unused variable warnings in plugin registry
-- [ ] Fix unused variable warnings in logging code
-- [ ] Clean up and document window creation code
 
 ### Testing
 - [ ] Add basic window creation tests

@@ -1,0 +1,431 @@
+error[E0432]: unresolved import `windows::Win32::Foundation::CREATESTRUCTA`
+ --> src\eg\classes\main_frame.rs:1:82
+  |
+1 | ...E, RECT, CREATESTRUCTA};
+  |             ^^^^^^^^^^^^^ no `CREATESTRUCTA` in `Win32::Foundation`
+  |
+  = help: consider importing one of these items instead:
+          winapi::um::winuser::CREATESTRUCTA
+          windows::Win32::UI::WindowsAndMessaging::CREATESTRUCTA
+
+error[E0432]: unresolved import `win32`
+ --> src\eg\winapi\mod.rs:7:9
+  |
+7 | pub use win32::{
+  |         ^^^^^ help: a similar path exists: `crate::win32`
+  |
+  = note: `use` statements changed in Rust 2018; read more at <https://doc.rust-lang.org/edition-guide/rust-2018/module-system/path-clarity.html>
+
+error[E0422]: cannot find struct, variant or union type `WNDCLASSA` in this scope
+  --> src\win32\window.rs:11:14
+   |
+11 |     let wc = WNDCLASSA {
+   |              ^^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+1  + use winapi::um::winuser::WNDCLASSA;
+   |
+
+error[E0425]: cannot find function, tuple struct or tuple variant `RegisterClassA` in this scope
+    --> src\win32\window.rs:20:9
+     |
+20   |   ...   RegisterClassA(&wc).map_err(|e| Error::Win32(format!("Failed to r...
+     |         ^^^^^^^^^^^^^^
+     |
+    ::: C:\Users\Dan\.cargo\registry\src\index.crates.io-6f17d22bba15001f\windows-0.52.0\src\Windows\Win32\UI\WindowsAndMessaging\mod.rs:3845:1
+     |
+3845 | / pub unsafe fn UnregisterClassA<P0, P1>(lpclassname: P0, hinstance: P1) -> ...
+3846 | | where
+3847 | |     P0: ::windows_core::IntoParam<::windows_core::PCSTR>,
+3848 | |     P1: ::windows_core::IntoParam<super::super::Foundation::HINSTANCE>,
+     | |_______________________________________________________________________- similarly named function `UnregisterClassA` defined here
+     |
+help: a function with a similar name exists
+     |
+20   |         UnregisterClassA(&wc).map_err(|e| Error::Win32(format!("Failed to register window class: {}", e)))
+     |         ~~~~~~~~~~~~~~~~
+help: consider importing this function
+     |
+1    + use winapi::um::winuser::RegisterClassA;
+     |
+
+error[E0425]: cannot find function, tuple struct or tuple variant `UpdateWindow` in this scope
+  --> src\win32\window.rs:62:9
+   |
+62 |   ...   UpdateWindow(hwnd).map_err(|e| Error::Win32(format!("Failed to upda...
+   |         ^^^^^^^^^^^^
+   |
+  ::: C:\Users\Dan\.cargo\registry\src\index.crates.io-6f17d22bba15001f\windows-0.52.0\src\Windows\Win32\UI\WindowsAndMessaging\mod.rs:31:1
+   |
+31 | / pub unsafe fn AnimateWindow<P0>(hwnd: P0, dwtime: u32, dwflags: ANIMATE_W...
+32 | | where
+33 | |     P0: ::windows_core::IntoParam<super::super::Foundation::HWND>,
+   | |__________________________________________________________________- similarly named function `AnimateWindow` defined here
+   |
+help: a function with a similar name exists
+   |
+62 |         AnimateWindow(hwnd).map_err(|e| Error::Win32(format!("Failed to update window: {}", e)))
+   |         ~~~~~~~~~~~~~
+help: consider importing this function
+   |
+1  + use winapi::um::winuser::UpdateWindow;
+   |
+
+error[E0425]: cannot find function, tuple struct or tuple variant `ScreenToClient` in this scope
+  --> src\win32\utils.rs:61:9
+   |
+61 |         ScreenToClient(hwnd, &mut pt)
+   |         ^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use winapi::um::winuser::ScreenToClient;
+   |
+
+error[E0425]: cannot find function, tuple struct or tuple variant `ClientToScreen` in this scope
+  --> src\win32\utils.rs:70:9
+   |
+70 |         ClientToScreen(hwnd, &mut pt)
+   |         ^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use winapi::um::winuser::ClientToScreen;
+   |
+
+error[E0412]: cannot find type `BOOL` in this scope
+   --> src\win32\utils.rs:127:72
+    |
+127 |     unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    |                                                                        ^^^^
+    |
+help: a builtin type with a similar name exists
+    |
+127 |     unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> bool {
+    |                                                                        ~~~~
+help: consider importing one of these items
+    |
+1   + use winapi::shared::minwindef::BOOL;
+    |
+1   + use windows::Win32::Foundation::BOOL;
+    |
+1   + use windows::core::imp::BOOL;
+    |
+
+error[E0425]: cannot find function, tuple struct or tuple variant `BOOL` in this scope
+   --> src\win32\utils.rs:129:9
+    |
+129 |         BOOL(if callback(hwnd) { 1 } else { 0 })
+    |         ^^^^ not found in this scope
+    |
+help: consider importing this tuple struct
+    |
+1   + use windows::Win32::Foundation::BOOL;
+    |
+
+warning: unused import: `std::error::Error as StdError`
+ --> src\core\error.rs:1:5
+  |
+1 | use std::error::Error as StdError;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::fmt`
+ --> src\core\error.rs:2:5
+  |
+2 | use std::fmt;
+  |     ^^^^^^^^
+
+warning: unused import: `Path`
+ --> src\core\config.rs:1:17
+  |
+1 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+
+warning: unused import: `crate::core::Error`
+ --> src\core\config.rs:3:5
+  |
+3 | use crate::core::Error;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `thiserror::Error`
+ --> src\core\config.rs:4:5
+  |
+4 | use thiserror::Error;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `LevelFilter`
+ --> src\core\logging.rs:4:18
+  |
+4 | use log::{Level, LevelFilter, Record};
+  |                  ^^^^^^^^^^^
+
+warning: unused import: `std::io`
+ --> src\core\named_pipe.rs:1:5
+  |
+1 | use std::io;
+  |     ^^^^^^^
+
+warning: unused import: `BOOL`
+ --> src\core\named_pipe.rs:2:42
+  |
+2 | use windows::Win32::Foundation::{HANDLE, BOOL};
+  |                                          ^^^^
+
+warning: unused import: `Result as WinResult`
+  --> src\core\named_pipe.rs:13:28
+   |
+13 | use windows::core::{PCSTR, Result as WinResult, Error as WinError};
+   |                            ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ActionInfo`
+ --> src\eg\action\common.rs:1:31
+  |
+1 | use super::base::{ActionBase, ActionInfo, ActionError};
+  |                               ^^^^^^^^^^
+
+warning: unused imports: `HINSTANCE`, `HWND`, `LPARAM`, `LRESULT`, `WPARAM`
+ --> src\eg\winapi\mod.rs:1:34
+  |
+1 | use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
+  |                                  ^^^^  ^^^^^^  ^^^^^^  ^^^^^^^  ^^^^^^^^^
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\eg\winapi\mod.rs:2:5
+  |
+2 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `windows::core::PCSTR`
+ --> src\eg\winapi\mod.rs:3:5
+  |
+3 | use windows::core::PCSTR;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::core::Error`
+ --> src\eg\winapi\mod.rs:4:5
+  |
+4 | use crate::core::Error;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `HINSTANCE`, `HWND`, `LPARAM`, `LRESULT`, `WPARAM`
+ --> src\win32\mod.rs:1:34
+  |
+1 | use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
+  |                                  ^^^^  ^^^^^^  ^^^^^^  ^^^^^^^  ^^^^^^^^^
+
+warning: unused import: `windows::Win32::UI::WindowsAndMessaging::*`
+ --> src\win32\mod.rs:2:5
+  |
+2 | use windows::Win32::UI::WindowsAndMessaging::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `PCSTR`
+ --> src\win32\mod.rs:3:21
+  |
+3 | use windows::core::{PCSTR, Error as WindowsError};
+  |                     ^^^^^
+
+warning: unused imports: `LPARAM`, `LRESULT`, `WPARAM`
+ --> src\win32\window.rs:1:40
+  |
+1 | use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
+  |                                        ^^^^^^  ^^^^^^  ^^^^^^^
+
+warning: unused import: `Error as WindowsError`
+ --> src\win32\window.rs:3:28
+  |
+3 | use windows::core::{PCSTR, Error as WindowsError};
+  |                            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Error as WindowsError`
+ --> src\win32\utils.rs:3:28
+  |
+3 | use windows::core::{PCSTR, Error as WindowsError};
+  |                            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `path`
+  --> src\core\plugin\registry.rs:48:37
+   |
+48 | ...sync fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+   |                               ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:54:39
+   |
+54 |     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                       ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:60:36
+   |
+60 | ...async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin...
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:72:38
+   |
+72 |     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                      ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:78:37
+   |
+78 |     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+   |                                     ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:84:46
+   |
+84 | ...pdate_plugin_config(&self, id: Uuid, config: Config) -> Result<(), Regis...
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `config`
+  --> src\core\plugin\registry.rs:84:56
+   |
+84 | ...in_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
+   |                               ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+
+warning: unused variable: `id`
+  --> src\core\plugin\registry.rs:90:43
+   |
+90 | ...n get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
+   |                               ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `config`
+  --> src\core\logging.rs:64:39
+   |
+64 | ...nc fn update_config(&self, config: LogConfig) -> Result<(), std::io::Err...
+   |                               ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+
+error[E0599]: no method named `get_hwnd` found for struct `Toolbar` in the current scope
+  --> src\eg\classes\main_frame.rs:94:30
+   |
+94 |                 self.toolbar.get_hwnd(),
+   |                              ^^^^^^^^ method not found in `Toolbar`
+   |
+  ::: src\eg\classes\toolbar.rs:32:1
+   |
+32 | pub struct Toolbar {
+   | ------------------ method `get_hwnd` not found for this struct
+   |
+  ::: src\eg\classes\mod.rs:36:8
+   |
+36 |     fn get_hwnd(&self) -> HWND;
+   |        -------- the method is available for `Toolbar` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: the following trait is implemented but not in scope; perhaps add a `use` for it:
+   |
+1  + use crate::eg::classes::UIComponent;
+   |
+
+error[E0599]: no method named `get_hwnd` found for struct `StatusBar` in the current scope
+   --> src\eg\classes\main_frame.rs:106:33
+    |
+106 |                 self.status_bar.get_hwnd(),
+    |                                 ^^^^^^^^ method not found in `StatusBar`
+    |
+   ::: src\eg\classes\status_bar.rs:19:1
+    |
+19  | pub struct StatusBar {
+    | -------------------- method `get_hwnd` not found for this struct
+    |
+   ::: src\eg\classes\mod.rs:36:8
+    |
+36  |     fn get_hwnd(&self) -> HWND;
+    |        -------- the method is available for `StatusBar` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following trait is implemented but not in scope; perhaps add a `use` for it:
+    |
+1   + use crate::eg::classes::UIComponent;
+    |
+
+error[E0599]: no method named `get_hwnd` found for struct `TreeCtrl` in the current scope
+   --> src\eg\classes\main_frame.rs:119:32
+    |
+119 |                 self.tree_ctrl.get_hwnd(),
+    |                                ^^^^^^^^ method not found in `TreeCtrl`
+    |
+   ::: src\eg\classes\tree_ctrl.rs:13:1
+    |
+13  | pub struct TreeCtrl {
+    | ------------------- method `get_hwnd` not found for this struct
+    |
+   ::: src\eg\classes\mod.rs:36:8
+    |
+36  |     fn get_hwnd(&self) -> HWND;
+    |        -------- the method is available for `TreeCtrl` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following trait is implemented but not in scope; perhaps add a `use` for it:
+    |
+1   + use crate::eg::classes::UIComponent;
+    |
+
+error[E0599]: no method named `get_hwnd` found for struct `LogCtrl` in the current scope
+   --> src\eg\classes\main_frame.rs:131:31
+    |
+131 |                 self.log_ctrl.get_hwnd(),
+    |                               ^^^^^^^^ method not found in `LogCtrl`
+    |
+   ::: src\eg\classes\log_ctrl.rs:22:1
+    |
+22  | pub struct LogCtrl {
+    | ------------------ method `get_hwnd` not found for this struct
+    |
+   ::: src\eg\classes\mod.rs:36:8
+    |
+36  |     fn get_hwnd(&self) -> HWND;
+    |        -------- the method is available for `LogCtrl` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: the following trait is implemented but not in scope; perhaps add a `use` for it:
+    |
+1   + use crate::eg::classes::UIComponent;
+    |
+
+error[E0599]: no method named `map_err` found for struct `LRESULT` in the current scope
+ --> src\win32\utils.rs:8:49
+  |
+8 | ..., wparam, lparam).map_err(|e| Error::Win32(format!("Failed to send messag...
+  |                      ^^^^^^^ method not found in `LRESULT`
+
+error[E0599]: no method named `map_err` found for type `i32` in the current scope
+  --> src\win32\utils.rs:21:41
+   |
+21 | ...   GetWindowTextA(hwnd, &mut text).map_err(|e| Error::Win32(format!("Fai...
+   |                                       ^^^^^^^ method not found in `i32`
+
+error[E0599]: no method named `map_err` found for type `i32` in the current scope
+  --> src\win32\utils.rs:95:14
+   |
+94 | / ...   GetClassNameA(hwnd, &mut name)
+95 | | ...       .map_err(|e| Error::Win32(format!("Failed to get class name: {}...
+   | |           -^^^^^^^ method not found in `i32`
+   | |___________|
+   |
+
+error[E0599]: no method named `map_err` found for struct `BOOL` in the current scope
+   --> src\win32\utils.rs:137:14
+    |
+136 | / ...   EnumChildWindows(parent, Some(enum_proc), lparam)
+137 | | ...       .map_err(|e| Error::Win32(format!("Failed to enumerate child w...
+    | |           -^^^^^^^ method not found in `BOOL`
+    | |___________|
+    |
+
+error[E0606]: casting `&mut Box<Box<dyn FnMut(HWND) -> bool>>` as `*mut Box<dyn FnMut(HWND) -> bool>` is invalid
+   --> src\win32\utils.rs:134:29
+    |
+134 | ...PARAM((&mut boxed_callback as *mut Box<dyn FnMut(HWND) -> bool>) as isi...
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0412, E0422, E0425, E0432, E0599, E0606.
+For more information about an error, try `rustc --explain E0412`.
+error: could not compile `eventghost` (lib) due to 18 previous errors; 29 warnings emitted
