@@ -12,7 +12,8 @@ pub mod toolbar;
 pub mod dialog;
 
 // Re-export common types
-pub use types::{DragEffects, PropertyValue, PopupFlags};
+pub use types::{PropertyValue, PopupFlags};
+pub use drag_drop::DragEffects;
 
 // Re-export UI components
 pub use main_frame::MainFrame;
