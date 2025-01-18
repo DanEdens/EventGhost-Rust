@@ -1,21 +1,25 @@
-use eg::EventGhost;
-
 mod core;
 mod eg;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut eg = EventGhost::new();
-    eg.initialize()?;
-    eg.start()?;
+use crate::core::Error;
+use crate::eg::EventGhost;
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let mut eg = EventGhost::new().await?;
+    
+    // Initialize and start
+    eg.start().await?;
     
     // Main event loop
     loop {
-        if eg.globals.read().stop_execution_flag {
+        if eg.should_stop().await {
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
     
-    eg.stop()?;
+    // Cleanup
+    eg.stop().await?;
     Ok(())
 } 

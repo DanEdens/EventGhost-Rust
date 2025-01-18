@@ -1,4 +1,4 @@
-use super::Bunch;
+use crate::eg::bunch::Bunch;
 use crate::core::constants::{DEFAULT_DEBUG_LEVEL, DEFAULT_ENCODING};
 use crate::core::Error;
 
@@ -51,8 +51,14 @@ impl Globals {
     }
 
     /// Get a global variable
-    pub fn get_var<T: 'static>(&self, name: &str) -> Option<&T> {
-        self.bunch.get(name)
+    pub fn get_var<T: 'static + Send + Sync + Clone>(&self, name: &str) -> Option<T> {
+        self.bunch.get::<T>(name).ok().and_then(|val| {
+            if let Ok(guard) = val.read() {
+                guard.downcast_ref::<T>().cloned()
+            } else {
+                None
+            }
+        })
     }
 
     /// Remove a global variable

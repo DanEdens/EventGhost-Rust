@@ -4,19 +4,69 @@ use super::UIComponent;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::fmt::Debug;
+
+#[derive(Debug, Clone)]
+pub enum PropertyValueType {
+    String,
+    Int,
+    Float,
+    Bool,
+    Color,
+    Enum,
+    Custom
+}
 
 #[derive(Debug, Clone)]
 pub enum PropertyValue {
-    Bool(bool),
+    String(String),
     Int(i32),
     Float(f64),
-    String(String),
+    Bool(bool),
     Color(u32),
     Enum(String, Vec<String>),
     Custom(Arc<dyn Any + Send + Sync>),
 }
 
-#[derive(Debug, Clone)]
+impl PropertyValue {
+    pub fn get_type(&self) -> PropertyValueType {
+        match self {
+            PropertyValue::String(_) => PropertyValueType::String,
+            PropertyValue::Int(_) => PropertyValueType::Int,
+            PropertyValue::Float(_) => PropertyValueType::Float,
+            PropertyValue::Bool(_) => PropertyValueType::Bool,
+            PropertyValue::Color(_) => PropertyValueType::Color,
+            PropertyValue::Enum(_, _) => PropertyValueType::Enum,
+            PropertyValue::Custom(_) => PropertyValueType::Custom,
+        }
+    }
+
+    pub fn as_string(&self) -> Option<&String> {
+        if let PropertyValue::String(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_int(&self) -> Option<i32> {
+        if let PropertyValue::Int(i) = self {
+            Some(*i)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        if let PropertyValue::Bool(b) = self {
+            Some(*b)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Property {
     name: String,
     category: String,
@@ -25,6 +75,21 @@ pub struct Property {
     readonly: bool,
     validator: Option<Arc<dyn Fn(&PropertyValue) -> Result<(), String> + Send + Sync>>,
 }
+
+impl std::fmt::Debug for Property {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Property")
+            .field("name", &self.name)
+            .field("category", &self.category)
+            .field("description", &self.description)
+            .field("value", &self.value)
+            .field("readonly", &self.readonly)
+            // .field("validator", &self.validator.as_ref().map(|_| "<validator_fn>"))
+            .field("validator", &"<validator_fn>")
+            .finish()
+    }
+}
+
 
 impl Property {
     pub fn new(name: &str, category: &str, value: PropertyValue) -> Self {
@@ -85,11 +150,13 @@ impl Property {
     }
 }
 
-pub trait PropertySource {
+pub trait PropertySource: Send + Sync + Debug {
+    fn get_property(&self, name: &str) -> Option<Property>;
+    fn set_property(&mut self, name: &str, value: Property) -> Result<(), Error>;
     fn get_properties(&self) -> Vec<Property>;
-    fn set_property(&mut self, name: &str, value: PropertyValue) -> Result<(), Error>;
 }
 
+#[derive(Debug)]
 pub struct PropertyGrid {
     hwnd: HWND,
     properties: HashMap<String, Property>,

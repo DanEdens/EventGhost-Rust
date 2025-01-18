@@ -89,13 +89,13 @@ impl DragDropManager {
         Ok(())
     }
 
-    pub fn start_drag(&mut self, source: Box<dyn DragSource>, data: DragData, allowed_effects: DragEffects) -> Result<DragEffects, Error> {
+    pub fn start_drag(&mut self, mut source: Box<dyn DragSource>, data: DragData, allowed_effects: DragEffects) -> Result<DragEffects, Error> {
         let mut current_data = self.current_data.lock().map_err(|_| {
             Error::Config("Failed to lock data mutex".into())
         })?;
 
         if current_data.is_some() {
-            return Err(Error::Config(DragDropError::AlreadyDragging.to_string()));
+            return Err(Error::Config(DragDropError::AlreadyDragging.to_string().into()));
         }
 
         *current_data = Some(data);

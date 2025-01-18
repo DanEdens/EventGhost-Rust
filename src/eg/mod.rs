@@ -6,33 +6,41 @@ pub mod bunch;
 pub mod globals;
 
 use crate::core::{EventManager, PluginRegistry};
-use crate::core::Error;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use std::path::PathBuf;
 
-pub struct Globals {
-    events: Arc<RwLock<EventManager>>,
+pub struct EventGhost {
+    event_manager: Arc<RwLock<EventManager>>,
     plugins: Arc<RwLock<PluginRegistry>>,
-    document: Arc<RwLock<tree::Document>>,
+    stop_flag: Arc<RwLock<bool>>,
 }
 
-impl Globals {
-    pub fn new() -> Self {
-        Self {
-            events: Arc::new(RwLock::new(EventManager::new())),
-            plugins: Arc::new(RwLock::new(PluginRegistry::new())),
-            document: Arc::new(RwLock::new(tree::Document::new())),
-        }
+impl EventGhost {
+    pub async fn new() -> Result<Self, crate::core::Error> {
+        let plugin_dir = PathBuf::from("plugins");  // Default plugin directory
+        Ok(Self {
+            event_manager: Arc::new(RwLock::new(EventManager::new())),
+            plugins: Arc::new(RwLock::new(PluginRegistry::new(plugin_dir)?)),
+            stop_flag: Arc::new(RwLock::new(false)),
+        })
     }
 
-    pub fn events(&self) -> Arc<RwLock<EventManager>> {
-        self.events.clone()
+    pub async fn start(&mut self) -> Result<(), crate::core::Error> {
+        // Initialize plugins
+        let mut plugins = self.plugins.write().await;
+        plugins.load_all().await?;
+        Ok(())
     }
 
-    pub fn plugins(&self) -> Arc<RwLock<PluginRegistry>> {
-        self.plugins.clone()
+    pub async fn stop(&mut self) -> Result<(), crate::core::Error> {
+        // Stop and unload plugins
+        let mut plugins = self.plugins.write().await;
+        plugins.unload_all().await?;
+        Ok(())
     }
 
-    pub fn document(&self) -> Arc<RwLock<tree::Document>> {
-        self.document.clone()
+    pub async fn should_stop(&self) -> bool {
+        *self.stop_flag.read().await
     }
 } 

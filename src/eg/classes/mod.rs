@@ -25,7 +25,7 @@ pub use dialog::{Dialog, DialogResult, CommonDialogs, FileDialogOptions, Message
 pub use menu::{Menu, MenuItem, MenuItemKind};
 pub use drag_drop::{DragDropManager, DragData, DragSource, DropTarget};
 pub use property_grid::{PropertyGrid, Property, PropertySource};
-pub use plugin_config::PluginConfigDialog;
+pub use plugin_config::ConfigDialog;
 
 use crate::core::Error;
 use windows::Win32::Foundation::HWND;

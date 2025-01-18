@@ -8,14 +8,13 @@
 //! - Plugin state management
 
 mod traits;
-mod registry;
-mod loader;
+pub mod registry;
+pub mod loader;
 
-pub use traits::{
-    Plugin, PluginInfo, PluginState, PluginCapability,
-    EventGenerator, Configurable, Stateful,
-};
-pub use registry::{PluginRegistry, RegistryError};
+pub use traits::*;
+pub use registry::PluginRegistry;
+pub use loader::PluginLoader;
 
-// Re-export from plugin_loader
-pub use crate::core::plugin_loader::PluginLoader; 
+// Re-export common types
+pub use registry::RegistryError;
+pub use loader::LoaderError; 

@@ -7,7 +7,7 @@ use crate::core::event::Event;
 pub struct Macro_ {
     info: TreeItemInfo,
     actions: Vec<Arc<RwLock<dyn TreeItem>>>,
-    trigger_event: Option<Box<dyn Event>>,
+    trigger_event: Option<Box<dyn Event + Send + Sync>>,
 }
 
 impl Macro_ {
@@ -51,11 +51,11 @@ impl Macro_ {
         &mut self.actions
     }
 
-    pub fn set_trigger_event(&mut self, event: Option<Box<dyn Event>>) {
+    pub fn set_trigger_event(&mut self, event: Option<Box<dyn Event + Send + Sync>>) {
         self.trigger_event = event;
     }
 
-    pub fn get_trigger_event(&self) -> Option<&dyn Event> {
+    pub fn get_trigger_event(&self) -> Option<&(dyn Event + Send + Sync)> {
         self.trigger_event.as_deref()
     }
 }
@@ -131,7 +131,7 @@ impl TreeItem for Macro_ {
                     panic!("Failed to read action")
                 }
             }).collect(),
-            trigger_event: self.trigger_event.clone(),
+            trigger_event: self.trigger_event.as_ref().map(|e| e.clone_event()),
         }))
     }
 

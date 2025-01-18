@@ -16,7 +16,7 @@ impl GUID {
     pub fn from_string(s: &str) -> Result<Self, Error> {
         match Uuid::from_str(s) {
             Ok(uuid) => Ok(Self(uuid)),
-            Err(_) => Err(Error::Config(format!("Invalid GUID format: {}", s))),
+            Err(_) => Err(Error::Config(format!("Invalid GUID format: {}", s).into())),
         }
     }
 

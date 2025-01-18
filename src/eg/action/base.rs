@@ -1,36 +1,18 @@
 use crate::core::Error;
+use crate::eg::classes::ConfigDialog;
 use crate::core::event::Event;
-use crate::eg::classes::plugin_config::ConfigDialog;
 use uuid::Uuid;
-use std::fmt;
+use thiserror::Error;
 
 /// Error type specific to action operations
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ActionError {
-    /// Action execution failed
+    #[error("Action execution failed: {0}")]
     ExecutionFailed(String),
-    /// Action configuration failed
+    #[error("Action configuration failed: {0}")]
     ConfigurationFailed(String),
-    /// Action validation failed
+    #[error("Action validation failed: {0}")]
     ValidationFailed(String),
-}
-
-impl fmt::Display for ActionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ActionError::ExecutionFailed(msg) => write!(f, "Action execution failed: {}", msg),
-            ActionError::ConfigurationFailed(msg) => write!(f, "Action configuration failed: {}", msg),
-            ActionError::ValidationFailed(msg) => write!(f, "Action validation failed: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for ActionError {}
-
-impl From<ActionError> for Error {
-    fn from(err: ActionError) -> Self {
-        Error::Action(err.to_string())
-    }
 }
 
 /// Base trait for all actions in EventGhost

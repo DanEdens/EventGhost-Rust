@@ -12,7 +12,7 @@ pub enum EventType {
     Internal,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum EventPayload {
     None,
     Text(String),
@@ -20,6 +20,19 @@ pub enum EventPayload {
     Float(f64),
     Boolean(bool),
     Custom(Box<dyn std::any::Any + Send + Sync>),
+}
+
+impl Clone for EventPayload {
+    fn clone(&self) -> Self {
+        match self {
+            Self::None => Self::None,
+            Self::Text(s) => Self::Text(s.clone()),
+            Self::Number(n) => Self::Number(*n),
+            Self::Float(f) => Self::Float(*f),
+            Self::Boolean(b) => Self::Boolean(*b),
+            Self::Custom(_) => Self::None, // Custom data cannot be cloned, fallback to None
+        }
+    }
 }
 
 pub trait Event: Any + Send + Sync + Debug {
@@ -30,7 +43,13 @@ pub trait Event: Any + Send + Sync + Debug {
     fn get_source(&self) -> Option<&str>;
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn clone_event(&self) -> Box<dyn Event>;
+    fn clone_event(&self) -> Box<dyn Event + Send + Sync>;
+}
+
+impl Clone for Box<dyn Event + Send + Sync> {
+    fn clone(&self) -> Self {
+        self.clone_event()
+    }
 }
 
 pub trait EventHandler: Send + Sync {

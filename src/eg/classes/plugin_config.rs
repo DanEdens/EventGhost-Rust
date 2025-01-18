@@ -3,13 +3,15 @@ use crate::core::Error;
 use super::{Dialog, DialogResult, UIComponent, PropertyGrid, PropertySource, Property};
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct ConfigPage {
     title: String,
     description: String,
     property_grid: PropertyGrid,
 }
 
-pub struct PluginConfigDialog {
+#[derive(Debug)]
+pub struct ConfigDialog {
     hwnd: HWND,
     pages: Vec<ConfigPage>,
     current_page: usize,
@@ -18,13 +20,17 @@ pub struct PluginConfigDialog {
     changes: HashMap<String, Property>,
 }
 
-impl PluginConfigDialog {
+// Phase 4: Configuration System - Not yet implemented
+#[allow(dead_code)]
+impl ConfigDialog {
+    const DEFAULT_DESCRIPTION: &'static str = "";
+
     pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+        todo!("Phase 4: Configuration System")
     }
 
     pub fn add_page(&mut self, title: &str, description: &str) -> Result<(), Error> {
-        todo!()
+        todo!("Phase 4: Configuration System")
     }
 
     pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource>) -> Result<(), Error> {
@@ -53,10 +59,10 @@ impl PluginConfigDialog {
         }
     }
 
-    pub fn get_description(&self) -> &str {
+    pub fn get_description(&self) -> String {
         self.pages.get(self.current_page)
-            .map(|page| &page.description)
-            .unwrap_or("")
+            .map(|page| page.description.clone())
+            .unwrap_or_else(String::new)
     }
 
     pub fn validate_changes(&self) -> Result<(), String> {
@@ -68,7 +74,7 @@ impl PluginConfigDialog {
 
     pub fn apply_changes(&mut self) -> Result<(), Error> {
         self.validate_changes()
-            .map_err(|e| Error::Config(e))?;
+            .map_err(|e| Error::Config(e.into()))?;
         todo!()
     }
 
@@ -85,7 +91,7 @@ impl PluginConfigDialog {
     }
 }
 
-impl Dialog for PluginConfigDialog {
+impl Dialog for ConfigDialog {
     fn show_modal(&mut self) -> Result<DialogResult, Error> {
         todo!()
     }
@@ -103,7 +109,7 @@ impl Dialog for PluginConfigDialog {
     }
 }
 
-impl UIComponent for PluginConfigDialog {
+impl UIComponent for ConfigDialog {
     fn get_hwnd(&self) -> HWND {
         self.hwnd
     }

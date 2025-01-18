@@ -29,13 +29,19 @@ pub struct PluginRegistry {
     loader: PluginLoader,
     /// Plugin configurations
     configs: Arc<RwLock<HashMap<Uuid, Config>>>,
+    /// Plugin directory
+    plugin_dir: PathBuf,
 }
 
 impl PluginRegistry {
     /// Create a new plugin registry
     pub fn new(plugin_dir: PathBuf) -> Result<Self, Error> {
-        // TODO: Implement registry creation
-        unimplemented!()
+        Ok(Self {
+            plugins: Arc::new(RwLock::new(HashMap::new())),
+            loader: PluginLoader::new(plugin_dir.clone())?,
+            configs: Arc::new(RwLock::new(HashMap::new())),
+            plugin_dir,
+        })
     }
 
     /// Load a plugin from a file
@@ -84,6 +90,18 @@ impl PluginRegistry {
     pub async fn get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
         // TODO: Implement config retrieval
         unimplemented!()
+    }
+
+    pub async fn load_all(&mut self) -> Result<(), RegistryError> {
+        // Phase 1: Plugin Loading System - Not yet implemented
+        #[allow(unused_variables)]
+        Ok(())
+    }
+
+    pub async fn unload_all(&mut self) -> Result<(), RegistryError> {
+        // Phase 1: Plugin Loading System - Not yet implemented
+        #[allow(unused_variables)]
+        Ok(())
     }
 }
 

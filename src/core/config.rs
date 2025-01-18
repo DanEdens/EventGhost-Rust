@@ -1,33 +1,30 @@
 use std::path::{Path, PathBuf};
 use serde::{Serialize, Deserialize};
 use crate::core::Error;
+use thiserror::Error;
 
 /// Error type for configuration operations
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
-    /// Failed to load configuration
-    Load(String),
-    /// Failed to save configuration
-    Save(String),
-    /// Invalid configuration data
+    #[error("IO error: {0}")]
+    IO(#[from] std::io::Error),
+    #[error("Invalid config: {0}")]
     Invalid(String),
+    #[error("Missing field: {0}")]
+    MissingField(String),
+    #[error("{0}")]
+    Other(String),
 }
 
-impl std::fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigError::Load(msg) => write!(f, "Failed to load config: {}", msg),
-            ConfigError::Save(msg) => write!(f, "Failed to save config: {}", msg),
-            ConfigError::Invalid(msg) => write!(f, "Invalid config: {}", msg),
-        }
+impl From<String> for ConfigError {
+    fn from(s: String) -> Self {
+        ConfigError::Other(s)
     }
 }
 
-impl std::error::Error for ConfigError {}
-
-impl From<ConfigError> for Error {
-    fn from(err: ConfigError) -> Self {
-        Error::Config(err.to_string())
+impl From<&str> for ConfigError {
+    fn from(s: &str) -> Self {
+        ConfigError::Other(s.to_string())
     }
 }
 
