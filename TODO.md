@@ -8,10 +8,10 @@
 - [x] Consolidate error types between core and win32 modules
 
 ### Window API Fixes
-- [ ] Fix imports for Windows API types (WNDCLASSA, RegisterClassA)
-- [ ] Implement proper string handling for window text (PCSTR conversion)
-- [ ] Fix result handling for Windows API calls
-- [ ] Remove duplicate window management code between eg/winapi and win32 modules
+- [x] Fix imports for Windows API types (WNDCLASSA, RegisterClassA)
+- [x] Implement proper string handling for window text (PCSTR conversion)
+- [x] Fix result handling for Windows API calls
+- [x] Remove duplicate window management code between eg/winapi and win32 modules
 
 ### Control Implementation
 - [ ] Update control constructors to handle HINSTANCE properly:
