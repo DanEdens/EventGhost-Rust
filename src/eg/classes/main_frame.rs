@@ -180,4 +180,33 @@ impl Drop for MainFrame {
             DestroyWindow(self.hwnd);
         }
     }
+}
+
+#[cfg(feature = "mainframe-test")]
+mod tests {
+    use super::*;
+    use std::ptr::null_mut;
+
+    #[test]
+    fn test_mainframe_initialization() {
+        // Mock HINSTANCE (nullptr for testing purposes)
+        let instance = HINSTANCE(0);
+        let result = MainFrame::new(instance);
+        assert!(result.is_ok(), "MainFrame initialization failed");
+        let frame = result.unwrap();
+        assert_eq!(frame.is_visible, false, "MainFrame should not be visible initially");
+    }
+
+    #[test]
+    fn test_layout_controls() {
+        // Mock HINSTANCE (nullptr for testing purposes)
+        let instance = HINSTANCE(0);
+        let mut frame = MainFrame::new(instance).expect("Failed to create MainFrame");
+
+        // Mock HWND and client area
+        frame.hwnd = HWND(0); // Assign a mock HWND
+
+        // Call layout_controls and ensure it doesn't panic
+        frame.layout_controls();
+    }
 } 

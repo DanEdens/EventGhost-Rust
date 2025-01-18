@@ -116,4 +116,28 @@ impl UIComponent for Toolbar {
     fn is_visible(&self) -> bool {
         self.is_visible
     }
+}
+
+#[cfg(feature = "toolbar-test")]
+mod tests {
+    use super::*;
+    use windows::Win32::Foundation::HWND;
+
+    #[test]
+    fn test_toolbar_initialization() {
+        // Mock HWND and HINSTANCE
+        let parent_hwnd = HWND(0);
+        let instance = HINSTANCE(0);
+        
+        let result = Toolbar::new(parent_hwnd, instance);
+        assert!(result.is_ok(), "Toolbar initialization failed");
+    }
+
+    #[test]
+    fn test_toolbar_visibility() {
+        let parent_hwnd = HWND(0);
+        let instance = HINSTANCE(0);
+        let toolbar = Toolbar::new(parent_hwnd, instance).expect("Failed to create Toolbar");
+        // Add additional visibility tests as needed
+    }
 } 
