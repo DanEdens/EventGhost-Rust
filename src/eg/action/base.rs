@@ -1,6 +1,6 @@
 use crate::core::Error;
+use crate::eg::classes::ConfigDialog;
 use crate::core::event::Event;
-use crate::eg::classes::plugin_config::ConfigDialog;
 use uuid::Uuid;
 use std::fmt;
 

@@ -3,13 +3,15 @@ use crate::core::Error;
 use super::{Dialog, DialogResult, UIComponent, PropertyGrid, PropertySource, Property};
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct ConfigPage {
     title: String,
     description: String,
     property_grid: PropertyGrid,
 }
 
-pub struct PluginConfigDialog {
+#[derive(Debug)]
+pub struct ConfigDialog {
     hwnd: HWND,
     pages: Vec<ConfigPage>,
     current_page: usize,
@@ -20,7 +22,7 @@ pub struct PluginConfigDialog {
 
 // Phase 4: Configuration System - Not yet implemented
 #[allow(dead_code)]
-impl PluginConfigDialog {
+impl ConfigDialog {
     const DEFAULT_DESCRIPTION: &'static str = "";
 
     pub fn new(parent: HWND) -> Result<Self, Error> {
@@ -89,7 +91,7 @@ impl PluginConfigDialog {
     }
 }
 
-impl Dialog for PluginConfigDialog {
+impl Dialog for ConfigDialog {
     fn show_modal(&mut self) -> Result<DialogResult, Error> {
         todo!()
     }
@@ -107,7 +109,7 @@ impl Dialog for PluginConfigDialog {
     }
 }
 
-impl UIComponent for PluginConfigDialog {
+impl UIComponent for ConfigDialog {
     fn get_hwnd(&self) -> HWND {
         self.hwnd
     }

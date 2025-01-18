@@ -4,6 +4,7 @@ pub mod log_ctrl;
 pub mod main_frame;
 pub mod menu;
 pub mod plugin_config;
+pub use plugin_config::ConfigDialog;
 pub mod property_grid;
 pub mod tree_ctrl;
 pub mod types;

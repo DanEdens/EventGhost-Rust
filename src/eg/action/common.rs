@@ -2,7 +2,7 @@ use super::base::{ActionBase, ActionInfo, ActionError};
 use super::item::ActionItem;
 use crate::core::Error;
 use crate::core::event::Event;
-use crate::eg::classes::plugin_config::ConfigDialog;
+use crate::eg::classes::ConfigDialog;
 use uuid::Uuid;
 use std::process::Command;
 use std::thread;

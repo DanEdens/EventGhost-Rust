@@ -110,16 +110,17 @@
 - [X] Fix RwLock usage in PluginRegistry
 - [X] Add missing plugin_dir field to PluginRegistry
 - [X] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
+- [X] Fix ConfigDialog imports and implementation:
+  - [X] Rename PluginConfigDialog to ConfigDialog
+  - [X] Add Debug derives
+  - [X] Fix imports in action modules
 
 ## Immediate Code Fixes (Miswritten Code)
-- [ ] Fix ConfigDialog imports in action modules:
-  - src/eg/action/base.rs
-  - src/eg/action/group.rs
-  - src/eg/action/item.rs
-  - src/eg/action/common.rs
+- [ ] Fix Bunch import in globals.rs
+- [ ] Fix constants import in globals.rs
+- [ ] Fix Macro import in tree/mod.rs
 - [ ] Implement From<RegistryError> for core::error::Error
 - [ ] Implement From<LoaderError> for core::error::Error
-- [ ] Fix Bunch import in globals.rs
 
 ## Next Implementation Priority
 - [ ] Implement ConfigDialog in plugin_config module
