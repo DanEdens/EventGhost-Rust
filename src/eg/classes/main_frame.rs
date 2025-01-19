@@ -7,6 +7,7 @@ use super::tree_ctrl::TreeCtrl;
 use super::log_ctrl::LogCtrl;
 use super::status_bar::StatusBar;
 use super::toolbar::Toolbar;
+use super::UIComponent;
 
 pub struct MainFrame {
     hwnd: HWND,
