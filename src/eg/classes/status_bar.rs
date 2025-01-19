@@ -1,5 +1,8 @@
 use windows::Win32::Foundation::{HWND, HINSTANCE};
+use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::UI::Controls::*;
 use crate::core::Error;
+use crate::win32;
 use super::UIComponent;
 
 #[derive(Debug, Clone)]
@@ -36,7 +39,42 @@ impl StatusBar {
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
+        // Create the status bar window
+        let hwnd = win32::create_window(
+            "msctls_statusbar32\0",
+            "",
+            WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
+            0,
+            0,
+            0,
+            0,
+            Some(self.parent),
+            self.instance,
+        )?;
+
+        self.hwnd = hwnd;
+        self.is_visible = true;
+
+        // Set default parts
+        let parts = [200, 400, -1]; // -1 means extend to the end
+        unsafe {
+            SendMessageA(
+                self.hwnd,
+                SB_SETPARTS,
+                WPARAM(parts.len()),
+                LPARAM(parts.as_ptr() as isize),
+            );
+
+            // Set initial text for each part
+            SendMessageA(
+                self.hwnd,
+                SB_SETTEXTA,
+                WPARAM(0),
+                LPARAM("Ready\0".as_ptr() as isize),
+            );
+        }
+
+        Ok(())
     }
 
     /// Set the text for a specific part
@@ -81,11 +119,19 @@ impl UIComponent for StatusBar {
     }
 
     fn show(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_SHOW);
+        }
+        self.is_visible = true;
+        Ok(())
     }
 
     fn hide(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_HIDE);
+        }
+        self.is_visible = false;
+        Ok(())
     }
 
     fn is_visible(&self) -> bool {
