@@ -1,5 +1,8 @@
 use windows::Win32::Foundation::{HWND, HINSTANCE};
+use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::UI::Controls::*;
 use crate::core::Error;
+use crate::win32;
 use super::UIComponent;
 
 pub struct TreeItem {
@@ -28,7 +31,33 @@ impl TreeCtrl {
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
+        // Create the tree control window
+        let hwnd = win32::create_window(
+            "SysTreeView32\0",
+            "",
+            WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_SHOWSELALWAYS,
+            0,
+            0,
+            0,
+            0,
+            Some(self.parent),
+            self.instance,
+        )?;
+
+        self.hwnd = hwnd;
+        self.is_visible = true;
+
+        // Set extended styles
+        unsafe {
+            SendMessageA(
+                self.hwnd,
+                TVM_SETEXTENDEDSTYLE,
+                WPARAM(TVS_EX_DOUBLEBUFFER as usize),
+                LPARAM(TVS_EX_DOUBLEBUFFER as isize),
+            );
+        }
+
+        Ok(())
     }
 
     pub fn add_item(&mut self, parent: Option<&TreeItem>, item: TreeItem) -> Result<TreeItem, Error> {
@@ -66,11 +95,19 @@ impl UIComponent for TreeCtrl {
     }
 
     fn show(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_SHOW);
+        }
+        self.is_visible = true;
+        Ok(())
     }
 
     fn hide(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_HIDE);
+        }
+        self.is_visible = false;
+        Ok(())
     }
 
     fn is_visible(&self) -> bool {
