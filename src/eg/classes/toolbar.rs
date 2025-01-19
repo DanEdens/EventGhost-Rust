@@ -1,5 +1,7 @@
 use windows::Win32::Foundation::{HWND, HINSTANCE};
+use windows::Win32::UI::WindowsAndMessaging::*;
 use crate::core::Error;
+use crate::win32;
 use super::UIComponent;
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,39 @@ impl Toolbar {
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
+        // Create the toolbar window
+        let hwnd = win32::create_window(
+            "ToolbarWindow32\0",
+            "",
+            WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NODIVIDER,
+            0,
+            0,
+            0,
+            0,
+            Some(self.parent),
+            self.instance,
+        )?;
+
+        self.hwnd = hwnd;
+        self.is_visible = true;
+
+        // Set toolbar button size and bitmap size
+        unsafe {
+            SendMessageA(
+                self.hwnd,
+                TB_SETBITMAPSIZE,
+                WPARAM(0),
+                LPARAM(MAKELONG(16, 16) as isize),
+            );
+            SendMessageA(
+                self.hwnd,
+                TB_BUTTONSTRUCTSIZE,
+                WPARAM(std::mem::size_of::<TBBUTTON>() as usize),
+                LPARAM(0),
+            );
+        }
+
+        Ok(())
     }
 
     /// Add a button to the toolbar
@@ -106,11 +140,19 @@ impl UIComponent for Toolbar {
     }
 
     fn show(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_SHOW);
+        }
+        self.is_visible = true;
+        Ok(())
     }
 
     fn hide(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_HIDE);
+        }
+        self.is_visible = false;
+        Ok(())
     }
 
     fn is_visible(&self) -> bool {
