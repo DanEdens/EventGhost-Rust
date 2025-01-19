@@ -1,5 +1,7 @@
-use windows::Win32::Foundation::{HWND, HINSTANCE};
-use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::Foundation::{HWND, HINSTANCE, WPARAM, LPARAM};
+use windows::Win32::UI::Controls::{TBBUTTON, TBSTYLE_FLAT, TBSTYLE_TOOLTIPS, CCS_NODIVIDER, TB_SETBITMAPSIZE, TB_BUTTONSTRUCTSIZE};
+use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, SW_SHOW, SW_HIDE, SendMessageA};
+use windows::Win32::Foundation::MAKELONG;
 use crate::core::Error;
 use crate::win32;
 use super::UIComponent;

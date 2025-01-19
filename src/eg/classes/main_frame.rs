@@ -9,6 +9,8 @@ use super::status_bar::StatusBar;
 use super::toolbar::Toolbar;
 use super::UIComponent;
 
+const MAIN_WINDOW_CLASS: &[u8] = b"EventGhostMainFrame\0";
+
 pub struct MainFrame {
     hwnd: HWND,
     tree_ctrl: TreeCtrl,

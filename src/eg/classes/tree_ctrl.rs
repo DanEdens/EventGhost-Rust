@@ -1,6 +1,9 @@
-use windows::Win32::Foundation::{HWND, HINSTANCE};
-use windows::Win32::UI::WindowsAndMessaging::*;
-use windows::Win32::UI::Controls::*;
+use windows::Win32::Foundation::{HWND, HINSTANCE, WPARAM, LPARAM};
+use windows::Win32::UI::Controls::{
+    TVS_HASLINES, TVS_LINESATROOT, TVS_HASBUTTONS, TVS_SHOWSELALWAYS,
+    TVS_EX_DOUBLEBUFFER, TVM_SETEXTENDEDSTYLE,
+};
+use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, SW_SHOW, SW_HIDE, SendMessageA};
 use crate::core::Error;
 use crate::win32;
 use super::UIComponent;

@@ -1,5 +1,5 @@
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
-use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::UI::WindowsAndMessaging::{WNDCLASSA, *};
 use windows::core::{PCSTR, Error as WindowsError};
 use super::Error;
 
