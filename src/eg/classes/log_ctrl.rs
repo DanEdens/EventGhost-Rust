@@ -1,6 +1,9 @@
 use windows::Win32::Foundation::{HWND, HINSTANCE};
+use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::UI::Controls::*;
 use chrono::{DateTime, Local};
 use crate::core::Error;
+use crate::win32;
 use super::UIComponent;
 
 #[derive(Debug, Clone)]
@@ -39,7 +42,57 @@ impl LogCtrl {
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
+        // Create the list view control window
+        let hwnd = win32::create_window(
+            "SysListView32\0",
+            "",
+            WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS,
+            0,
+            0,
+            0,
+            0,
+            Some(self.parent),
+            self.instance,
+        )?;
+
+        self.hwnd = hwnd;
+        self.is_visible = true;
+
+        // Set extended list view styles
+        unsafe {
+            SendMessageA(
+                self.hwnd,
+                LVM_SETEXTENDEDLISTVIEWSTYLE,
+                WPARAM(0),
+                LPARAM((LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER) as isize),
+            );
+
+            // Add columns
+            let mut lvc = LVCOLUMNA::default();
+            lvc.mask = LVCF_TEXT | LVCF_WIDTH;
+            
+            // Time column
+            lvc.pszText = "Time\0".as_ptr() as *mut i8;
+            lvc.cx = 100;
+            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(0), LPARAM(&lvc as *const _ as isize));
+
+            // Level column
+            lvc.pszText = "Level\0".as_ptr() as *mut i8;
+            lvc.cx = 60;
+            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(1), LPARAM(&lvc as *const _ as isize));
+
+            // Message column
+            lvc.pszText = "Message\0".as_ptr() as *mut i8;
+            lvc.cx = 400;
+            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(2), LPARAM(&lvc as *const _ as isize));
+
+            // Source column
+            lvc.pszText = "Source\0".as_ptr() as *mut i8;
+            lvc.cx = 100;
+            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(3), LPARAM(&lvc as *const _ as isize));
+        }
+
+        Ok(())
     }
 
     pub fn add_entry(&mut self, entry: LogEntry) -> Result<(), Error> {
@@ -73,11 +126,19 @@ impl UIComponent for LogCtrl {
     }
 
     fn show(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_SHOW);
+        }
+        self.is_visible = true;
+        Ok(())
     }
 
     fn hide(&mut self) -> Result<(), Error> {
-        todo!()
+        unsafe {
+            ShowWindow(self.hwnd, SW_HIDE);
+        }
+        self.is_visible = false;
+        Ok(())
     }
 
     fn is_visible(&self) -> bool {
