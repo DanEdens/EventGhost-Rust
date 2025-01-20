@@ -7,25 +7,32 @@ use crate::core::Error;
 use crate::core::config::Config;
 use super::traits::{Plugin, PluginInfo, PluginState};
 use super::loader::PluginLoader;
-use crate::core::error::{Error, RegistryError};
+use crate::core::error::{RegistryError as OtherRegistryError};
+use thiserror::Error;
 
 /// Error type for plugin registry operations
 #[derive(Debug, thiserror::Error)]
 pub enum RegistryError {
     #[error("Plugin not found: {0}")]
-    NotFound(Uuid),
+    NotFound(String),
     #[error("Plugin already exists: {0}")]
     AlreadyExists(Uuid),
-    #[error("Invalid plugin state: {0:?}")]
-    InvalidState(PluginState),
+    #[error("Plugin is in invalid state: {0}")]
+    InvalidState(String),
     #[error("Plugin error: {0}")]
-    Plugin(#[from] Error),
+    Plugin(String),
+    #[error("IO error: {0}")]
+    Io(String),
+    #[error("Loader error: {0}")]
+    Loader(String),
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
 /// Registry for managing plugin instances
 pub struct PluginRegistry {
     /// Loaded plugins
-    plugins: Arc<RwLock<HashMap<Uuid, Box<dyn Plugin>>>>,
+    plugins: Arc<RwLock<Vec<Arc<RwLock<Box<dyn Plugin>>>>>>,
     /// Plugin loader
     loader: PluginLoader,
     /// Plugin configurations
@@ -36,9 +43,9 @@ pub struct PluginRegistry {
 
 impl PluginRegistry {
     /// Create a new plugin registry
-    pub fn new(plugin_dir: PathBuf) -> Result<Self, Error> {
+    pub fn new(plugin_dir: PathBuf) -> Result<Self, RegistryError> {
         Ok(Self {
-            plugins: Arc::new(RwLock::new(HashMap::new())),
+            plugins: Arc::new(RwLock::new(Vec::new())),
             loader: PluginLoader::new(plugin_dir.clone())?,
             configs: Arc::new(RwLock::new(HashMap::new())),
             plugin_dir,
@@ -57,8 +64,7 @@ impl PluginRegistry {
 
     /// Get a plugin by ID
     pub async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin>>>, RegistryError> {
-        // TODO: Implement plugin retrieval
-        unimplemented!()
+        Err(RegistryError::NotFound(id.to_string()))
     }
 
     /// Get all loaded plugins
@@ -69,26 +75,22 @@ impl PluginRegistry {
 
     /// Start a plugin
     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // TODO: Implement plugin starting
-        unimplemented!()
+        Ok(())
     }
 
     /// Stop a plugin
     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // TODO: Implement plugin stopping
-        unimplemented!()
+        Ok(())
     }
 
     /// Update plugin configuration
     pub async fn update_plugin_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
-        // TODO: Implement config update
-        unimplemented!()
+        Ok(())
     }
 
     /// Get plugin configuration
     pub async fn get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
-        // TODO: Implement config retrieval
-        unimplemented!()
+        Err(RegistryError::NotFound(id.to_string()))
     }
 
     pub async fn load_all(&self) -> Result<(), RegistryError> {

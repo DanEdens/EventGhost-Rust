@@ -23,11 +23,11 @@ pub struct PluginInfo {
     /// Supported platforms
     pub platforms: Vec<String>,
     /// Plugin capabilities
-    pub capabilities: Vec<String>,
+    pub capabilities: Vec<PluginCapability>,
 }
 
 /// Plugin capability flags
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PluginCapability {
     /// Can generate events
     EventGenerator,
@@ -39,10 +39,14 @@ pub enum PluginCapability {
     HotReload,
     /// Has persistent state
     Stateful,
+    /// Action provider
+    ActionProvider,
+    /// Config provider
+    ConfigProvider,
 }
 
 /// Plugin state
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PluginState {
     /// Plugin is created but not initialized
     Created,
@@ -54,6 +58,8 @@ pub enum PluginState {
     Stopped,
     /// Plugin has failed
     Failed,
+    /// Plugin is in error state
+    Error,
 }
 
 /// Base trait for plugin functionality

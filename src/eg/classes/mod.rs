@@ -1,26 +1,26 @@
 use gtk::prelude::*;
 use gtk::Widget;
 
-pub mod dialog;
-pub mod drag_drop;
-pub mod log_ctrl;
+// Core modules needed for basic window functionality
 pub mod main_frame;
 pub mod menu;
-pub mod plugin_config;
-pub mod property_grid;
-pub mod status_bar;
 pub mod toolbar;
-pub mod tree_ctrl;
+pub mod status_bar;
+pub mod dialog;
 
-pub use dialog::CustomDialog;
-pub use log_ctrl::LogCtrl;
+// Re-export the main components
 pub use main_frame::MainFrame;
 pub use menu::Menu;
-pub use plugin_config::ConfigDialog;
-pub use property_grid::PropertyGrid;
-pub use status_bar::StatusBar;
 pub use toolbar::Toolbar;
-pub use tree_ctrl::TreeCtrl;
+pub use status_bar::StatusBar;
+pub use dialog::ConfigDialog;
+
+// Comment out modules that need GTK conversion
+// pub mod drag_drop;
+// pub mod log_ctrl;
+// pub mod plugin_config;
+// pub mod property_grid;
+// pub mod tree_ctrl;
 
 /// Trait for UI components that can be shown/hidden
 pub trait UIComponent {

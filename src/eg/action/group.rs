@@ -1,92 +1,69 @@
-use super::base::{ActionBase, ActionInfo};
 use crate::core::Error;
 use crate::core::event::Event;
-use crate::eg::classes::ConfigDialog;
 use uuid::Uuid;
+use std::sync::Arc;
+use super::base::ActionBase;
+use async_trait::async_trait;
 
+/// A group of actions that can be executed together
 pub struct ActionGroup {
-    info: ActionInfo,
-    actions: Vec<Box<dyn ActionBase>>,
+    id: Uuid,
+    name: String,
+    description: String,
+    plugin_id: Uuid,
+    actions: Vec<Arc<dyn ActionBase>>,
 }
 
 impl ActionGroup {
+    /// Create a new action group
     pub fn new(name: &str, description: &str, plugin_id: Uuid) -> Self {
-        Self {
-            info: ActionInfo {
-                name: name.to_string(),
-                description: description.to_string(),
-                id: Uuid::new_v4(),
-                plugin_id,
-            },
+        ActionGroup {
+            id: Uuid::new_v4(),
+            name: name.to_string(),
+            description: description.to_string(),
+            plugin_id,
             actions: Vec::new(),
         }
     }
-
-    pub fn add_action(&mut self, action: Box<dyn ActionBase>) {
+    
+    /// Add an action to the group
+    pub fn add_action(&mut self, action: Arc<dyn ActionBase>) {
         self.actions.push(action);
     }
-
-    pub fn remove_action(&mut self, id: Uuid) -> Option<Box<dyn ActionBase>> {
-        if let Some(index) = self.actions.iter().position(|a| a.get_id() == id) {
-            Some(self.actions.remove(index))
-        } else {
-            None
-        }
+    
+    /// Remove an action from the group
+    pub fn remove_action(&mut self, id: Uuid) {
+        self.actions.retain(|a| a.get_id() != id);
     }
-
-    pub fn get_actions(&self) -> &[Box<dyn ActionBase>] {
+    
+    /// Get all actions in the group
+    pub fn get_actions(&self) -> &[Arc<dyn ActionBase>] {
         &self.actions
-    }
-
-    pub fn get_actions_mut(&mut self) -> &mut [Box<dyn ActionBase>] {
-        &mut self.actions
     }
 }
 
+#[async_trait::async_trait]
 impl ActionBase for ActionGroup {
-    fn get_name(&self) -> &str {
-        &self.info.name
-    }
-
-    fn get_description(&self) -> &str {
-        &self.info.description
-    }
-
     fn get_id(&self) -> Uuid {
-        self.info.id
+        self.id
     }
-
+    
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+    
+    fn get_description(&self) -> &str {
+        &self.description
+    }
+    
     fn get_plugin_id(&self) -> Uuid {
-        self.info.plugin_id
+        self.plugin_id
     }
-
-    fn configure(&mut self) -> Option<ConfigDialog> {
-        None // Groups don't have configuration
-    }
-
-    fn execute(&mut self, event: Option<&dyn Event>) -> Result<(), Error> {
+    
+    async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
         for action in &mut self.actions {
-            action.execute(event)?;
+            action.execute(event).await?;
         }
         Ok(())
-    }
-
-    fn can_execute(&self, event: Option<&dyn Event>) -> bool {
-        self.actions.iter().any(|action| action.can_execute(event))
-    }
-
-    fn clone_action(&self) -> Box<dyn ActionBase> {
-        let mut group = ActionGroup::new(
-            &self.info.name,
-            &self.info.description,
-            self.info.plugin_id,
-        );
-        group.info.id = self.info.id;
-        
-        for action in &self.actions {
-            group.add_action(action.clone_action());
-        }
-        
-        Box::new(group)
     }
 } 

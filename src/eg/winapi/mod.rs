@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Application, ApplicationWindow};
 use gio;
+use glib;
 
 pub fn init_application() -> gtk::Application {
     let application = Application::new(
@@ -25,6 +26,6 @@ mod tests {
     #[test]
     fn test_application_initialization() {
         let app = init_application();
-        assert_eq!(app.application_id(), Some("org.eventghost.app"));
+        assert_eq!(app.application_id(), Some(glib::GString::from("org.eventghost.app")));
     }
 } 

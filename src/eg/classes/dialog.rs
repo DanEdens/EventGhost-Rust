@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog, ColorChooserDialog, ResponseType, FileChooserAction};
+use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog as GtkMessageDialog, ColorChooserDialog, ResponseType, FileChooserAction, Window};
 use gtk::gdk;
 use crate::core::Error;
 use super::UIComponent;
@@ -46,9 +46,8 @@ pub enum DialogResult {
     No,
     None,
 }
-
-impl From<ResponseType> for DialogResult {
-    fn from(response: ResponseType) -> Self {
+impl DialogResult {
+    pub fn from_response(response: ResponseType) -> Self {
         match response {
             ResponseType::Ok => DialogResult::Ok,
             ResponseType::Cancel => DialogResult::Cancel,
@@ -297,7 +296,7 @@ impl FileDialog {
 
     pub fn show(&self) -> Option<PathBuf> {
         self.widget.present();
-        if self.widget.response_type() == ResponseType::Accept {
+        if self.widget.response() == ResponseType::Accept {
             self.widget.file().and_then(|f| f.path())
         } else {
             None
@@ -358,6 +357,34 @@ impl Dialog for ColorDialog {
 
     fn hide(&self) {
         self.widget.hide();
+    }
+}
+
+/// A dialog for configuring plugin settings
+pub struct ConfigDialog {
+    pub dialog: GtkDialog,
+}
+
+impl ConfigDialog {
+    pub fn new(parent: Option<&Window>) -> Self {
+        let dialog = GtkDialog::builder()
+            .title("Configure")
+            .modal(true)
+            .build();
+            
+        if let Some(parent) = parent {
+            dialog.set_transient_for(Some(parent));
+        }
+        
+        ConfigDialog { dialog }
+    }
+    
+    pub fn run(&self) -> gtk::ResponseType {
+        self.dialog.run()
+    }
+    
+    pub fn destroy(&self) {
+        self.dialog.destroy();
     }
 }
 

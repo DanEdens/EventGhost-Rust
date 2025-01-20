@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Box, Button};
 use gtk::Orientation;
+use super::UIComponent;
 
 pub struct Toolbar {
     pub widget: Box,
@@ -50,6 +51,13 @@ impl Toolbar {
     
     pub fn is_visible(&self) -> bool {
         self.widget.is_visible()
+    }
+}
+
+// Implement UIComponent trait
+impl UIComponent for Toolbar {
+    fn get_widget(&self) -> &gtk::Widget {
+        self.widget.upcast_ref()
     }
 }
 

@@ -63,7 +63,7 @@ impl TreeCtrl {
     }
     
     pub fn get_path(&self, iter: &TreeIter) -> Option<TreePath> {
-        self.store.path(iter)
+        Some(self.store.path(iter))
     }
 
     pub fn get_iter(&self, path: &TreePath) -> Option<TreeIter> {

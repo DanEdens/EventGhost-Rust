@@ -1,5 +1,4 @@
 use crate::core::Error;
-use crate::eg::classes::ConfigDialog;
 use crate::core::event::Event;
 use uuid::Uuid;
 use thiserror::Error;
@@ -19,6 +18,7 @@ pub enum ActionError {
 /// 
 /// Actions are the basic building blocks of EventGhost macros. They represent
 /// operations that can be executed in response to events or user triggers.
+#[async_trait::async_trait]
 pub trait ActionBase: Send + Sync {
     /// Get the display name of the action
     fn get_name(&self) -> &str;
@@ -33,10 +33,12 @@ pub trait ActionBase: Send + Sync {
     fn get_plugin_id(&self) -> Uuid;
     
     /// Open a configuration dialog for this action if available
-    fn configure(&mut self) -> Option<ConfigDialog>;
+    fn configure(&mut self) -> Result<bool, Error> {
+        Ok(false) // Temporarily return false for no configuration
+    }
     
     /// Execute the action with an optional triggering event
-    fn execute(&mut self, event: Option<&dyn Event>) -> Result<(), Error>;
+    async fn execute(&mut self, event: &dyn Event) -> Result<(), Error>;
     
     /// Check if the action can be executed with the given event
     fn can_execute(&self, event: Option<&dyn Event>) -> bool;

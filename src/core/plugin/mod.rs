@@ -7,11 +7,11 @@
 //! - Plugin configuration
 //! - Plugin state management
 
-mod traits;
-pub mod registry;
 pub mod loader;
+pub mod registry;
+pub mod traits;
 
-pub use traits::*;
+pub use self::traits::*;
 pub use registry::PluginRegistry;
 pub use loader::PluginLoader;
 

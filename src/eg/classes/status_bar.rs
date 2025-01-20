@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Box, Label, CheckButton, Statusbar};
 use glib;
+use super::UIComponent;
 
 #[derive(Debug, Clone)]
 pub struct StatusPart {
@@ -69,5 +70,11 @@ impl StatusBar {
         } else {
             self.check_box.remove_css_class("success");
         }
+    }
+}
+
+impl UIComponent for StatusBar {
+    fn get_widget(&self) -> &gtk::Widget {
+        self.widget.upcast_ref()
     }
 } 
