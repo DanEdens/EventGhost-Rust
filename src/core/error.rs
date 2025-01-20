@@ -34,6 +34,9 @@ pub enum Error {
     
     #[error("Loader error: {0}")]
     Loader(String),
+
+    #[error("Dialog error: {0}")]
+    Dialog(String),
 }
 
 impl From<std::io::Error> for Error {
@@ -58,4 +61,34 @@ impl From<LoaderError> for Error {
     fn from(err: LoaderError) -> Self {
         Error::Loader(err.to_string())
     }
+}
+
+#[derive(Debug, Error)]
+pub enum RegistryError {
+    #[error("Plugin not found: {0}")]
+    PluginNotFound(String),
+
+    #[error("Plugin load failed: {0}")]
+    LoadFailed(String),
+
+    #[error("Plugin already loaded: {0}")]
+    AlreadyLoaded(String),
+}
+
+#[derive(Debug, Error)]
+pub enum LoaderError {
+    #[error("Failed to load plugin: {0}")]
+    LoadFailed(String),
+
+    #[error("Invalid plugin: {0}")]
+    InvalidPlugin(String),
+}
+
+#[derive(Debug, Error)]
+pub enum ActionError {
+    #[error("Execution failed: {0}")]
+    ExecutionFailed(String),
+
+    #[error("Invalid action: {0}")]
+    InvalidAction(String),
 } 

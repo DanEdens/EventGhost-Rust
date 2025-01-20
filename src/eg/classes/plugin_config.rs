@@ -22,6 +22,7 @@ pub struct ConfigDialog {
     is_visible: bool,
     result: DialogResult,
     changes: HashMap<String, Property>,
+    property_grid: PropertyGrid,
 }
 
 // Phase 4: Configuration System - Not yet implemented
@@ -48,6 +49,7 @@ impl ConfigDialog {
             is_visible: false,
             result: DialogResult::Cancel,
             changes: HashMap::new(),
+            property_grid,
         }
     }
     
@@ -158,19 +160,19 @@ impl Dialog for ConfigDialog {
     fn on_command(&mut self, _command: u32) -> Result<(), Error> {
         Ok(())
     }
+
+    fn show(&self) {
+        self.widget.present();
+    }
+
+    fn hide(&self) {
+        self.widget.hide();
+    }
 }
 
 impl UIComponent for ConfigDialog {
     fn get_widget(&self) -> &gtk::Widget {
         self.widget.upcast_ref()
-    }
-
-    fn show(&self) {
-        // Implementation
-    }
-
-    fn hide(&self) {
-        // Implementation
     }
 
     fn is_visible(&self) -> bool {
@@ -222,5 +224,12 @@ mod tests {
         
         let dialog = ConfigDialog::new("Test Config", &gio::Application::new());
         assert!(!dialog.widget.is_visible());
+    }
+
+    #[test]
+    fn test_config_dialog() {
+        let dialog = ConfigDialog::new("Test Config", &gio::Application::new()).unwrap();
+        dialog.show();
+        dialog.hide();
     }
 } 

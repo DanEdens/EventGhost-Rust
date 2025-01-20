@@ -1,14 +1,19 @@
 use gtk::prelude::*;
-use gtk::{self, Dialog as GtkDialog, ResponseType, FileChooserDialog, FileChooserAction, ColorChooserDialog};
+use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog, ColorChooserDialog, ResponseType, FileChooserAction};
+use gtk::gdk;
 use crate::core::Error;
 use super::UIComponent;
-use gtk4::{PrintOperation, Application};
+use gtk::{PrintOperation, Application};
 use std::path::PathBuf;
 
 /// Base dialog trait
 pub trait Dialog {
     fn show(&self);
     fn hide(&self);
+    fn show_modal(&mut self) -> Result<DialogResult, Error>; 
+    fn end_dialog(&mut self, result: DialogResult); 
+    fn on_init(&mut self) -> Result<(), Error>; 
+    fn on_command(&mut self, _command: u32) -> Result<(), Error>; 
 }
 
 pub struct DialogImpl {
@@ -39,7 +44,7 @@ pub enum DialogResult {
     Cancel,
     Yes,
     No,
-    Custom(i32),
+    None,
 }
 
 impl From<ResponseType> for DialogResult {
@@ -49,7 +54,7 @@ impl From<ResponseType> for DialogResult {
             ResponseType::Cancel => DialogResult::Cancel,
             ResponseType::Yes => DialogResult::Yes,
             ResponseType::No => DialogResult::No,
-            _ => DialogResult::Custom(response.into()),
+            _ => DialogResult::None,
         }
     }
 }
@@ -229,6 +234,7 @@ pub enum MessageBoxStyle {
 
 pub struct CustomDialog {
     pub widget: GtkDialog,
+    result: DialogResult,
 }
 
 impl CustomDialog {
@@ -239,15 +245,32 @@ impl CustomDialog {
         
         CustomDialog {
             widget: dialog,
+            result: DialogResult::None,
         }
     }
     
-    pub fn run(&self) -> ResponseType {
-        self.widget.run()
+    pub fn run(&mut self) -> ResponseType {
+        let response = self.widget.run();
+        self.result = response.into();
+        self.widget.close();
+        response
     }
     
     pub fn close(&self) {
         self.widget.close();
+    }
+
+    pub fn end_dialog(&mut self, result: DialogResult) {
+        self.result = result;
+        self.widget.close();
+    }
+
+    pub fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+
+    pub fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
     }
 }
 
@@ -257,22 +280,44 @@ impl UIComponent for CustomDialog {
     }
 }
 
+pub struct FileDialog {
+    widget: FileChooserDialog,
+}
+
 impl FileDialog {
+    pub fn new_open() -> Self {
+        let dialog = FileChooserDialog::new(
+            Some("Open File"),
+            None::<&gtk::Window>,
+            FileChooserAction::Open,
+            &[("Cancel", ResponseType::Cancel), ("Open", ResponseType::Accept)],
+        );
+        Self { widget: dialog }
+    }
+
     pub fn show(&self) -> Option<PathBuf> {
-        let response = self.widget.present();
-        if response == ResponseType::Accept {
-            self.widget.file().map(|f| f.path()).flatten()
+        self.widget.present();
+        if self.widget.response_type() == ResponseType::Accept {
+            self.widget.file().and_then(|f| f.path())
         } else {
             None
         }
     }
 }
 
+pub struct MessageDialog {
+    widget: gtk::MessageDialog,
+}
+
 impl MessageDialog {
-    pub fn show(&self) -> ResponseType {
+    pub fn show(&self) -> DialogResult {
         self.widget.present();
-        self.widget.response_type()
+        self.widget.response_type().into()
     }
+}
+
+pub struct ColorDialog {
+    widget: ColorChooserDialog,
 }
 
 impl ColorDialog {
@@ -286,10 +331,33 @@ impl ColorDialog {
     }
 }
 
-impl Dialog {
-    pub fn show(&self) -> ResponseType {
+impl Dialog for FileDialog {
+    fn show(&self) {
         self.widget.present();
-        self.widget.response_type()
+    }
+
+    fn hide(&self) {
+        self.widget.hide();
+    }
+}
+
+impl Dialog for MessageDialog {
+    fn show(&self) {
+        self.widget.present();
+    }
+
+    fn hide(&self) {
+        self.widget.hide();
+    }
+}
+
+impl Dialog for ColorDialog {
+    fn show(&self) {
+        self.widget.present();
+    }
+
+    fn hide(&self) {
+        self.widget.hide();
     }
 }
 

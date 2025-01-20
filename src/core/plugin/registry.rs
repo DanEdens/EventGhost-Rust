@@ -7,6 +7,7 @@ use crate::core::Error;
 use crate::core::config::Config;
 use super::traits::{Plugin, PluginInfo, PluginState};
 use super::loader::PluginLoader;
+use crate::core::error::{Error, RegistryError};
 
 /// Error type for plugin registry operations
 #[derive(Debug, thiserror::Error)]
@@ -46,14 +47,12 @@ impl PluginRegistry {
 
     /// Load a plugin from a file
     pub async fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
-        // TODO: Implement plugin loading
-        unimplemented!()
+        Ok(Uuid::new_v4())  // TODO: Implement actual loading
     }
 
     /// Unload a plugin
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // TODO: Implement plugin unloading
-        unimplemented!()
+        Ok(())  // TODO: Implement actual unloading
     }
 
     /// Get a plugin by ID
@@ -92,16 +91,12 @@ impl PluginRegistry {
         unimplemented!()
     }
 
-    pub async fn load_all(&mut self) -> Result<(), RegistryError> {
-        // Phase 1: Plugin Loading System - Not yet implemented
-        #[allow(unused_variables)]
-        Ok(())
+    pub async fn load_all(&self) -> Result<(), RegistryError> {
+        Ok(())  // TODO: Implement actual loading
     }
 
-    pub async fn unload_all(&mut self) -> Result<(), RegistryError> {
-        // Phase 1: Plugin Loading System - Not yet implemented
-        #[allow(unused_variables)]
-        Ok(())
+    pub async fn unload_all(&self) -> Result<(), RegistryError> {
+        Ok(())  // TODO: Implement actual unloading
     }
 }
 

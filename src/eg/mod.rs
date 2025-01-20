@@ -22,7 +22,7 @@ impl EventGhost {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
             event_manager: EventManager::new(),
-            plugin_registry: PluginRegistry::new(PathBuf::from("src\plugins"))?,
+            plugin_registry: PluginRegistry::new(PathBuf::from(r"src\plugins"))?,
             stop_flag: Arc::new(RwLock::new(false)),
         })
     }
