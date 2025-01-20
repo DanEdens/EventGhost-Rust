@@ -11,7 +11,7 @@ pub struct ActionItem {
     name: String,
     description: String,
     plugin_id: Uuid,
-    handler: Box<dyn Fn(&dyn Event) -> Result<(), Error> + Send + Sync>,
+    handler: Arc<dyn Fn(&dyn Event) -> Result<(), Error> + Send + Sync>,
 }
 
 impl ActionItem {
@@ -27,7 +27,7 @@ impl ActionItem {
             name: name.to_string(),
             description: description.to_string(),
             plugin_id,
-            handler: Box::new(handler),
+            handler: Arc::new(handler),
         }
     }
 }
@@ -52,5 +52,20 @@ impl ActionBase for ActionItem {
     
     async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
         (self.handler)(event)
+    }
+    
+    fn can_execute(&self, event: Option<&dyn Event>) -> bool {
+        // By default, actions can always execute
+        true
+    }
+    
+    fn clone_action(&self) -> Box<dyn ActionBase> {
+        Box::new(ActionItem {
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            plugin_id: self.plugin_id,
+            handler: self.handler.clone(),
+        })
     }
 } 

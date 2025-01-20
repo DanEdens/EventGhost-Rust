@@ -100,7 +100,9 @@ impl Plugin for MockPlugin {
 }
 
 /// Mock event for testing
+#[derive(Debug)]
 pub struct MockEvent {
+    id: String,
     event_type: EventType,
     payload: EventPayload,
     timestamp: DateTime<Local>,
@@ -110,6 +112,7 @@ pub struct MockEvent {
 impl MockEvent {
     pub fn new(event_type: EventType, payload: EventPayload) -> Self {
         MockEvent {
+            id: Uuid::new_v4().to_string(),
             event_type,
             payload,
             timestamp: Local::now(),
@@ -119,6 +122,10 @@ impl MockEvent {
 }
 
 impl Event for MockEvent {
+    fn get_id(&self) -> &str {
+        &self.id
+    }
+
     fn get_type(&self) -> EventType {
         self.event_type
     }
@@ -145,6 +152,7 @@ impl Event for MockEvent {
     
     fn clone_event(&self) -> Box<dyn Event + Send + Sync> {
         Box::new(MockEvent {
+            id: self.id.clone(),
             event_type: self.event_type,
             payload: self.payload.clone(),
             timestamp: self.timestamp,

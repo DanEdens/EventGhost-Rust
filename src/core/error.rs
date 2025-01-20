@@ -5,6 +5,12 @@ pub enum Error {
     #[error("Registry error: {0}")]
     Registry(#[from] crate::core::plugin::registry::RegistryError),
     
+    #[error("Tree error: {0}")]
+    Tree(String),
+    
+    #[error("Property error: {0}")]
+    Property(String),
+    
     #[error("Loader error: {0}")]
     Loader(#[from] crate::core::plugin::loader::LoaderError),
     

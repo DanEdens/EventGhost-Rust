@@ -97,10 +97,6 @@ mod tests {
             .application_id("org.eventghost.app")
             .build();
             
-        // Ensure app was created successfully
-        assert!(app.is_ok(), "Failed to create application: {:?}", app.err());
-        let app = app.unwrap();
-            
         // Create the main frame
         let main_frame = MainFrame::new(&app);
         

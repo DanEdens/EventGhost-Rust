@@ -10,6 +10,7 @@ pub enum EventType {
     Plugin,
     User,
     Internal,
+    KeyPress,
 }
 
 #[derive(Debug)]

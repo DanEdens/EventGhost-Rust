@@ -5,6 +5,7 @@ use crate::core::Error;
 use super::UIComponent;
 use gtk::{PrintOperation, Application};
 use std::path::PathBuf;
+use tokio::runtime::Runtime;
 
 /// Base dialog trait
 pub trait Dialog {
@@ -36,24 +37,46 @@ impl Dialog for DialogImpl {
     fn hide(&self) {
         self.widget.hide();
     }
+
+    fn show_modal(&mut self) -> Result<DialogResult, Error> {
+        self.widget.set_modal(true);
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(self.widget.run_future());
+        Ok(response.into())
+    }
+
+    fn end_dialog(&mut self, result: DialogResult) {
+        self.widget.close();
+    }
+
+    fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DialogResult {
     Ok,
     Cancel,
     Yes,
     No,
     None,
+    Custom(i32),
 }
-impl DialogResult {
-    pub fn from_response(response: ResponseType) -> Self {
+
+impl From<ResponseType> for DialogResult {
+    fn from(response: ResponseType) -> Self {
         match response {
             ResponseType::Ok => DialogResult::Ok,
             ResponseType::Cancel => DialogResult::Cancel,
             ResponseType::Yes => DialogResult::Yes,
             ResponseType::No => DialogResult::No,
-            _ => DialogResult::None,
+            ResponseType::None => DialogResult::None,
+            _ => DialogResult::Custom(response.into()),
         }
     }
 }
@@ -87,10 +110,12 @@ impl CommonDialogs {
             dialog.set_current_folder(Some(&gtk::gio::File::for_path(&options.initial_dir)));
         }
         
-        let response = dialog.run();
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(dialog.run_future());
         let result = if response == ResponseType::Accept {
             dialog.files()
                 .iter()
+                .filter_map(|f| f.ok())
                 .filter_map(|f| f.path())
                 .filter_map(|p| p.to_str().map(String::from))
                 .collect()
@@ -118,7 +143,8 @@ impl CommonDialogs {
             dialog.set_current_name(&options.file_name);
         }
         
-        let response = dialog.run();
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(dialog.run_future());
         let result = if response == ResponseType::Accept {
             dialog.file()
                 .and_then(|f| f.path())
@@ -280,89 +306,142 @@ impl UIComponent for CustomDialog {
 }
 
 pub struct FileDialog {
-    widget: FileChooserDialog,
+    dialog: FileChooserDialog,
 }
 
 impl FileDialog {
-    pub fn new_open() -> Self {
+    pub fn new(title: &str, parent: Option<&Window>, action: FileChooserAction) -> Self {
         let dialog = FileChooserDialog::new(
-            Some("Open File"),
-            None::<&gtk::Window>,
-            FileChooserAction::Open,
-            &[("Cancel", ResponseType::Cancel), ("Open", ResponseType::Accept)],
+            Some(title),
+            parent,
+            action,
+            &[("_Cancel", ResponseType::Cancel), ("_Open", ResponseType::Accept)],
         );
-        Self { widget: dialog }
-    }
-
-    pub fn show(&self) -> Option<PathBuf> {
-        self.widget.present();
-        if self.widget.response() == ResponseType::Accept {
-            self.widget.file().and_then(|f| f.path())
-        } else {
-            None
-        }
-    }
-}
-
-pub struct MessageDialog {
-    widget: gtk::MessageDialog,
-}
-
-impl MessageDialog {
-    pub fn show(&self) -> DialogResult {
-        self.widget.present();
-        self.widget.response_type().into()
-    }
-}
-
-pub struct ColorDialog {
-    widget: ColorChooserDialog,
-}
-
-impl ColorDialog {
-    pub fn show(&self) -> Option<gdk::RGBA> {
-        self.widget.present();
-        if self.widget.response_type() == ResponseType::Accept {
-            Some(self.widget.rgba())
-        } else {
-            None
-        }
+        
+        FileDialog { dialog }
     }
 }
 
 impl Dialog for FileDialog {
     fn show(&self) {
-        self.widget.present();
+        self.dialog.present();
     }
 
     fn hide(&self) {
-        self.widget.hide();
+        self.dialog.hide();
+    }
+
+    fn show_modal(&mut self) -> Result<DialogResult, Error> {
+        self.dialog.set_modal(true);
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(self.dialog.run_future());
+        Ok(response.into())
+    }
+    
+    fn end_dialog(&mut self, _result: DialogResult) {
+        self.dialog.close();
+    }
+    
+    fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+pub struct MessageDialog {
+    dialog: GtkMessageDialog,
+}
+
+impl MessageDialog {
+    pub fn new(title: &str, message: &str, parent: Option<&Window>) -> Self {
+        let dialog = GtkMessageDialog::new(
+            parent,
+            gtk::DialogFlags::MODAL,
+            gtk::MessageType::Info,
+            gtk::ButtonsType::Ok,
+            message,
+        );
+        dialog.set_title(Some(title));
+        
+        MessageDialog { dialog }
     }
 }
 
 impl Dialog for MessageDialog {
     fn show(&self) {
-        self.widget.present();
+        self.dialog.present();
     }
 
     fn hide(&self) {
-        self.widget.hide();
+        self.dialog.hide();
+    }
+
+    fn show_modal(&mut self) -> Result<DialogResult, Error> {
+        self.dialog.set_modal(true);
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(self.dialog.run_future());
+        Ok(response.into())
+    }
+    
+    fn end_dialog(&mut self, _result: DialogResult) {
+        self.dialog.close();
+    }
+    
+    fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+pub struct ColorDialog {
+    dialog: ColorChooserDialog,
+}
+
+impl ColorDialog {
+    pub fn new(title: &str, parent: Option<&Window>) -> Self {
+        let dialog = ColorChooserDialog::new(Some(title), parent);
+        ColorDialog { dialog }
     }
 }
 
 impl Dialog for ColorDialog {
     fn show(&self) {
-        self.widget.present();
+        self.dialog.present();
     }
 
     fn hide(&self) {
-        self.widget.hide();
+        self.dialog.hide();
+    }
+
+    fn show_modal(&mut self) -> Result<DialogResult, Error> {
+        self.dialog.set_modal(true);
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(self.dialog.run_future());
+        Ok(response.into())
+    }
+    
+    fn end_dialog(&mut self, _result: DialogResult) {
+        self.dialog.close();
+    }
+    
+    fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
     }
 }
 
 /// A dialog for configuring plugin settings
 pub struct ConfigDialog {
-    pub dialog: GtkDialog,
+    dialog: GtkDialog,
 }
 
 impl ConfigDialog {
@@ -378,13 +457,34 @@ impl ConfigDialog {
         
         ConfigDialog { dialog }
     }
-    
-    pub fn run(&self) -> gtk::ResponseType {
-        self.dialog.run()
+}
+
+impl Dialog for ConfigDialog {
+    fn show(&self) {
+        self.dialog.present();
+    }
+
+    fn hide(&self) {
+        self.dialog.hide();
+    }
+
+    fn show_modal(&mut self) -> Result<DialogResult, Error> {
+        self.dialog.set_modal(true);
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(self.dialog.run_future());
+        Ok(response.into())
     }
     
-    pub fn destroy(&self) {
-        self.dialog.destroy();
+    fn end_dialog(&mut self, _result: DialogResult) {
+        self.dialog.close();
+    }
+    
+    fn on_init(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
     }
 }
 

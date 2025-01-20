@@ -66,4 +66,19 @@ impl ActionBase for ActionGroup {
         }
         Ok(())
     }
+    
+    fn can_execute(&self, event: Option<&dyn Event>) -> bool {
+        // Groups can always execute
+        true
+    }
+    
+    fn clone_action(&self) -> Box<dyn ActionBase> {
+        Box::new(ActionGroup {
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            plugin_id: self.plugin_id,
+            actions: self.actions.clone(),
+        })
+    }
 } 
