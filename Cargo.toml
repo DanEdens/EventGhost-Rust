@@ -38,13 +38,27 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 bitflags = "2.4"
 gtk = { version = "0.6", package = "gtk4", features = ["v4_8"] }
-gio = "0.17"
-glib = "0.17"
+gio = { version = "0.17", features = ["v2_66"] }
+glib = { version = "0.17", features = ["v2_66"] }
 
 [dev-dependencies]
 tokio-test = "0.4" 
 
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Pipes",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO"
+]}
+
+[build-dependencies]
+pkg-config = "0.3"
+
 [features]
+default = []
 mainframe-test = []
 toolbar-test = []
 statusbar-test = []
