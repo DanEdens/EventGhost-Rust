@@ -7,6 +7,9 @@ use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, 
 use crate::core::Error;
 use crate::win32;
 use super::UIComponent;
+use gtk::prelude::*;
+use gtk::{self, TreeView, TreeStore, TreeViewColumn, CellRendererText};
+use glib;
 
 pub struct TreeItem {
     pub id: String,
@@ -17,6 +20,8 @@ pub struct TreeItem {
 }
 
 pub struct TreeCtrl {
+    pub widget: TreeView,
+    store: TreeStore,
     hwnd: HWND,
     parent: HWND,
     instance: HINSTANCE,
@@ -25,7 +30,36 @@ pub struct TreeCtrl {
 
 impl TreeCtrl {
     pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
+        // Create tree store with columns
+        let store = TreeStore::new(&[
+            glib::Type::STRING, // Name
+            glib::Type::STRING, // Icon
+            glib::Type::BOOL,   // Enabled
+            glib::Type::STRING, // Type
+        ]);
+
+        // Create tree view
+        let widget = TreeView::new();
+        widget.set_model(Some(&store));
+        
+        // Add columns
+        let renderer = CellRendererText::new();
+        let column = TreeViewColumn::new();
+        column.pack_start(&renderer, true);
+        column.add_attribute(&renderer, "text", 0);
+        column.set_title("Name");
+        widget.append_column(&column);
+        
+        // Enable selection
+        let selection = widget.selection();
+        selection.set_mode(gtk::SelectionMode::Single);
+        
+        // Enable drag and drop
+        widget.set_reorderable(true);
+        
         Ok(Self {
+            widget,
+            store,
             hwnd: HWND::default(),
             parent,
             instance,
@@ -75,12 +109,16 @@ impl TreeCtrl {
         todo!()
     }
 
-    pub fn expand_item(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
+    pub fn expand_item(&self, iter: &gtk::TreeIter) {
+        if let Some(path) = self.store.path(iter) {
+            self.widget.expand_row(&path, false);
+        }
     }
 
-    pub fn collapse_item(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
+    pub fn collapse_item(&self, iter: &gtk::TreeIter) {
+        if let Some(path) = self.store.path(iter) {
+            self.widget.collapse_row(&path);
+        }
     }
 
     pub fn set_image_list(&mut self, image_list: HWND) -> Result<(), Error> {
@@ -89,6 +127,36 @@ impl TreeCtrl {
 
     pub fn ensure_visible(&mut self, item: &TreeItem) -> Result<(), Error> {
         todo!()
+    }
+
+    pub fn append_item(&self, parent: Option<&gtk::TreeIter>, name: &str, item_type: &str) -> gtk::TreeIter {
+        self.store.append(parent)
+    }
+    
+    pub fn set_item_values(&self, iter: &gtk::TreeIter, name: &str, icon: &str, enabled: bool, item_type: &str) {
+        self.store.set(iter, &[
+            (0, &name),
+            (1, &icon),
+            (2, &enabled),
+            (3, &item_type),
+        ]);
+    }
+    
+    pub fn get_selection(&self) -> Option<gtk::TreeIter> {
+        let selection = self.widget.selection();
+        if let Some((model, iter)) = selection.selected() {
+            Some(iter)
+        } else {
+            None
+        }
+    }
+    
+    pub fn expand_all(&self) {
+        self.widget.expand_all();
+    }
+    
+    pub fn collapse_all(&self) {
+        self.widget.collapse_all();
     }
 }
 

@@ -37,6 +37,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 bitflags = "2.4"
+gtk = { version = "0.6", package = "gtk4", features = ["v4_8"] }
+gio = "0.17"
+glib = "0.17"
 
 [dev-dependencies]
 tokio-test = "0.4" 

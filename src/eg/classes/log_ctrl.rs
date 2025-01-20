@@ -8,6 +8,9 @@ use chrono::{DateTime, Local};
 use crate::core::Error;
 use crate::win32;
 use super::UIComponent;
+use gtk::prelude::*;
+use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable};
+use glib;
 
 #[derive(Debug, Clone)]
 pub struct LogEntry {
@@ -26,125 +29,136 @@ pub enum LogLevel {
 }
 
 pub struct LogCtrl {
-    hwnd: HWND,
-    parent: HWND,
-    instance: HINSTANCE,
-    is_visible: bool,
-    max_entries: usize,
+    pub widget: TextView,
+    buffer: TextBuffer,
+    show_time: bool,
+    show_date: bool,
+    indent: bool,
 }
 
 impl LogCtrl {
-    pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
-        Ok(Self {
-            hwnd: HWND::default(),
-            parent,
-            instance,
-            is_visible: false,
-            max_entries: 1000, // Default max entries
-        })
-    }
-
-    pub fn initialize(&mut self) -> Result<(), Error> {
-        // Create the list view control window
-        let hwnd = win32::create_window(
-            "SysListView32\0",
-            "",
-            WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS,
-            0,
-            0,
-            0,
-            0,
-            Some(self.parent),
-            self.instance,
-        )?;
-
-        self.hwnd = hwnd;
-        self.is_visible = true;
-
-        // Set extended list view styles
-        unsafe {
-            SendMessageA(
-                self.hwnd,
-                LVM_SETEXTENDEDLISTVIEWSTYLE,
-                WPARAM(0),
-                LPARAM((LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER) as isize),
-            );
-
-            // Add columns
-            let mut lvc = LVCOLUMNA::default();
-            lvc.mask = LVCF_TEXT | LVCF_WIDTH;
+    pub fn new() -> Self {
+        // Create text tag table and buffer
+        let tag_table = TextTagTable::new();
+        
+        // Create tags for different message types
+        let error_tag = TextTag::builder()
+            .name("error")
+            .foreground("red")
+            .build();
+        tag_table.add(&error_tag);
+        
+        let warning_tag = TextTag::builder()
+            .name("warning")
+            .foreground("orange")
+            .build();
+        tag_table.add(&warning_tag);
+        
+        let info_tag = TextTag::builder()
+            .name("info")
+            .foreground("blue")
+            .build();
+        tag_table.add(&info_tag);
+        
+        // Create buffer with tags
+        let buffer = TextBuffer::builder()
+            .tag_table(&tag_table)
+            .build();
             
-            // Time column
-            lvc.pszText = "Time\0".as_ptr() as *mut i8;
-            lvc.cx = 100;
-            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(0), LPARAM(&lvc as *const _ as isize));
-
-            // Level column
-            lvc.pszText = "Level\0".as_ptr() as *mut i8;
-            lvc.cx = 60;
-            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(1), LPARAM(&lvc as *const _ as isize));
-
-            // Message column
-            lvc.pszText = "Message\0".as_ptr() as *mut i8;
-            lvc.cx = 400;
-            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(2), LPARAM(&lvc as *const _ as isize));
-
-            // Source column
-            lvc.pszText = "Source\0".as_ptr() as *mut i8;
-            lvc.cx = 100;
-            SendMessageA(self.hwnd, LVM_INSERTCOLUMNA, WPARAM(3), LPARAM(&lvc as *const _ as isize));
+        // Create text view
+        let widget = TextView::builder()
+            .buffer(&buffer)
+            .editable(false)
+            .monospace(true)
+            .build();
+            
+        // Enable scrolling
+        widget.set_wrap_mode(gtk::WrapMode::Word);
+        
+        LogCtrl {
+            widget,
+            buffer,
+            show_time: true,
+            show_date: false,
+            indent: true,
         }
-
-        Ok(())
     }
-
-    pub fn add_entry(&mut self, entry: LogEntry) -> Result<(), Error> {
-        todo!()
+    
+    pub fn write(&self, text: &str, level: LogLevel) {
+        let mut prefix = String::new();
+        
+        // Add timestamp if enabled
+        if self.show_time || self.show_date {
+            let now = Local::now();
+            if self.show_date {
+                prefix.push_str(&now.format("%Y-%m-%d ").to_string());
+            }
+            if self.show_time {
+                prefix.push_str(&now.format("%H:%M:%S ").to_string());
+            }
+        }
+        
+        // Add indentation if enabled
+        if self.indent {
+            prefix.push_str("  ");
+        }
+        
+        let full_text = format!("{}{}\n", prefix, text);
+        
+        // Get end iterator
+        let mut end_iter = self.buffer.end_iter();
+        
+        // Insert text with appropriate tag
+        let tag_name = match level {
+            LogLevel::Error => Some("error"),
+            LogLevel::Warning => Some("warning"),
+            LogLevel::Info => Some("info"),
+            LogLevel::Debug => None,
+        };
+        
+        if let Some(tag_name) = tag_name {
+            if let Some(tag) = self.buffer.tag_table().lookup(tag_name) {
+                self.buffer.insert_with_tags(&mut end_iter, &full_text, &[&tag]);
+            }
+        } else {
+            self.buffer.insert(&mut end_iter, &full_text);
+        }
+        
+        // Scroll to end
+        self.widget.scroll_to_iter(&self.buffer.end_iter(), 0.0, false, 0.0, 0.0);
     }
-
-    pub fn clear(&mut self) -> Result<(), Error> {
-        todo!()
+    
+    pub fn clear(&self) {
+        self.buffer.set_text("");
     }
-
-    pub fn set_max_entries(&mut self, max: usize) {
-        todo!()
+    
+    pub fn set_time_logging(&mut self, enabled: bool) {
+        self.show_time = enabled;
     }
-
-    pub fn get_entry(&self, index: usize) -> Option<LogEntry> {
-        todo!()
+    
+    pub fn set_date_logging(&mut self, enabled: bool) {
+        self.show_date = enabled;
     }
-
-    pub fn get_entries(&self) -> Vec<LogEntry> {
-        todo!()
-    }
-
-    pub fn set_font(&mut self, font_name: &str, size: i32) -> Result<(), Error> {
-        todo!()
+    
+    pub fn set_indent(&mut self, enabled: bool) {
+        self.indent = enabled;
     }
 }
 
 impl UIComponent for LogCtrl {
     fn get_hwnd(&self) -> HWND {
-        self.hwnd
+        HWND::default()
     }
 
     fn show(&mut self) -> Result<(), Error> {
-        unsafe {
-            ShowWindow(self.hwnd, SW_SHOW);
-        }
-        self.is_visible = true;
         Ok(())
     }
 
     fn hide(&mut self) -> Result<(), Error> {
-        unsafe {
-            ShowWindow(self.hwnd, SW_HIDE);
-        }
-        self.is_visible = false;
         Ok(())
     }
 
     fn is_visible(&self) -> bool {
-        self.is_visible
+        true
     }
 } 
