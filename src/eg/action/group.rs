@@ -11,7 +11,7 @@ pub struct ActionGroup {
     name: String,
     description: String,
     plugin_id: Uuid,
-    actions: Vec<Arc<Mutex<dyn ActionBase>>>,
+    actions: Vec<Arc<Mutex<Box<dyn ActionBase>>>>,
 }
 
 impl ActionGroup {
@@ -41,7 +41,7 @@ impl ActionGroup {
     }
     
     /// Get all actions in the group
-    pub fn get_actions(&self) -> &[Arc<Mutex<dyn ActionBase>>] {
+    pub fn get_actions(&self) -> &[Arc<Mutex<Box<dyn ActionBase>>>] {
         &self.actions
     }
 }
@@ -66,7 +66,7 @@ impl ActionBase for ActionGroup {
     
     async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
         for action in &self.actions {
-            let action = action.lock().unwrap();
+            let mut action = action.lock().unwrap();
             action.execute(event).await?;
         }
         Ok(())
@@ -74,6 +74,7 @@ impl ActionBase for ActionGroup {
     
     fn can_execute(&self, event: Option<&dyn Event>) -> bool {
         // Groups can always execute
+        // print the unused var
         println!("Event: {:?}", event);
         true
     }
