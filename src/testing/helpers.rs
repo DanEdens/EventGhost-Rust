@@ -42,9 +42,13 @@ where
     F: std::future::Future<Output = T>,
 {
     // TODO: Implement async wait helper
-    println!("Waiting for async operation with timeout");
+    // print the unused var timeout_ms future
+    println!("Future: {:?}", future);
+    println!("Waiting for async operation with timeout: {}", timeout_ms);
     unimplemented!()
 }
+
+
 
 
 /// Assert that two configs are equal, ignoring volatile fields
