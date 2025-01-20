@@ -68,9 +68,12 @@ where
         move |_| {
             let event = event_generator();
             // TODO: Send event through event system
+            // print the unused var
+            println!("Event: {:?}", event);
             Ok(())
         },
     )
+
 }
 
 /// Creates an action that executes only if a condition is met

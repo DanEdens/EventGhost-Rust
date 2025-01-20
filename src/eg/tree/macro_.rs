@@ -112,8 +112,13 @@ impl TreeItem for Macro_ {
         if let Some(trigger) = &self.trigger_event {
             if let Some(event) = event {
                 // TODO: Implement event matching logic
+                // print the unused vars
+                println!("Trigger: {:?}", trigger);
+                println!("Event: {:?}", event);
                 true
             } else {
+
+
                 false
             }
         } else {

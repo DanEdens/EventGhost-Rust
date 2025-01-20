@@ -181,6 +181,7 @@ impl EventHandler for MockEventHandler {
     }
 
     fn can_handle(&self, event_type: EventType) -> bool {
+        println!("Can handle event type: {:?}", event_type);
         true
     }
 }

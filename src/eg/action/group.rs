@@ -2,6 +2,7 @@ use crate::core::Error;
 use crate::core::event::Event;
 use uuid::Uuid;
 use std::sync::Arc;
+use std::sync::Mutex;
 use super::base::ActionBase;
 use async_trait::async_trait;
 
@@ -11,7 +12,7 @@ pub struct ActionGroup {
     name: String,
     description: String,
     plugin_id: Uuid,
-    actions: Vec<Arc<dyn ActionBase>>,
+    actions: Vec<Arc<Mutex<dyn ActionBase>>>,
 }
 
 impl ActionGroup {
@@ -37,7 +38,7 @@ impl ActionGroup {
     }
     
     /// Get all actions in the group
-    pub fn get_actions(&self) -> &[Arc<dyn ActionBase>] {
+    pub fn get_actions(&self) -> &[Arc<Mutex<dyn ActionBase>>] {
         &self.actions
     }
 }
@@ -61,7 +62,8 @@ impl ActionBase for ActionGroup {
     }
     
     async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
-        for action in &mut self.actions {
+        for action in &self.actions {
+            let action = action.lock().unwrap();
             action.execute(event).await?;
         }
         Ok(())
@@ -69,9 +71,12 @@ impl ActionBase for ActionGroup {
     
     fn can_execute(&self, event: Option<&dyn Event>) -> bool {
         // Groups can always execute
+        // print the unused var
+        println!("Event: {:?}", event);
         true
     }
     
+
     fn clone_action(&self) -> Box<dyn ActionBase> {
         Box::new(ActionGroup {
             id: self.id,

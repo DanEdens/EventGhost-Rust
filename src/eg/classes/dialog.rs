@@ -46,7 +46,15 @@ impl Dialog for DialogImpl {
     }
 
     fn end_dialog(&mut self, result: DialogResult) {
-        self.widget.close();
+        match result {
+            DialogResult::Ok => {
+                self.widget.close();
+            }
+            DialogResult::Cancel => {
+                self.widget.close();
+            }
+            _ => {}
+        }
     }
 
     fn on_init(&mut self) -> Result<(), Error> {

@@ -56,9 +56,12 @@ impl ActionBase for ActionItem {
     
     fn can_execute(&self, event: Option<&dyn Event>) -> bool {
         // By default, actions can always execute
+        // print the unused var
+        println!("Event: {:?}", event);
         true
     }
     
+
     fn clone_action(&self) -> Box<dyn ActionBase> {
         Box::new(ActionItem {
             id: self.id,
