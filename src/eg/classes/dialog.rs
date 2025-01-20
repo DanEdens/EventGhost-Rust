@@ -113,12 +113,20 @@ impl CommonDialogs {
         let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
         let response = rt.block_on(dialog.run_future());
         let result = if response == ResponseType::Accept {
-            dialog.files()
-                .iter()
-                .filter_map(|f| f.ok())
-                .filter_map(|f| f.path())
-                .filter_map(|p| p.to_str().map(String::from))
-                .collect()
+            let files = dialog.files();
+            let mut paths = Vec::new();
+            for i in 0..files.n_items() {
+                if let Some(file) = files.item(i) {
+                    if let Some(file) = file.downcast_ref::<gtk::gio::File>() {
+                        if let Some(path) = file.path() {
+                            if let Some(path_str) = path.to_str() {
+                                paths.push(path_str.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+            paths
         } else {
             Vec::new()
         };
@@ -189,7 +197,8 @@ impl CommonDialogs {
         );
         dialog.set_title(Some(caption));
         
-        let response = dialog.run();
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(dialog.run_future());
         dialog.close();
         
         Ok(response.into())
@@ -203,7 +212,8 @@ impl CommonDialogs {
             dialog.set_rgba(&color);
         }
         
-        let response = dialog.run();
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(dialog.run_future());
         let result = if response == ResponseType::Ok {
             Some(dialog.rgba())
         } else {
@@ -231,7 +241,8 @@ impl CommonDialogs {
             dialog.set_current_folder(Some(&gtk::gio::File::for_path(dir)));
         }
         
-        let response = dialog.run();
+        let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+        let response = rt.block_on(dialog.run_future());
         let result = if response == ResponseType::Accept {
             dialog.file()
                 .and_then(|f| f.path())
@@ -263,9 +274,11 @@ pub struct CustomDialog {
 }
 
 impl CustomDialog {
-    pub fn new(app: &Application) -> Self {
+    pub fn new(app: Option<&Application>) -> Self {
         let dialog = GtkDialog::new();
-        dialog.set_application(Some(app));
+        if let Some(app) = app {
+            dialog.set_application(Some(app));
+        }
         dialog.set_modal(true);
         
         CustomDialog {
@@ -275,7 +288,8 @@ impl CustomDialog {
     }
     
     pub fn run(&mut self) -> ResponseType {
-        let response = self.widget.run();
+        let rt = Runtime::new().expect("Failed to create runtime");
+        let response = rt.block_on(self.widget.run_future());
         self.result = response.into();
         self.widget.close();
         response

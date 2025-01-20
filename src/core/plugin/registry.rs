@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::core::Error;
 use crate::core::config::Config;
 use super::traits::{Plugin, PluginInfo, PluginState};
-use super::loader::PluginLoader;
+use super::loader::{PluginLoader, LoaderError};
 use crate::core::error::{RegistryError as OtherRegistryError};
 use thiserror::Error;
 
@@ -27,6 +27,18 @@ pub enum RegistryError {
     Loader(String),
     #[error("Other error: {0}")]
     Other(String),
+}
+
+impl From<LoaderError> for RegistryError {
+    fn from(err: LoaderError) -> Self {
+        match err {
+            LoaderError::LoadFailed(msg) => RegistryError::Loader(msg),
+            LoaderError::NotFound(msg) => RegistryError::NotFound(msg),
+            LoaderError::Invalid(msg) => RegistryError::Plugin(msg),
+            LoaderError::Io(msg) => RegistryError::Io(msg),
+            LoaderError::Other(msg) => RegistryError::Other(msg),
+        }
+    }
 }
 
 /// Registry for managing plugin instances

@@ -9,6 +9,7 @@ use std::thread;
 use std::time::Duration;
 use async_trait::async_trait;
 use std::sync::Arc;
+use tokio::runtime::Runtime;
 
 /// Creates an action that executes a shell command
 pub fn shell_command_action(
@@ -88,8 +89,16 @@ where
         name,
         description,
         plugin_id,
-        move |event| conditional.clone_action().execute(event)
-    ).with_can_execute(condition)
+        move |event| {
+            let mut action = conditional.clone_action();
+            if action.can_execute(Some(event)) {
+                let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+                rt.block_on(action.execute(event))
+            } else {
+                Ok(())
+            }
+        }
+    )
 }
 
 /// Creates an action that repeats another action a specified number of times
@@ -105,11 +114,13 @@ pub fn repeat_action(
         description,
         plugin_id,
         move |event| {
+            let mut action = action.clone_action();
+            let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
             for _ in 0..count {
-                action.clone_action().execute(event)?;
+                rt.block_on(action.execute(event))?;
             }
             Ok(())
-        },
+        }
     )
 }
 

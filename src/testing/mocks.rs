@@ -168,19 +168,18 @@ pub struct MockEventHandler {
 
 impl MockEventHandler {
     pub fn new() -> Self {
-        MockEventHandler {
+        Self {
             handled_events: Vec::new(),
         }
     }
 }
 
-#[async_trait]
 impl EventHandler for MockEventHandler {
-    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
+    fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
         self.handled_events.push(event.get_type());
         Ok(())
     }
-    
+
     fn can_handle(&self, event_type: EventType) -> bool {
         true
     }
