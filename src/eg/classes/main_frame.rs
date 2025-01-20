@@ -7,6 +7,7 @@ use glib;
 use super::tree_ctrl::TreeCtrl;
 use super::log_ctrl::LogCtrl;
 use super::status_bar::StatusBar;
+use crate::eg::tree::Document;
 
 pub struct MainFrame {
     window: ApplicationWindow,

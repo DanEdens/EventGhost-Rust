@@ -1,7 +1,6 @@
-use windows::Win32::Foundation::{HWND, HINSTANCE, WPARAM, LPARAM};
-use windows::Win32::UI::Controls::{TBBUTTON, TBSTYLE_FLAT, TBSTYLE_TOOLTIPS, CCS_NODIVIDER, TB_SETBITMAPSIZE, TB_BUTTONSTRUCTSIZE};
-use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, SW_SHOW, SW_HIDE, SendMessageA};
-use windows::Win32::Foundation::MAKELONG;
+use gtk::prelude::*;
+use gtk::{self, Box, Button, Image, Orientation};
+use glib;
 use crate::core::Error;
 use crate::win32;
 use super::UIComponent;
@@ -11,7 +10,7 @@ pub struct ToolbarButton {
     pub id: i32,
     pub text: String,
     pub tooltip: String,
-    pub icon_index: i32,
+    pub icon_name: String,
     pub style: ButtonStyle,
     pub state: ButtonState,
 }
@@ -34,105 +33,123 @@ pub enum ButtonState {
 }
 
 pub struct Toolbar {
-    hwnd: HWND,
-    parent: HWND,
-    instance: HINSTANCE,
-    is_visible: bool,
-    buttons: Vec<ToolbarButton>,
-    image_list: Option<HWND>,
+    pub widget: Box,
+    buttons: Vec<(ToolbarButton, Button)>,
 }
 
 impl Toolbar {
-    pub fn new(parent: HWND, instance: HINSTANCE) -> Result<Self, Error> {
-        Ok(Self {
-            hwnd: HWND::default(),
-            parent,
-            instance,
-            is_visible: false,
+    pub fn new() -> Self {
+        let widget = Box::new(Orientation::Horizontal, 5);
+        widget.add_css_class("toolbar");
+        
+        Toolbar {
+            widget,
             buttons: Vec::new(),
-            image_list: None,
-        })
-    }
-
-    pub fn initialize(&mut self) -> Result<(), Error> {
-        // Create the toolbar window
-        let hwnd = win32::create_window(
-            "ToolbarWindow32\0",
-            "",
-            WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NODIVIDER,
-            0,
-            0,
-            0,
-            0,
-            Some(self.parent),
-            self.instance,
-        )?;
-
-        self.hwnd = hwnd;
-        self.is_visible = true;
-
-        // Set toolbar button size and bitmap size
-        unsafe {
-            SendMessageA(
-                self.hwnd,
-                TB_SETBITMAPSIZE,
-                WPARAM(0),
-                LPARAM(MAKELONG(16, 16) as isize),
-            );
-            SendMessageA(
-                self.hwnd,
-                TB_BUTTONSTRUCTSIZE,
-                WPARAM(std::mem::size_of::<TBBUTTON>() as usize),
-                LPARAM(0),
-            );
         }
-
-        Ok(())
     }
 
-    /// Add a button to the toolbar
-    pub fn add_button(&mut self, button: ToolbarButton) -> Result<(), Error> {
-        todo!()
+    pub fn add_button(&mut self, button: ToolbarButton) {
+        let btn = Button::new();
+        
+        // Set icon if specified
+        if !button.icon_name.is_empty() {
+            let image = Image::from_icon_name(&button.icon_name);
+            btn.set_child(Some(&image));
+        }
+        
+        // Set tooltip
+        if !button.tooltip.is_empty() {
+            btn.set_tooltip_text(Some(&button.tooltip));
+        }
+        
+        // Set style
+        match button.style {
+            ButtonStyle::Check => {
+                btn.add_css_class("toggle");
+            }
+            ButtonStyle::Group => {
+                btn.add_css_class("group");
+            }
+            ButtonStyle::Separator => {
+                btn.add_css_class("separator");
+            }
+            ButtonStyle::DropDown => {
+                btn.add_css_class("dropdown");
+            }
+            _ => {}
+        }
+        
+        // Set initial state
+        match button.state {
+            ButtonState::Disabled => {
+                btn.set_sensitive(false);
+            }
+            ButtonState::Checked => {
+                if button.style == ButtonStyle::Check {
+                    btn.set_css_classes(&["toggle", "active"]);
+                }
+            }
+            _ => {}
+        }
+        
+        self.widget.append(&btn);
+        self.buttons.push((button, btn));
     }
 
-    /// Remove a button from the toolbar
-    pub fn remove_button(&mut self, button_id: i32) -> Result<(), Error> {
-        todo!()
+    pub fn remove_button(&mut self, button_id: i32) {
+        if let Some(index) = self.buttons.iter().position(|(btn, _)| btn.id == button_id) {
+            let (_, button) = &self.buttons[index];
+            self.widget.remove(button);
+            self.buttons.remove(index);
+        }
     }
 
-    /// Enable or disable a button
-    pub fn enable_button(&mut self, button_id: i32, enabled: bool) -> Result<(), Error> {
-        todo!()
+    pub fn enable_button(&mut self, button_id: i32, enabled: bool) {
+        if let Some((_, button)) = self.buttons.iter().find(|(btn, _)| btn.id == button_id) {
+            button.set_sensitive(enabled);
+        }
     }
 
-    /// Set button state
-    pub fn set_button_state(&mut self, button_id: i32, state: ButtonState) -> Result<(), Error> {
-        todo!()
+    pub fn set_button_state(&mut self, button_id: i32, state: ButtonState) {
+        if let Some((btn, button)) = self.buttons.iter_mut().find(|(b, _)| b.id == button_id) {
+            match state {
+                ButtonState::Disabled => {
+                    button.set_sensitive(false);
+                }
+                ButtonState::Checked => {
+                    if btn.style == ButtonStyle::Check {
+                        button.set_css_classes(&["toggle", "active"]);
+                    }
+                }
+                _ => {
+                    button.set_sensitive(true);
+                    if btn.style == ButtonStyle::Check {
+                        button.set_css_classes(&["toggle"]);
+                    }
+                }
+            }
+            btn.state = state;
+        }
     }
 
-    /// Get button state
-    pub fn get_button_state(&self, button_id: i32) -> Result<ButtonState, Error> {
-        todo!()
+    pub fn get_button_state(&self, button_id: i32) -> Option<ButtonState> {
+        self.buttons.iter()
+            .find(|(btn, _)| btn.id == button_id)
+            .map(|(btn, _)| btn.state)
     }
 
-    /// Set the image list for toolbar icons
-    pub fn set_image_list(&mut self, image_list: HWND) -> Result<(), Error> {
-        todo!()
+    pub fn set_button_text(&mut self, button_id: i32, text: &str) {
+        if let Some((btn, button)) = self.buttons.iter_mut().find(|(b, _)| b.id == button_id) {
+            button.set_label(text);
+            btn.text = text.to_string();
+        }
     }
 
-    /// Set button text
-    pub fn set_button_text(&mut self, button_id: i32, text: &str) -> Result<(), Error> {
-        todo!()
-    }
-
-    /// Set button tooltip
-    pub fn set_button_tooltip(&mut self, button_id: i32, tooltip: &str) -> Result<(), Error> {
-        todo!()
-    }
-
-    /// Get the rect of a specific button
-    pub fn get_button_rect(&self, button_id: i32) -> Result<Option<windows::Win32::Foundation::RECT>, Error> {
-        todo!()
+    pub fn set_button_tooltip(&mut self, button_id: i32, tooltip: &str) {
+        if let Some((btn, button)) = self.buttons.iter_mut().find(|(b, _)| b.id == button_id) {
+            button.set_tooltip_text(Some(tooltip));
+            btn.tooltip = tooltip.to_string();
+        }
     }
 }
 
@@ -169,19 +186,31 @@ mod tests {
 
     #[test]
     fn test_toolbar_initialization() {
-        // Mock HWND and HINSTANCE
-        let parent_hwnd = HWND(0);
-        let instance = HINSTANCE(0);
+        gtk::init().expect("Failed to initialize GTK");
         
-        let result = Toolbar::new(parent_hwnd, instance);
-        assert!(result.is_ok(), "Toolbar initialization failed");
+        let toolbar = Toolbar::new();
+        assert!(toolbar.buttons.is_empty());
     }
 
     #[test]
-    fn test_toolbar_visibility() {
-        let parent_hwnd = HWND(0);
-        let instance = HINSTANCE(0);
-        let toolbar = Toolbar::new(parent_hwnd, instance).expect("Failed to create Toolbar");
-        // Add additional visibility tests as needed
+    fn test_toolbar_buttons() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let mut toolbar = Toolbar::new();
+        
+        let button = ToolbarButton {
+            id: 1,
+            text: "Test".to_string(),
+            tooltip: "Test Button".to_string(),
+            icon_name: "document-new-symbolic".to_string(),
+            style: ButtonStyle::Normal,
+            state: ButtonState::Normal,
+        };
+        
+        toolbar.add_button(button);
+        assert_eq!(toolbar.buttons.len(), 1);
+        
+        toolbar.remove_button(1);
+        assert!(toolbar.buttons.is_empty());
     }
 } 

@@ -73,15 +73,13 @@ impl TreeCtrl {
     }
     
     pub fn expand_item(&self, iter: &gtk::TreeIter) {
-        let path = self.store.path(iter);
-        if let Some(path) = path {
+        if let Some(path) = self.store.path(iter) {
             self.widget.expand_row(&path, false);
         }
     }
     
     pub fn collapse_item(&self, iter: &gtk::TreeIter) {
-        let path = self.store.path(iter);
-        if let Some(path) = path {
+        if let Some(path) = self.store.path(iter) {
             self.widget.collapse_row(&path);
         }
     }

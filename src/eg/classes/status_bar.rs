@@ -1,11 +1,3 @@
-use windows::Win32::Foundation::{HWND, HINSTANCE, WPARAM, LPARAM};
-use windows::Win32::UI::Controls::{
-    SBS_SIZEGRIP, SB_SETPARTS, SB_SETTEXTA,
-};
-use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, SW_SHOW, SW_HIDE, SendMessageA};
-use crate::core::Error;
-use crate::win32;
-use super::UIComponent;
 use gtk::prelude::*;
 use gtk::{self, Box, Label, CheckButton, Statusbar};
 use glib;
@@ -77,23 +69,5 @@ impl StatusBar {
         } else {
             self.check_box.remove_css_class("success");
         }
-    }
-}
-
-impl UIComponent for StatusBar {
-    fn get_hwnd(&self) -> HWND {
-        HWND::default()
-    }
-
-    fn show(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn hide(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn is_visible(&self) -> bool {
-        true
     }
 } 
