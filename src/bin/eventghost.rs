@@ -14,11 +14,11 @@ fn main() {
     main_frame.show();
 
     // Message loop
-    let mut msg = MSG::default();
-    unsafe {
-        while GetMessageA(&mut msg, None, 0, 0).into() {
-            TranslateMessage(&msg);
-            DispatchMessageA(&msg);
-        }
-    }
+    // let mut msg = MSG::default();
+    // unsafe {
+    //     while GetMessageA(&mut msg, None, 0, 0).into() {
+    //         TranslateMessage(&msg);
+    //         DispatchMessageA(&msg);
+    //     }
+    // }
 } 

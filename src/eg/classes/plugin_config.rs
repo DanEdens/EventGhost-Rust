@@ -5,6 +5,7 @@ use super::UIComponent;
 use super::dialog::{Dialog, DialogResult};
 use super::property_grid::{PropertyGrid, PropertySource, Property};
 use std::collections::HashMap;
+use gio::Application;
 
 #[derive(Debug)]
 pub struct ConfigPage {
@@ -28,15 +29,16 @@ pub struct ConfigDialog {
 impl ConfigDialog {
     const DEFAULT_DESCRIPTION: &'static str = "";
 
-    pub fn new(title: &str) -> Self {
+    pub fn new(title: &str, app: &Application) -> Self {
         let widget = GtkDialog::new();
+        widget.set_application(Some(app));
         widget.set_title(Some(title));
         
         let container = GtkBox::new(gtk::Orientation::Vertical, 6);
         widget.content_area().append(&container);
         
         let property_grid = PropertyGrid::new();
-        container.append(&property_grid.get_widget());
+        container.append(property_grid.get_widget());
         
         ConfigDialog {
             widget,
@@ -163,12 +165,12 @@ impl UIComponent for ConfigDialog {
         self.widget.upcast_ref()
     }
 
-    fn show(&mut self) -> Result<(), Error> {
-        todo!()
+    fn show(&self) {
+        // Implementation
     }
 
-    fn hide(&mut self) -> Result<(), Error> {
-        todo!()
+    fn hide(&self) {
+        // Implementation
     }
 
     fn is_visible(&self) -> bool {
@@ -218,7 +220,7 @@ mod tests {
     fn test_config_dialog_initialization() {
         gtk::init().expect("Failed to initialize GTK");
         
-        let dialog = ConfigDialog::new("Test Config");
+        let dialog = ConfigDialog::new("Test Config", &gio::Application::new());
         assert!(!dialog.widget.is_visible());
     }
 } 

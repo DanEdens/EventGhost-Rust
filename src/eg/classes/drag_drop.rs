@@ -124,6 +124,16 @@ impl DragDropManager {
         self.current_data.lock().ok()
             .and_then(|data| data.clone())
     }
+
+    pub fn setup_drag_source(&self, widget: &impl IsA<Widget>) {
+        let source = DragSource::new();
+        widget.add_controller(source);
+    }
+
+    pub fn setup_drop_target(&self, widget: &impl IsA<Widget>) {
+        let target = DropTarget::new(None::<glib::Type>, gdk::DragAction::COPY);
+        widget.add_controller(target);
+    }
 }
 
 pub struct DragSourceWrapper {

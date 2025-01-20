@@ -1,5 +1,3 @@
-use std::error::Error as StdError;
-use std::fmt;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -21,12 +19,43 @@ pub enum Error {
     
     #[error("Other error: {0}")]
     Other(String),
+    
+    #[error("Property error: {0}")]
+    Property(String),
+    
+    #[error("Tree error: {0}")]
+    Tree(String),
+    
+    #[error("Registry error: {0}")]
+    Registry(String),
+    
+    #[error("Action error: {0}")]
+    Action(String),
+    
+    #[error("Loader error: {0}")]
+    Loader(String),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::Io(err)
     }
 }
 
-impl StdError for Error {} 
+impl From<RegistryError> for Error {
+    fn from(err: RegistryError) -> Self {
+        Error::Registry(err.to_string())
+    }
+}
+
+impl From<ActionError> for Error {
+    fn from(err: ActionError) -> Self {
+        Error::Action(err.to_string())
+    }
+}
+
+impl From<LoaderError> for Error {
+    fn from(err: LoaderError) -> Self {
+        Error::Loader(err.to_string())
+    }
+} 

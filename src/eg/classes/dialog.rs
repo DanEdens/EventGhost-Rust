@@ -2,13 +2,35 @@ use gtk::prelude::*;
 use gtk::{self, Dialog as GtkDialog, ResponseType, FileChooserDialog, FileChooserAction, ColorChooserDialog};
 use crate::core::Error;
 use super::UIComponent;
+use gtk4::{PrintOperation, Application};
+use std::path::PathBuf;
 
 /// Base dialog trait
-pub trait Dialog: UIComponent {
-    fn show_modal(&mut self) -> Result<DialogResult, Error>;
-    fn end_dialog(&mut self, result: DialogResult);
-    fn on_init(&mut self) -> Result<(), Error>;
-    fn on_command(&mut self, command: u32) -> Result<(), Error>;
+pub trait Dialog {
+    fn show(&self);
+    fn hide(&self);
+}
+
+pub struct DialogImpl {
+    widget: gtk::Dialog
+}
+
+impl DialogImpl {
+    pub fn new() -> Self {
+        Self {
+            widget: gtk::Dialog::new()
+        }
+    }
+}
+
+impl Dialog for DialogImpl {
+    fn show(&self) {
+        self.widget.present();
+    }
+
+    fn hide(&self) {
+        self.widget.hide();
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -210,13 +232,13 @@ pub struct CustomDialog {
 }
 
 impl CustomDialog {
-    pub fn new(title: &str) -> Self {
-        let widget = GtkDialog::new();
-        widget.set_title(Some(title));
-        widget.set_modal(true);
+    pub fn new(app: &Application) -> Self {
+        let dialog = GtkDialog::new();
+        dialog.set_application(Some(app));
+        dialog.set_modal(true);
         
         CustomDialog {
-            widget,
+            widget: dialog,
         }
     }
     
@@ -235,6 +257,42 @@ impl UIComponent for CustomDialog {
     }
 }
 
+impl FileDialog {
+    pub fn show(&self) -> Option<PathBuf> {
+        let response = self.widget.present();
+        if response == ResponseType::Accept {
+            self.widget.file().map(|f| f.path()).flatten()
+        } else {
+            None
+        }
+    }
+}
+
+impl MessageDialog {
+    pub fn show(&self) -> ResponseType {
+        self.widget.present();
+        self.widget.response_type()
+    }
+}
+
+impl ColorDialog {
+    pub fn show(&self) -> Option<gdk::RGBA> {
+        self.widget.present();
+        if self.widget.response_type() == ResponseType::Accept {
+            Some(self.widget.rgba())
+        } else {
+            None
+        }
+    }
+}
+
+impl Dialog {
+    pub fn show(&self) -> ResponseType {
+        self.widget.present();
+        self.widget.response_type()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,7 +301,7 @@ mod tests {
     fn test_dialog_initialization() {
         gtk::init().expect("Failed to initialize GTK");
         
-        let dialog = CustomDialog::new("Test Dialog");
+        let dialog = CustomDialog::new(None);
         assert!(!dialog.widget.is_visible());
     }
 } 

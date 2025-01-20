@@ -22,6 +22,7 @@ impl Plugin for MockPlugin {
 }
 
 /// Mock event for testing
+#[derive(Debug)]
 pub struct MockEvent {
     id: String,
     payload: Vec<u8>,

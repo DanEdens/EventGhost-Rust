@@ -37,12 +37,16 @@ impl TreeCtrl {
     pub fn expand_item(&self, iter: &gtk::TreeIter) {
         if let Some(path) = self.store.path(iter) {
             self.tree_view.expand_row(&path, false);
+        } else {
+            eprintln!("Could not find path for the given iter.");
         }
     }
     
     pub fn collapse_item(&self, iter: &gtk::TreeIter) {
         if let Some(path) = self.store.path(iter) {
             self.tree_view.collapse_row(&path);
+        } else {
+            eprintln!("Could not find path for the given iter.");
         }
     }
     
@@ -60,6 +64,10 @@ impl TreeCtrl {
     
     pub fn get_path(&self, iter: &TreeIter) -> Option<TreePath> {
         self.store.path(iter)
+    }
+
+    pub fn get_iter(&self, path: &TreePath) -> Option<TreeIter> {
+        self.store.iter(path)
     }
 }
 
