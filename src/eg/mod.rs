@@ -5,38 +5,45 @@ pub mod winapi;
 pub mod bunch;
 pub mod globals;
 
-use crate::core::{EventManager, PluginRegistry};
+use crate::core::event::EventManager;
+use crate::core::PluginRegistry;
+use crate::core::Error;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::path::PathBuf;
 
 pub struct EventGhost {
-    event_manager: Arc<RwLock<EventManager>>,
-    plugins: Arc<RwLock<PluginRegistry>>,
+    event_manager: EventManager,
+    plugin_registry: PluginRegistry,
     stop_flag: Arc<RwLock<bool>>,
 }
 
 impl EventGhost {
-    pub async fn new() -> Result<Self, crate::core::Error> {
-        let plugin_dir = PathBuf::from("plugins");  // Default plugin directory
+    pub fn new() -> Result<Self, Error> {
         Ok(Self {
-            event_manager: Arc::new(RwLock::new(EventManager::new())),
-            plugins: Arc::new(RwLock::new(PluginRegistry::new(plugin_dir)?)),
+            event_manager: EventManager::new(),
+            plugin_registry: PluginRegistry::new()?,
             stop_flag: Arc::new(RwLock::new(false)),
         })
     }
 
-    pub async fn start(&mut self) -> Result<(), crate::core::Error> {
+    pub fn get_event_manager(&self) -> &EventManager {
+        &self.event_manager
+    }
+
+    pub fn get_plugin_registry(&self) -> &PluginRegistry {
+        &self.plugin_registry
+    }
+
+    pub async fn start(&mut self) -> Result<(), Error> {
         // Initialize plugins
-        let mut plugins = self.plugins.write().await;
-        plugins.load_all().await?;
+        self.plugin_registry.load_all().await?;
         Ok(())
     }
 
-    pub async fn stop(&mut self) -> Result<(), crate::core::Error> {
+    pub async fn stop(&mut self) -> Result<(), Error> {
         // Stop and unload plugins
-        let mut plugins = self.plugins.write().await;
-        plugins.unload_all().await?;
+        self.plugin_registry.unload_all().await?;
         Ok(())
     }
 

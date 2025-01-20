@@ -2,36 +2,22 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::core::{
-    Plugin, PluginInfo, Event, EventHandler, Error,
-    Config, ConfigStore, ConfigError,
-    Window, WindowConfig,
+    Plugin, PluginInfo, Event,
+    Error, Config, ConfigStore, ConfigError,
 };
+use crate::core::event::EventHandler;
+use gtk::prelude::*;
+use gtk::{self, Window};
 
 /// Mock plugin for testing
 pub struct MockPlugin {
-    info: PluginInfo,
-    events: Arc<Mutex<Vec<Box<dyn Event>>>>,
+    pub info: PluginInfo,
+    pub enabled: bool,
 }
 
 impl Plugin for MockPlugin {
-    fn get_info(&self) -> PluginInfo {
-        // TODO: Implement mock plugin info
-        unimplemented!()
-    }
-
-    fn initialize(&mut self) -> Result<(), Error> {
-        // TODO: Implement mock initialization
-        unimplemented!()
-    }
-
-    fn start(&mut self) -> Result<(), Error> {
-        // TODO: Implement mock start
-        unimplemented!()
-    }
-
-    fn stop(&mut self) -> Result<(), Error> {
-        // TODO: Implement mock stop
-        unimplemented!()
+    fn get_info(&self) -> &PluginInfo {
+        &self.info
     }
 }
 
@@ -43,25 +29,22 @@ pub struct MockEvent {
 
 impl Event for MockEvent {
     fn get_id(&self) -> &str {
-        // TODO: Implement mock event id
-        unimplemented!()
+        &self.id
     }
 
     fn get_payload(&self) -> &[u8] {
-        // TODO: Implement mock event payload
-        unimplemented!()
+        &self.payload
     }
 }
 
 /// Mock event handler for testing
 pub struct MockEventHandler {
-    handled_events: Arc<Mutex<Vec<Box<dyn Event>>>>,
+    pub received_events: Vec<Box<dyn Event>>,
 }
 
 impl EventHandler for MockEventHandler {
-    fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
-        // TODO: Implement mock event handling
-        unimplemented!()
+    fn handle_event(&mut self, event: Box<dyn Event>) {
+        self.received_events.push(event);
     }
 }
 
@@ -72,35 +55,68 @@ pub struct MockConfigStore {
 
 impl ConfigStore for MockConfigStore {
     fn load(&self) -> Result<Config, ConfigError> {
-        // TODO: Implement mock config loading
-        unimplemented!()
+        todo!("Implement mock config loading")
     }
 
-    fn save(&self, config: &Config) -> Result<(), ConfigError> {
-        // TODO: Implement mock config saving
-        unimplemented!()
+    fn save(&self, _config: &Config) -> Result<(), ConfigError> {
+        todo!("Implement mock config saving")
     }
 }
 
 /// Mock window for testing
 pub struct MockWindow {
-    config: WindowConfig,
-    events: Arc<Mutex<Vec<String>>>,
+    pub widget: Window,
 }
 
-impl Window for MockWindow {
-    fn show(&mut self) {
-        // TODO: Implement mock window show
-        unimplemented!()
+impl MockWindow {
+    pub fn new() -> Self {
+        let widget = Window::new();
+        MockWindow { widget }
     }
+}
 
-    fn hide(&mut self) {
-        // TODO: Implement mock window hide
-        unimplemented!()
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_mock_plugin() {
+        let info = PluginInfo {
+            id: "mock".into(),
+            name: "Mock Plugin".into(),
+            description: "A mock plugin for testing".into(),
+            version: "1.0.0".into(),
+            author: "Test Author".into(),
+        };
+        
+        let plugin = MockPlugin {
+            info,
+            enabled: false,
+        };
+        
+        assert_eq!(plugin.get_info().id, "mock");
     }
-
-    fn close(&mut self) {
-        // TODO: Implement mock window close
-        unimplemented!()
+    
+    #[test]
+    fn test_mock_window() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let window = MockWindow::new();
+        assert!(!window.widget.is_visible());
+    }
+    
+    #[test]
+    fn test_mock_event_handler() {
+        let mut handler = MockEventHandler {
+            received_events: Vec::new(),
+        };
+        
+        let event = MockEvent {
+            id: "test.event".into(),
+            payload: vec![],
+        };
+        handler.handle_event(Box::new(event));
+        
+        assert_eq!(handler.received_events.len(), 1);
     }
 } 

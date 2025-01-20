@@ -1,15 +1,30 @@
-use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT, HINSTANCE};
-use windows::Win32::UI::WindowsAndMessaging::*;
-use windows::core::PCSTR;
-use crate::core::Error;
+use gtk::prelude::*;
+use gtk::{self, Application, ApplicationWindow};
+use gio;
 
-// Re-export the window functions from win32 module
-pub use win32::{
-    register_window_class,
-    create_window,
-    show_window,
-    send_message,
-    post_message,
-    get_window_text,
-    set_window_text,
-}; 
+pub fn init_application() -> gtk::Application {
+    let application = Application::new(
+        Some("org.eventghost.app"),
+        gio::ApplicationFlags::FLAGS_NONE,
+    );
+    
+    application.connect_activate(|app| {
+        let window = ApplicationWindow::new(app);
+        window.set_title(Some("EventGhost"));
+        window.set_default_size(800, 600);
+        window.show();
+    });
+    
+    application
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_application_initialization() {
+        let app = init_application();
+        assert_eq!(app.application_id(), Some("org.eventghost.app"));
+    }
+} 

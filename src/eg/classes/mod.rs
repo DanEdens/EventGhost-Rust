@@ -1,40 +1,40 @@
+use gtk::prelude::*;
+use gtk::Widget;
+
+pub mod dialog;
 pub mod drag_drop;
-pub mod guid;
 pub mod log_ctrl;
 pub mod main_frame;
 pub mod menu;
 pub mod plugin_config;
 pub mod property_grid;
-pub mod tree_ctrl;
-pub mod types;
 pub mod status_bar;
 pub mod toolbar;
-pub mod dialog;
+pub mod tree_ctrl;
 
-// Re-export common types
-pub use types::{PropertyValue, PopupFlags};
-pub use drag_drop::DragEffects;
-
-// Re-export UI components
-pub use main_frame::MainFrame;
-pub use tree_ctrl::TreeCtrl;
+pub use dialog::CustomDialog;
 pub use log_ctrl::LogCtrl;
-pub use guid::GUID;
+pub use main_frame::MainFrame;
+pub use menu::Menu;
+pub use plugin_config::ConfigDialog;
+pub use property_grid::PropertyGrid;
 pub use status_bar::StatusBar;
 pub use toolbar::Toolbar;
-pub use dialog::{Dialog, DialogResult, CommonDialogs, FileDialogOptions, MessageBoxStyle};
-pub use menu::{Menu, MenuItem, MenuItemKind};
-pub use drag_drop::{DragDropManager, DragData, DragSource, DropTarget};
-pub use property_grid::{PropertyGrid, Property, PropertySource};
-pub use plugin_config::ConfigDialog;
+pub use tree_ctrl::TreeCtrl;
 
-use crate::core::Error;
-use windows::Win32::Foundation::HWND;
-
-/// Base trait for UI components
+/// Trait for UI components that can be shown/hidden
 pub trait UIComponent {
-    fn get_hwnd(&self) -> HWND;
-    fn show(&mut self) -> Result<(), Error>;
-    fn hide(&mut self) -> Result<(), Error>;
-    fn is_visible(&self) -> bool;
+    fn get_widget(&self) -> &Widget;
+    
+    fn show(&self) {
+        self.get_widget().show();
+    }
+    
+    fn hide(&self) {
+        self.get_widget().hide();
+    }
+    
+    fn is_visible(&self) -> bool {
+        self.get_widget().is_visible()
+    }
 } 

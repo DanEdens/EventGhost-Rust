@@ -1,6 +1,9 @@
-use windows::Win32::Foundation::HWND;
+use gtk::prelude::*;
+use gtk::{self, Dialog as GtkDialog, Box as GtkBox, Label, Entry, Button, ResponseType};
 use crate::core::Error;
-use super::{Dialog, DialogResult, UIComponent, PropertyGrid, PropertySource, Property};
+use super::UIComponent;
+use super::dialog::{Dialog, DialogResult};
+use super::property_grid::{PropertyGrid, PropertySource, Property};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -10,9 +13,9 @@ pub struct ConfigPage {
     property_grid: PropertyGrid,
 }
 
-#[derive(Debug)]
 pub struct ConfigDialog {
-    hwnd: HWND,
+    widget: GtkDialog,
+    container: GtkBox,
     pages: Vec<ConfigPage>,
     current_page: usize,
     is_visible: bool,
@@ -25,15 +28,51 @@ pub struct ConfigDialog {
 impl ConfigDialog {
     const DEFAULT_DESCRIPTION: &'static str = "";
 
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!("Phase 4: Configuration System")
+    pub fn new(title: &str) -> Self {
+        let widget = GtkDialog::new();
+        widget.set_title(Some(title));
+        
+        let container = GtkBox::new(gtk::Orientation::Vertical, 6);
+        widget.content_area().append(&container);
+        
+        let property_grid = PropertyGrid::new();
+        container.append(&property_grid.get_widget());
+        
+        ConfigDialog {
+            widget,
+            container,
+            pages: Vec::new(),
+            current_page: 0,
+            is_visible: false,
+            result: DialogResult::Cancel,
+            changes: HashMap::new(),
+        }
+    }
+    
+    pub fn add_field(&self, label: &str, value: &str) -> Entry {
+        let hbox = GtkBox::new(gtk::Orientation::Horizontal, 12);
+        let label = Label::new(Some(label));
+        let entry = Entry::new();
+        entry.set_text(value);
+        
+        hbox.append(&label);
+        hbox.append(&entry);
+        self.container.append(&hbox);
+        
+        entry
+    }
+    
+    pub fn add_button(&self, label: &str) -> Button {
+        let button = Button::with_label(label);
+        self.widget.add_action_widget(&button, ResponseType::Ok);
+        button
     }
 
     pub fn add_page(&mut self, title: &str, description: &str) -> Result<(), Error> {
         todo!("Phase 4: Configuration System")
     }
 
-    pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource>) -> Result<(), Error> {
+    pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource + Send + Sync>) -> Result<(), Error> {
         todo!()
     }
 
@@ -89,11 +128,21 @@ impl ConfigDialog {
     fn on_property_changed(&mut self, name: String, value: Property) {
         self.changes.insert(name, value);
     }
+
+    pub fn run(&self) -> ResponseType {
+        self.widget.run()
+    }
+    
+    pub fn close(&self) {
+        self.widget.close();
+    }
 }
 
 impl Dialog for ConfigDialog {
     fn show_modal(&mut self) -> Result<DialogResult, Error> {
-        todo!()
+        let response = self.widget.run();
+        self.widget.close();
+        Ok(response.into())
     }
 
     fn end_dialog(&mut self, result: DialogResult) {
@@ -101,17 +150,17 @@ impl Dialog for ConfigDialog {
     }
 
     fn on_init(&mut self) -> Result<(), Error> {
-        todo!()
+        Ok(())
     }
 
-    fn on_command(&mut self, command: u32) -> Result<(), Error> {
-        todo!()
+    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
+        Ok(())
     }
 }
 
 impl UIComponent for ConfigDialog {
-    fn get_hwnd(&self) -> HWND {
-        self.hwnd
+    fn get_widget(&self) -> &gtk::Widget {
+        self.widget.upcast_ref()
     }
 
     fn show(&mut self) -> Result<(), Error> {
@@ -163,5 +212,13 @@ mod tests {
             }
             Ok(())
         }
+    }
+
+    #[test]
+    fn test_config_dialog_initialization() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let dialog = ConfigDialog::new("Test Config");
+        assert!(!dialog.widget.is_visible());
     }
 } 

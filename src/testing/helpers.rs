@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tempfile::TempDir;
 use uuid::Uuid;
-use crate::core::{Config, GlobalConfig, PluginConfig};
+use crate::core::{Config, config::{GlobalConfig, PluginConfig}};
 
 /// Create a temporary test directory
 pub fn create_test_dir() -> TempDir {
