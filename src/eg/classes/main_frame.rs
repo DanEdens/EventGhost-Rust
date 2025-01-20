@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, HeaderBar, MenuButton, Button};
+use gtk::{self, Application, ApplicationWindow, Box, HeaderBar, MenuButton, Button, Toolbar};
 use gtk::Orientation;
 use gio::SimpleAction;
 use glib;
@@ -36,6 +36,10 @@ impl MainFrame {
         
         // Create header bar (replaces traditional menu bar)
         let header = HeaderBar::new();
+        
+        // Create toolbar
+        let toolbar = Self::create_toolbar();
+        main_box.append(&toolbar);
         
         // Create main menu button
         let menu_button = MenuButton::new();
@@ -123,6 +127,66 @@ impl MainFrame {
         menu.append_submenu(Some("Edit"), &edit_menu);
         
         menu_button.set_menu_model(Some(&menu));
+    }
+    
+    fn create_toolbar() -> gtk::Box {
+        let toolbar = gtk::Box::new(Orientation::Horizontal, 2);
+        toolbar.add_css_class("toolbar");
+        
+        // New button
+        let new_button = Button::from_icon_name("document-new-symbolic");
+        new_button.set_tooltip_text(Some("New"));
+        toolbar.append(&new_button);
+        
+        // Open button
+        let open_button = Button::from_icon_name("document-open-symbolic");
+        open_button.set_tooltip_text(Some("Open"));
+        toolbar.append(&open_button);
+        
+        // Save button
+        let save_button = Button::from_icon_name("document-save-symbolic");
+        save_button.set_tooltip_text(Some("Save"));
+        toolbar.append(&save_button);
+        
+        // Separator
+        let separator1 = gtk::Separator::new(Orientation::Vertical);
+        toolbar.append(&separator1);
+        
+        // Cut button
+        let cut_button = Button::from_icon_name("edit-cut-symbolic");
+        cut_button.set_tooltip_text(Some("Cut"));
+        toolbar.append(&cut_button);
+        
+        // Copy button
+        let copy_button = Button::from_icon_name("edit-copy-symbolic");
+        copy_button.set_tooltip_text(Some("Copy"));
+        toolbar.append(&copy_button);
+        
+        // Paste button
+        let paste_button = Button::from_icon_name("edit-paste-symbolic");
+        paste_button.set_tooltip_text(Some("Paste"));
+        toolbar.append(&paste_button);
+        
+        // Separator
+        let separator2 = gtk::Separator::new(Orientation::Vertical);
+        toolbar.append(&separator2);
+        
+        // Add Plugin button
+        let add_plugin_button = Button::from_icon_name("list-add-symbolic");
+        add_plugin_button.set_tooltip_text(Some("Add Plugin"));
+        toolbar.append(&add_plugin_button);
+        
+        // Add Folder button
+        let add_folder_button = Button::from_icon_name("folder-new-symbolic");
+        add_folder_button.set_tooltip_text(Some("Add Folder"));
+        toolbar.append(&add_folder_button);
+        
+        // Add Macro button
+        let add_macro_button = Button::from_icon_name("insert-object-symbolic");
+        add_macro_button.set_tooltip_text(Some("Add Macro"));
+        toolbar.append(&add_macro_button);
+        
+        toolbar
     }
     
     pub fn show(&self) {
