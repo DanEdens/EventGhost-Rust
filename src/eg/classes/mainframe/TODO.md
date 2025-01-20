@@ -1,37 +1,58 @@
-Current Status of main_frame.rs
-Based on your message, the src/eg/classes/main_frame.rs file remains identical to the original version. This indicates that none of the modifications or implementations specific to the Rust version of MainFrame have been completed yet.
+# MainFrame TODO List
 
-Steps Outlined in the README
-To effectively reproduce the Python MainFrame in Rust, you have a structured approach outlined in your readme.md. Here's a brief overview of what each section entails and how they relate to the current state of main_frame.rs:
-Implementing the MainFrame Struct
+## Current Progress
+- [x] Basic GTK4 window structure
+- [x] Header bar implementation
+- [x] Toolbar basic setup
+- [x] Tree control integration
+- [x] Log control integration
+- [x] Status bar implementation
+- [x] Basic document handling
 
-Status: Not Accomplished
-Action Needed: Define the MainFrame struct with appropriate fields for UI components like toolbar, status_bar, tree_ctrl, and log_ctrl.
-Creating UI Components in Rust
+## Immediate Tasks
+- [ ] Implement full action handlers for toolbar buttons
+- [ ] Add keyboard shortcut support
+- [ ] Enhance document management
+- [ ] Implement drag-and-drop functionality
+- [ ] Add context menu support
 
-Status: Partially Accomplished
-Action Needed: Implement each UI component (Toolbar, StatusBar, TreeCtrl, LogCtrl) in Rust. Ensure that their initialization and event handling are correctly set up.
-Event Handling
+## UI Improvements
+- [ ] Customize GTK theme to match EventGhost's look and feel
+- [ ] Add more detailed tooltips
+- [ ] Implement responsive design for different screen sizes
+- [ ] Add accessibility features
 
-Status: Not Accomplished
-Action Needed: Implement the window_proc function to handle Windows messages and route events to the appropriate UI components.
-Layout Management
+## Performance and Optimization
+- [ ] Profile and optimize component initialization
+- [ ] Implement lazy loading for heavy components
+- [ ] Optimize memory usage
+- [ ] Add logging for performance tracking
 
-Status: Not Accomplished
-Action Needed: Develop the layout_controls method to correctly position and size UI components within the main window.
-Memory and Resource Management
+## Advanced Features
+- [ ] Plugin system integration
+- [ ] Advanced search and filter capabilities
+- [ ] Custom layout and workspace saving
+- [ ] Multi-document support
 
-Status: Not Accomplished
-Action Needed: Implement the Drop trait to ensure that resources like windows and controls are properly released when MainFrame is dropped.
-Logging and Error Handling
+## Testing
+- [ ] Expand unit tests for MainFrame
+- [ ] Add integration tests
+- [ ] Create comprehensive test scenarios
+- [ ] Implement UI automation tests
 
-Status: Not Accomplished
-Action Needed: Integrate logging mechanisms to display logs within LogCtrl and handle errors gracefully, updating the StatusBar as needed.
-Testing
+## Documentation
+- [x] Add inline documentation
+- [x] Create README.md
+- [ ] Add more detailed usage examples
+- [ ] Create developer guide for UI components
 
-Status: Not Accomplished
-Action Needed: Develop unit and integration tests to ensure that MainFrame and its components function as expected.
-Maintaining UI Consistency
+## Community and Feedback
+- [ ] Set up feedback channels
+- [ ] Create contribution guidelines
+- [ ] Implement user suggestion tracking system
 
-Status: Not Accomplished
-Action Needed: Ensure that the Rust UI mirrors the Python version in terms of layout, behavior, and aesthetics.
+## Long-term Goals
+- [ ] Feature parity with Python EventGhost
+- [ ] Cross-platform compatibility
+- [ ] Performance benchmarking
+- [ ] Advanced scripting support

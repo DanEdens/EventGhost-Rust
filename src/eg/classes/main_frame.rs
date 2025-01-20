@@ -9,15 +9,41 @@ use super::log_ctrl::LogCtrl;
 use super::status_bar::StatusBar;
 use crate::eg::tree::Document;
 
+/// Represents the main application window for EventGhost.
+///
+/// The `MainFrame` is responsible for creating and managing the primary user interface,
+/// including the tree control, log control, status bar, and various actions.
+///
+/// # Components
+/// - Window: The main application window
+/// - Tree Control: Displays hierarchical data and navigation
+/// - Log Control: Shows application logs and messages
+/// - Status Bar: Displays current application status and additional information
+///
+/// # Actions
+/// The MainFrame sets up various actions like New, Open, Save, etc., which can be
+/// triggered through menu items or keyboard shortcuts.
 pub struct MainFrame {
+    /// The main GTK application window
     window: ApplicationWindow,
+    /// Optional tree control for displaying hierarchical data
     tree_ctrl: Option<TreeCtrl>,
+    /// Optional log control for displaying application logs
     log_ctrl: Option<LogCtrl>,
+    /// Optional status bar for showing application status
     status_bar: Option<StatusBar>,
+    /// Current document being worked on
     document: Option<Document>,
 }
 
 impl MainFrame {
+    /// Creates a new MainFrame instance.
+    ///
+    /// # Arguments
+    /// * `app` - The GTK Application instance
+    ///
+    /// # Returns
+    /// A new MainFrame with a configured GTK window and components
     pub fn new(app: &Application) -> Self {
         // Create main window
         let window = ApplicationWindow::builder()
@@ -83,6 +109,10 @@ impl MainFrame {
         }
     }
     
+    /// Sets up application-wide actions for the main window.
+    ///
+    /// # Arguments
+    /// * `window` - The main application window to attach actions to
     fn setup_actions(window: &ApplicationWindow) {
         // File actions
         let new_action = SimpleAction::new("new", None);
@@ -231,10 +261,18 @@ impl MainFrame {
         toolbar
     }
     
+    /// Shows the main application window.
     pub fn show(&self) {
         self.window.show();
     }
     
+    /// Sets the current document for the application.
+    ///
+    /// # Arguments
+    /// * `document` - The Document to be set as the current working document
+    ///
+    /// # Side Effects
+    /// Updates the tree view and other related views with the new document's information
     pub fn set_document(&mut self, document: Document) {
         self.document = Some(document);
         // Update tree and other views with document
@@ -242,6 +280,9 @@ impl MainFrame {
 }
 
 impl Drop for MainFrame {
+    /// Handles cleanup when the MainFrame is dropped.
+    ///
+    /// In GTK, most cleanup is handled automatically, so this is a no-op.
     fn drop(&mut self) {
         // GTK will handle cleanup automatically
     }
@@ -253,6 +294,14 @@ mod tests {
     use gtk::prelude::*;
     use std::time::Duration;
 
+    /// Tests the initialization of the MainFrame.
+    ///
+    /// This test does the following:
+    /// 1. Initializes GTK
+    /// 2. Creates an application
+    /// 3. Creates a MainFrame
+    /// 4. Adds test content to log and status bar
+    /// 5. Automatically closes the window after 5 seconds
     #[test]
     fn test_mainframe_initialization() {
         // Initialize GTK

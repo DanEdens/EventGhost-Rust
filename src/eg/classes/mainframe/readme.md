@@ -1,3 +1,80 @@
+# MainFrame Implementation
+
+## Overview
+The MainFrame is the primary user interface component of the EventGhost application, built using GTK4 in Rust. It provides a comprehensive workspace for managing events, logs, and application state.
+
+## Key Components
+
+### Window Structure
+- **Header Bar**: Replaces traditional menu bar with a modern, compact design
+- **Toolbar**: Provides quick access to common actions
+- **Tree Control**: Displays hierarchical event and configuration data
+- **Log Control**: Shows application logs and messages
+- **Status Bar**: Displays current application status and additional information
+
+## Architecture
+
+### MainFrame Struct
+The `MainFrame` struct manages the lifecycle and state of the main application window:
+
+```rust
+pub struct MainFrame {
+    window: ApplicationWindow,
+    tree_ctrl: Option<TreeCtrl>,
+    log_ctrl: Option<LogCtrl>,
+    status_bar: Option<StatusBar>,
+    document: Option<Document>,
+}
+```
+
+### Key Methods
+- `new(app: &Application)`: Initializes the main window and all its components
+- `show()`: Displays the main window
+- `set_document(document: Document)`: Updates the current working document
+
+## Actions and Interactions
+The MainFrame supports various actions:
+- File operations (New, Open, Save)
+- Edit actions
+- View management
+- Plugin and macro interactions
+
+## Testing
+Includes a comprehensive test suite to validate:
+- Window initialization
+- Component integration
+- Basic user interactions
+
+## Performance Considerations
+- Lazy initialization of components
+- Optional components for flexibility
+- Minimal overhead with GTK4's efficient rendering
+
+## Future Improvements
+- Enhanced drag-and-drop support
+- More granular action management
+- Improved document handling
+- Customizable UI layouts
+
+## Dependencies
+- GTK4
+- Gio
+- Glib
+- Custom EventGhost components
+
+## Maintaining UI Consistency
+
+1. **Adhere to EventGhost's UI Layout**:
+    - Ensure that the positioning, sizing, and behavior of UI components mirror the Python version.
+    - Reference the Python implementation for guidance on UI flows.
+
+2. **Feedback from Users**:
+    - Engage with EventGhost's community to gather feedback on the Rust UI.
+    - Iterate based on suggestions to enhance user experience.
+
+## Contribution
+Please refer to the project's main contribution guidelines when making changes to the MainFrame implementation.
+
 # MainFrame Implementation in Rust
 
 This guide walks you through reproducing the `MainFrame` component of EventGhost from Python to Rust. The goal is to maintain a UI experience familiar to diehard EventGhost fans while leveraging Rust's performance and safety features.
@@ -374,7 +451,7 @@ fn drop(&mut self) {
 
 ## Maintaining UI Consistency
 
-1. **Adhere to EventGhost’s UI Layout**:
+1. **Adhere to EventGhost's UI Layout**:
     - Ensure that the positioning, sizing, and behavior of UI components mirror the Python version.
     - Reference the Python implementation for guidance on UI flows.
 
@@ -383,7 +460,7 @@ fn drop(&mut self) {
     - Use Rust-compatible libraries or custom implementations to match the original aesthetic.
 
 3. **Feedback from Users**:
-    - Engage with EventGhost’s community to gather feedback on the Rust UI.
+    - Engage with EventGhost's community to gather feedback on the Rust UI.
     - Iterate based on suggestions to enhance user experience.
 
 
