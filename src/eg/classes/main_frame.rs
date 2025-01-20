@@ -1,17 +1,12 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, HeaderBar, MenuButton, Button, Toolbar};
+use gtk::{self, Application, ApplicationWindow, Box, HeaderBar, MenuButton, Button};
 use gtk::Orientation;
 use gio::SimpleAction;
 use glib;
 
-use crate::win32::{self, Error as Win32Error};
 use super::tree_ctrl::TreeCtrl;
 use super::log_ctrl::LogCtrl;
 use super::status_bar::StatusBar;
-use super::toolbar::Toolbar;
-use super::UIComponent;
-
-const MAIN_WINDOW_CLASS: &[u8] = b"EventGhostMainFrame\0";
 
 pub struct MainFrame {
     window: ApplicationWindow,
@@ -247,10 +242,7 @@ impl MainFrame {
 
 impl Drop for MainFrame {
     fn drop(&mut self) {
-        // Child controls will be destroyed automatically when parent window is destroyed
-        unsafe {
-            DestroyWindow(self.hwnd);
-        }
+        // GTK will handle cleanup automatically
     }
 }
 

@@ -1,16 +1,7 @@
-use windows::Win32::Foundation::{HWND, HINSTANCE, WPARAM, LPARAM};
-use windows::Win32::UI::Controls::{
-    LVS_EX_DOUBLEBUFFER, LVS_EX_FULLROWSELECT, LVS_EX_GRIDLINES,
-    LVCF_TEXT, LVCF_WIDTH, LVM_INSERTCOLUMNA,
-};
-use windows::Win32::UI::WindowsAndMessaging::{WS_CHILD, WS_VISIBLE, ShowWindow, SW_SHOW, SW_HIDE, SendMessageA};
-use chrono::{DateTime, Local};
-use crate::core::Error;
-use crate::win32;
-use super::UIComponent;
 use gtk::prelude::*;
 use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable};
 use glib;
+use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone)]
 pub struct LogEntry {
@@ -124,8 +115,9 @@ impl LogCtrl {
             self.buffer.insert(&mut end_iter, &full_text);
         }
         
-        // Scroll to end
-        self.widget.scroll_to_iter(&self.buffer.end_iter(), 0.0, false, 0.0, 0.0);
+        // Scroll to end - Fixed to use mutable iterator
+        let mut end_iter = self.buffer.end_iter();
+        self.widget.scroll_to_iter(&mut end_iter, 0.0, false, 0.0, 0.0);
     }
     
     pub fn clear(&self) {
@@ -142,23 +134,5 @@ impl LogCtrl {
     
     pub fn set_indent(&mut self, enabled: bool) {
         self.indent = enabled;
-    }
-}
-
-impl UIComponent for LogCtrl {
-    fn get_hwnd(&self) -> HWND {
-        HWND::default()
-    }
-
-    fn show(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn hide(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn is_visible(&self) -> bool {
-        true
     }
 } 
