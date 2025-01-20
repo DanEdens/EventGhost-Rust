@@ -88,25 +88,62 @@ impl MainFrame {
     }
     
     fn setup_actions(window: &ApplicationWindow) {
-        // File menu actions
+        // File actions
         let new_action = SimpleAction::new("new", None);
+        new_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("New action activated");
+        }));
         window.add_action(&new_action);
         
         let open_action = SimpleAction::new("open", None);
+        open_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Open action activated");
+        }));
         window.add_action(&open_action);
         
         let save_action = SimpleAction::new("save", None);
+        save_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Save action activated");
+        }));
         window.add_action(&save_action);
         
-        // Edit menu actions
+        // Edit actions
         let cut_action = SimpleAction::new("cut", None);
+        cut_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Cut action activated");
+        }));
         window.add_action(&cut_action);
         
         let copy_action = SimpleAction::new("copy", None);
+        copy_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Copy action activated");
+        }));
         window.add_action(&copy_action);
         
         let paste_action = SimpleAction::new("paste", None);
+        paste_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Paste action activated");
+        }));
         window.add_action(&paste_action);
+        
+        // Configuration actions
+        let add_plugin_action = SimpleAction::new("add-plugin", None);
+        add_plugin_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Add plugin action activated");
+        }));
+        window.add_action(&add_plugin_action);
+        
+        let add_folder_action = SimpleAction::new("add-folder", None);
+        add_folder_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Add folder action activated");
+        }));
+        window.add_action(&add_folder_action);
+        
+        let add_macro_action = SimpleAction::new("add-macro", None);
+        add_macro_action.connect_activate(glib::clone!(@weak window => move |_, _| {
+            println!("Add macro action activated");
+        }));
+        window.add_action(&add_macro_action);
     }
     
     fn create_menus(menu_button: &MenuButton) {
@@ -136,16 +173,19 @@ impl MainFrame {
         // New button
         let new_button = Button::from_icon_name("document-new-symbolic");
         new_button.set_tooltip_text(Some("New"));
+        new_button.set_action_name(Some("win.new"));
         toolbar.append(&new_button);
         
         // Open button
         let open_button = Button::from_icon_name("document-open-symbolic");
         open_button.set_tooltip_text(Some("Open"));
+        open_button.set_action_name(Some("win.open"));
         toolbar.append(&open_button);
         
         // Save button
         let save_button = Button::from_icon_name("document-save-symbolic");
         save_button.set_tooltip_text(Some("Save"));
+        save_button.set_action_name(Some("win.save"));
         toolbar.append(&save_button);
         
         // Separator
@@ -155,16 +195,19 @@ impl MainFrame {
         // Cut button
         let cut_button = Button::from_icon_name("edit-cut-symbolic");
         cut_button.set_tooltip_text(Some("Cut"));
+        cut_button.set_action_name(Some("win.cut"));
         toolbar.append(&cut_button);
         
         // Copy button
         let copy_button = Button::from_icon_name("edit-copy-symbolic");
         copy_button.set_tooltip_text(Some("Copy"));
+        copy_button.set_action_name(Some("win.copy"));
         toolbar.append(&copy_button);
         
         // Paste button
         let paste_button = Button::from_icon_name("edit-paste-symbolic");
         paste_button.set_tooltip_text(Some("Paste"));
+        paste_button.set_action_name(Some("win.paste"));
         toolbar.append(&paste_button);
         
         // Separator
@@ -174,16 +217,19 @@ impl MainFrame {
         // Add Plugin button
         let add_plugin_button = Button::from_icon_name("list-add-symbolic");
         add_plugin_button.set_tooltip_text(Some("Add Plugin"));
+        add_plugin_button.set_action_name(Some("win.add-plugin"));
         toolbar.append(&add_plugin_button);
         
         // Add Folder button
         let add_folder_button = Button::from_icon_name("folder-new-symbolic");
         add_folder_button.set_tooltip_text(Some("Add Folder"));
+        add_folder_button.set_action_name(Some("win.add-folder"));
         toolbar.append(&add_folder_button);
         
         // Add Macro button
         let add_macro_button = Button::from_icon_name("insert-object-symbolic");
         add_macro_button.set_tooltip_text(Some("Add Macro"));
+        add_macro_button.set_action_name(Some("win.add-macro"));
         toolbar.append(&add_macro_button);
         
         toolbar
