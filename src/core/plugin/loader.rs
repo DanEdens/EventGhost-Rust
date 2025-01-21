@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tokio::sync::RwLock;
 use std::sync::Arc;
-use crate::core::Error;
+// use crate::core::Error;
 use super::Plugin;
 
 #[derive(Debug, thiserror::Error)]

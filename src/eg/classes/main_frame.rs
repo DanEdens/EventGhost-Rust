@@ -1,7 +1,8 @@
 use gtk::prelude::*;
 use gtk::{self, Application, ApplicationWindow, Box};
 use super::{Menu, Toolbar, StatusBar, UIComponent};
-use glib::Error;
+// use glib::Error;
+
 
 /// Represents the main application window for EventGhost.
 pub struct MainFrame {

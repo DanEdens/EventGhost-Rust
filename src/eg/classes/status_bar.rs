@@ -1,6 +1,6 @@
 use gtk::prelude::*;
-use gtk::{self, Box, Label, CheckButton, Statusbar};
-use glib;
+use gtk::{self, Box, CheckButton, Statusbar};
+// use glib;
 use super::UIComponent;
 
 #[derive(Debug, Clone)]

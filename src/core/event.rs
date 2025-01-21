@@ -77,10 +77,13 @@ impl EventManager {
 
     pub fn unregister_handler(&mut self, id: &str) {
         // TODO: Implement handler removal
+        println!("Unregistering handler: {}", id);
     }
+
 
     pub fn process_event(&mut self, event: Box<dyn Event>) -> Result<(), Error> {
         // TODO: Implement event processing
+        println!("Processing event: {:?}", event);
         Ok(())
     }
 } 

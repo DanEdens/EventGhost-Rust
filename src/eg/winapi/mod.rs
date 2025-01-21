@@ -1,7 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Application, ApplicationWindow};
 use gio;
-use glib;
+// use glib;
 
 pub fn init_application() -> gtk::Application {
     let application = Application::new(

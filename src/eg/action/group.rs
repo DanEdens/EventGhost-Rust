@@ -3,7 +3,7 @@ use crate::core::event::Event;
 use uuid::Uuid;
 use std::sync::{Arc, Mutex};
 use super::base::ActionBase;
-use async_trait::async_trait;
+// use async_trait::async_trait;
 
 /// A group of actions that can be executed together
 pub struct ActionGroup {

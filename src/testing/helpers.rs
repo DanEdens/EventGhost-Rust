@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+// use std::path::PathBuf;
 use tempfile::TempDir;
-use uuid::Uuid;
-use crate::core::{Config, config::{GlobalConfig, PluginConfig}};
+// use uuid::Uuid;
+use crate::core::{Config, config::PluginConfig};
+
 
 /// Create a temporary test directory
 pub fn create_test_dir() -> TempDir {
@@ -37,13 +38,13 @@ pub fn create_test_event_payload() -> Vec<u8> {
 
 
 /// Wait for an async operation with timeout
-pub async fn wait_with_timeout<F, T>(future: F, timeout_ms: u64) -> Option<T>
+pub async fn wait_with_timeout<F, T>(_future: F, timeout_ms: u64) -> Option<T>
 where
-    F: std::future::Future<Output = T>,
+F: std::future::Future<Output = T>,
 {
     // TODO: Implement async wait helper
+    // println!("Future: {:?}", future);
     // print the unused var timeout_ms future
-    println!("Future: {:?}", future);
     println!("Waiting for async operation with timeout: {}", timeout_ms);
     unimplemented!()
 }

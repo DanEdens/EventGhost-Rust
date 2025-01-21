@@ -187,9 +187,11 @@ impl EventHandler for MockEventHandler {
 }
 
 /// Mock config store for testing
+#[derive(Debug)]
 pub struct MockConfigStore {
     config: Arc<Mutex<Config>>,
 }
+
 
 impl ConfigStore for MockConfigStore {
     fn load(&self) -> Result<Config, ConfigError> {

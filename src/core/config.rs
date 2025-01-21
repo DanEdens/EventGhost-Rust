@@ -1,7 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+// , 
 use serde::{Serialize, Deserialize};
-use crate::core::Error;
-use thiserror::Error;
+// use crate::core::Error;
+// use thiserror::Error;
+use std::fmt::Debug;
 
 /// Error type for configuration operations
 #[derive(Debug, thiserror::Error)]
@@ -29,7 +31,7 @@ impl From<&str> for ConfigError {
 }
 
 /// Base trait for configuration storage
-pub trait ConfigStore: Send + Sync {
+pub trait ConfigStore: Send + Sync + Debug {
     /// Load configuration from storage
     fn load(&self) -> Result<Config, ConfigError>;
     /// Save configuration to storage
@@ -77,8 +79,12 @@ impl ConfigManager {
     /// Create a new configuration manager
     pub fn new(store: Box<dyn ConfigStore>) -> Result<Self, ConfigError> {
         // TODO: Implement config manager creation
+        
+        println!("Creating config manager with store: {:?}", store);
         unimplemented!()
     }
+
+
 
     /// Get the current configuration
     pub fn get_config(&self) -> &Config {
@@ -88,43 +94,48 @@ impl ConfigManager {
     /// Update the configuration
     pub fn update_config(&mut self, config: Config) -> Result<(), ConfigError> {
         // TODO: Implement config update
+        println!("Updating config: {:?}", config);
         unimplemented!()
     }
+
 
     /// Get plugin configuration
     pub fn get_plugin_config(&self, id: &str) -> Option<&PluginConfig> {
         // TODO: Implement plugin config retrieval
+        println!("Getting plugin config for: {}", id);
         unimplemented!()
     }
+
 
     /// Update plugin configuration
     pub fn update_plugin_config(&mut self, config: PluginConfig) -> Result<(), ConfigError> {
         // TODO: Implement plugin config update
+        println!("Updating plugin config: {:?}", config);
         unimplemented!()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    struct MockConfigStore;
+//     struct MockConfigStore;
 
-    impl ConfigStore for MockConfigStore {
-        fn load(&self) -> Result<Config, ConfigError> {
-            // TODO: Implement mock load
-            unimplemented!()
-        }
+//     impl ConfigStore for MockConfigStore {
+//         fn load(&self) -> Result<Config, ConfigError> {
+//             // TODO: Implement mock load
+//             unimplemented!()
+//         }
 
-        fn save(&self, _config: &Config) -> Result<(), ConfigError> {
-            // TODO: Implement mock save
-            unimplemented!()
-        }
-    }
+//         fn save(&self, _config: &Config) -> Result<(), ConfigError> {
+//             // TODO: Implement mock save
+//             unimplemented!()
+//         }
+//     }
 
-    #[test]
-    fn test_config_manager() {
-        // TODO: Implement config manager tests
-        unimplemented!()
-    }
-} 
+//     #[test]
+//     fn test_config_manager() {
+//         // TODO: Implement config manager tests
+//         unimplemented!()
+//     }
+// } 

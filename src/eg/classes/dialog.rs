@@ -1,10 +1,9 @@
 use gtk::prelude::*;
 use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog as GtkMessageDialog, ColorChooserDialog, ResponseType, FileChooserAction, Window};
-use gtk::gdk;
+// use gtk::gdk;
 use crate::core::Error;
 use super::UIComponent;
-use gtk::{PrintOperation, Application};
-use std::path::PathBuf;
+use gtk::Application;
 use tokio::runtime::Runtime;
 
 /// Base dialog trait

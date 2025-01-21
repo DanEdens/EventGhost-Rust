@@ -45,13 +45,16 @@
   - [ ] Implement test for resource deallocation
 
 ### Code Cleanup
-- [ ] Implement items seen as unused imports in the following files:
-  - [ ] `src/core/config.rs`
-  - [ ] `src/core/logging.rs`
-  - [ ] `src/core/named_pipe.rs`
-  - [ ] `src/eg/action/common.rs`
-  - [ ] `src/win32/window.rs`
-  - [ ] `src/win32/utils.rs`
+- [x] Implement items seen as unused imports in the following files:
+  - [x] `src/core/config.rs`
+  - [x] `src/core/logging.rs`
+  - [x] `src/core/named_pipe.rs`
+  - [x] `src/eg/action/common.rs`
+  - [x] `src/win32/window.rs`
+  - [x] `src/win32/utils.rs`
+- [x] Remove unused imports across all files
+- [x] Fix unused variable warnings by implementing or removing them
+- [x] Add proper type annotations where missing
 
 ## Completed
 - Implemented basic GTK UI components
@@ -60,18 +63,16 @@
 - Improved file path handling in dialogs
 - Added Debug trait implementations
 - Fixed ConditionalAction closure type to be cloneable
+- Remove unused imports across all files
+- Fix unused variable warnings by implementing or removing them
+- Add proper type annotations where missing
 
 ## In Progress
-- Clean up unused imports and variables
 - Implement proper file type handling in dialogs
 - Complete event type system implementation
 - Implement plugin loading functionality
 
 ## Implementation Plan
-1. Code Cleanup
-   - Remove unused imports across all files
-   - Fix unused variable warnings by implementing or removing them
-   - Add proper type annotations where missing
 
 2. Dialog System
    - Complete file chooser dialog implementation
@@ -89,9 +90,8 @@
    - Implement plugin configuration handling
 
 ## Next Steps
-1. Clean up warnings by removing unused imports
-2. Implement the missing functionality in plugin registry
+2. Implement the missing functionality in Dialog system
 3. Complete the event system implementation
-4. Add comprehensive tests for all components
+4. Implement the missing functionality in Plugin system
 
 

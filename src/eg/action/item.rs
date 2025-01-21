@@ -3,7 +3,7 @@ use crate::core::event::Event;
 use uuid::Uuid;
 use std::sync::Arc;
 use super::base::ActionBase;
-use async_trait::async_trait;
+// use async_trait::async_trait;
 
 /// A single action that can be executed
 pub struct ActionItem {
