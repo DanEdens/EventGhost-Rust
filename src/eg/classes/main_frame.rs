@@ -23,7 +23,160 @@ pub struct MainFrame {
 }
 
 impl MainFrame {
-    fn create_menu_bar(&self) -> Menu {
+    /// Creates a new MainFrame instance.
+    ///
+    /// # Arguments
+    /// * `app` - The GTK Application instance
+    ///
+    /// # Returns
+    /// A new MainFrame with a configured GTK window
+    pub fn new(app: &Application) -> Result<Self, Error> {
+        // Create main window
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .title("EventGhost")
+            .default_width(DEFAULT_WINDOW_WIDTH)
+            .default_height(DEFAULT_WINDOW_HEIGHT)
+            .build();
+
+        // Create main vertical container
+        let container = Box::new(Orientation::Vertical, 0);
+
+        // Initialize UI components
+        let (menu_bar, toolbar, status_bar) = Self::init_ui_components();
+
+        // Create MainFrame instance
+        let main_frame = MainFrame {
+            window,
+            menu_bar,
+            toolbar,
+            status_bar,
+            container,
+        };
+
+        // Set up the menu model
+        let menu_model = main_frame.create_menu_model();
+        main_frame.menu_bar.set_menu_model(Some(&menu_model));
+
+        // Add components to container
+        main_frame.container.append(&main_frame.menu_bar);
+        main_frame.container.append(&main_frame.toolbar.widget);
+        main_frame.container.append(&main_frame.status_bar.widget);
+
+        // Add container to window
+        main_frame.window.set_child(Some(&main_frame.container));
+
+        Ok(main_frame)
+    }
+
+    /// Initialize UI components (menu bar, toolbar, status bar)
+    fn init_ui_components() -> (PopoverMenuBar, Toolbar, StatusBar) {
+        // Initialize menu bar
+        let menu_model = Menu::new();
+        let menu_bar = PopoverMenuBar::from_model(Some(&menu_model));
+
+        // Initialize toolbar with all buttons
+        let mut toolbar = Toolbar::new();
+        Self::init_toolbar_buttons(&mut toolbar);
+
+        // Initialize status bar
+        let status_bar = StatusBar::new();
+
+        (menu_bar, toolbar, status_bar)
+    }
+
+    /// Initialize toolbar buttons with their handlers
+    fn init_toolbar_buttons(toolbar: &mut Toolbar) {
+        // File operations
+        let new_button = toolbar.add_button("new", "document-new", "New");
+        new_button.connect_clicked(|_| println!("New button clicked"));
+
+        let open_button = toolbar.add_button("open", "document-open", "Open");
+        open_button.connect_clicked(|_| println!("Open button clicked"));
+
+        let save_button = toolbar.add_button("save", "document-save", "Save");
+        save_button.connect_clicked(|_| println!("Save button clicked"));
+        save_button.set_sensitive(false);
+
+        toolbar.add_separator();
+
+        // Edit operations
+        let cut_button = toolbar.add_button("cut", "edit-cut", "Cut");
+        cut_button.connect_clicked(|_| println!("Cut button clicked"));
+
+        let copy_button = toolbar.add_button("copy", "edit-copy", "Copy");
+        copy_button.connect_clicked(|_| println!("Copy button clicked"));
+
+        let paste_button = toolbar.add_button("paste", "edit-paste", "Paste");
+        paste_button.connect_clicked(|_| println!("Paste button clicked"));
+
+        toolbar.add_separator();
+
+        // Undo/Redo
+        let undo_button = toolbar.add_button("undo", "edit-undo", "Undo");
+        undo_button.connect_clicked(|_| println!("Undo button clicked"));
+        undo_button.set_sensitive(false);
+
+        let redo_button = toolbar.add_button("redo", "edit-redo", "Redo");
+        redo_button.connect_clicked(|_| println!("Redo button clicked"));
+        redo_button.set_sensitive(false);
+
+        toolbar.add_separator();
+
+        // Add items
+        let add_plugin_button = toolbar.add_button("add-plugin", "list-add", "Add Plugin");
+        add_plugin_button.connect_clicked(|_| println!("Add plugin button clicked"));
+
+        let add_folder_button = toolbar.add_button("add-folder", "folder-new", "Add Folder");
+        add_folder_button.connect_clicked(|_| println!("Add folder button clicked"));
+
+        let add_macro_button = toolbar.add_button("add-macro", "insert-object", "Add Macro");
+        add_macro_button.connect_clicked(|_| println!("Add macro button clicked"));
+
+        let add_event_button = toolbar.add_button("add-event", "insert-text", "Add Event");
+        add_event_button.connect_clicked(|_| println!("Add event button clicked"));
+
+        let add_action_button = toolbar.add_button("add-action", "system-run", "Add Action");
+        add_action_button.connect_clicked(|_| println!("Add action button clicked"));
+
+        toolbar.add_separator();
+
+        // Execute and tree operations
+        let execute_button = toolbar.add_button("execute", "media-playback-start", "Execute");
+        execute_button.connect_clicked(|_| println!("Execute button clicked"));
+
+        toolbar.add_separator();
+
+        let expand_button = toolbar.add_button("expand", "go-down", "Expand");
+        expand_button.connect_clicked(|_| println!("Expand button clicked"));
+
+        let collapse_button = toolbar.add_button("collapse", "go-up", "Collapse");
+        collapse_button.connect_clicked(|_| println!("Collapse button clicked"));
+
+        // Set tooltips
+        Self::init_toolbar_tooltips(toolbar);
+    }
+
+    /// Initialize toolbar tooltips
+    fn init_toolbar_tooltips(toolbar: &mut Toolbar) {
+        toolbar.set_button_tooltip("new", "New (Ctrl+N)");
+        toolbar.set_button_tooltip("open", "Open (Ctrl+O)");
+        toolbar.set_button_tooltip("save", "Save (Ctrl+S)");
+        toolbar.set_button_tooltip("cut", "Cut (Ctrl+X)");
+        toolbar.set_button_tooltip("copy", "Copy (Ctrl+C)");
+        toolbar.set_button_tooltip("paste", "Paste (Ctrl+V)");
+        toolbar.set_button_tooltip("undo", "Undo (Ctrl+Z)");
+        toolbar.set_button_tooltip("redo", "Redo (Ctrl+Y)");
+        toolbar.set_button_tooltip("add-plugin", "Add Plugin (Shift+Ctrl+P)");
+        toolbar.set_button_tooltip("add-folder", "Add Folder (Shift+Ctrl+N)");
+        toolbar.set_button_tooltip("add-macro", "Add Macro (Shift+Ctrl+M)");
+        toolbar.set_button_tooltip("add-event", "Add Event (Shift+Ctrl+E)");
+        toolbar.set_button_tooltip("add-action", "Add Action (Shift+Ctrl+A)");
+        toolbar.set_button_tooltip("execute", "Execute (F5)");
+    }
+
+    /// Create the menu model for the menu bar
+    fn create_menu_model(&self) -> Menu {
         let menu_bar = Menu::new();
 
         // File Menu
@@ -143,51 +296,6 @@ impl MainFrame {
         menu_bar
     }
 
-    /// Creates a new MainFrame instance.
-    ///
-    /// # Arguments
-    /// * `app` - The GTK Application instance
-    ///
-    /// # Returns
-    /// A new MainFrame with a configured GTK window
-    pub fn new(app: &Application) -> Result<Self, Error> {
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title("EventGhost")
-            .default_width(DEFAULT_WINDOW_WIDTH)
-            .default_height(DEFAULT_WINDOW_HEIGHT)
-            .build();
-
-        let container = Box::new(Orientation::Vertical, 0);
-        let menu_model = Menu::new();
-        let menu_bar = PopoverMenuBar::from_model(Some(&menu_model));
-        let mut toolbar = Toolbar::new();
-        let status_bar = StatusBar::new();
-
-        // Create main frame instance first
-        let main_frame = MainFrame {
-            window,
-            menu_bar,
-            toolbar,
-            status_bar,
-            container,
-        };
-
-        // Create and add menu bar
-        let menu_model = main_frame.create_menu_bar();
-        main_frame.menu_bar.set_menu_model(Some(&menu_model));
-        main_frame.container.append(&main_frame.menu_bar);
-        
-        // Add toolbar and status bar
-        main_frame.container.append(&main_frame.toolbar.widget);
-        main_frame.container.append(&main_frame.status_bar.widget);
-        
-        // Add container to window
-        main_frame.window.set_child(Some(&main_frame.container));
-
-        Ok(main_frame)
-    }
-    
     /// Shows the main application window.
     pub fn show(&self) {
         self.window.show();
@@ -217,21 +325,7 @@ impl MainFrame {
     
     /// Updates button tooltips with additional information (like keyboard shortcuts)
     pub fn update_button_tooltips(&mut self) {
-        self.toolbar.set_button_tooltip("new", "New (Ctrl+N)");
-        self.toolbar.set_button_tooltip("open", "Open (Ctrl+O)");
-        self.toolbar.set_button_tooltip("save", "Save (Ctrl+S)");
-        self.toolbar.set_button_tooltip("cut", "Cut (Ctrl+X)");
-        self.toolbar.set_button_tooltip("copy", "Copy (Ctrl+C)");
-        self.toolbar.set_button_tooltip("paste", "Paste (Ctrl+V)");
-        self.toolbar.set_button_tooltip("undo", "Undo (Ctrl+Z)");
-        self.toolbar.set_button_tooltip("redo", "Redo (Ctrl+Y)");
-        self.toolbar.set_button_tooltip("add-plugin", "Add Plugin (Shift+Ctrl+P)");
-        self.toolbar.set_button_tooltip("add-folder", "Add Folder (Shift+Ctrl+N)");
-        self.toolbar.set_button_tooltip("add-macro", "Add Macro (Shift+Ctrl+M)");
-        self.toolbar.set_button_tooltip("add-event", "Add Event (Shift+Ctrl+E)");
-        self.toolbar.set_button_tooltip("add-action", "Add Action (Shift+Ctrl+A)");
-        self.toolbar.set_button_tooltip("disabled", "Disabled (Ctrl+D)");
-        self.toolbar.set_button_tooltip("execute", "Execute (F5)");
+        Self::init_toolbar_tooltips(&mut self.toolbar);
     }
 }
 
