@@ -1,7 +1,8 @@
 use gtk::prelude::*;
 use gtk::{self, Box, Button, Image, Orientation, Separator};
-use gio::Icon;
+use gio::{Icon, File as GFile, Resource};
 use super::UIComponent;
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct ToolbarButton {
@@ -27,11 +28,19 @@ impl Toolbar {
         }
     }
     
-    pub fn add_button(&mut self, id: &str, icon_name: &str, tooltip: &str) -> Button {
+    pub fn add_button(&mut self, id: &str, icon_path: &str, tooltip: &str) -> Button {
         let button = Button::new();
         
         // Set up icon
-        if let Some(icon) = Icon::for_string(icon_name).ok() {
+        if icon_path.starts_with("/org/eventghost/") {
+            // Load from GResource
+            let icon = Icon::for_string(&format!("resource://{}", icon_path))
+                .expect("Failed to create icon from resource path");
+            let image = Image::from_gicon(&icon);
+            image.set_icon_size(gtk::IconSize::Large);
+            button.set_child(Some(&image));
+        } else if let Some(icon) = Icon::for_string(icon_path).ok() {
+            // Load from stock icon name
             let image = Image::from_gicon(&icon);
             image.set_icon_size(gtk::IconSize::Large);
             button.set_child(Some(&image));

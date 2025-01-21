@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "eventghost-bin"
-path = "src/bin/eventghost.rs"
+name = "test-gui"
+path = "src/bin/test-gui.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }

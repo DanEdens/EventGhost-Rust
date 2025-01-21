@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/eventghost">
+    <file>images/action.png</file>
+    <file>images/add.png</file>
+    <file>images/collapse.png</file>
+    <file>images/collapse_all.png</file>
+    <file>images/collapse_children.png</file>
+    <file>images/copy.png</file>
+    <file>images/cut.png</file>
+    <file>images/event.png</file>
+    <file>images/Execute.png</file>
+    <file>images/expand.png</file>
+    <file>images/expand_all.png</file>
+    <file>images/expand_children.png</file>
+    <file>images/folder.png</file>
+    <file>images/macro.png</file>
+    <file>images/new.png</file>
+    <file>images/open.png</file>
+    <file>images/paste.png</file>
+    <file>images/plugin.png</file>
+    <file>images/redo.png</file>
+    <file>images/save.png</file>
+    <file>images/undo.png</file>
+  </gresource>
+</gresources> 

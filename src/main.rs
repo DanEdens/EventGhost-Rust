@@ -1,25 +1,32 @@
 mod core;
 mod eg;
 
-use crate::core::Error;
-use crate::eg::EventGhost;
+use gtk::prelude::*;
+use gtk::{self, Application};
+use gio::Resource;
+use crate::eg::classes::MainFrame;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    let mut eg = EventGhost::new().expect("Failed to create EventGhost instance");
-    
-    // Initialize and start
-    eg.start().await?;
-    
-    // Main event loop
-    loop {
-        if eg.should_stop().await {
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    }
-    
-    // Cleanup
-    eg.stop().await?;
-    Ok(())
+fn main() {
+    // Initialize GTK
+    gtk::init().expect("Failed to initialize GTK");
+
+    // Load and register resources
+    let resource_bytes = include_bytes!("resources.gresource");
+    let resource = Resource::from_data(&glib::Bytes::from_static(resource_bytes))
+        .expect("Failed to load resources");
+    gio::resources_register(&resource);
+
+    // Create application
+    let app = Application::builder()
+        .application_id("org.eventghost")
+        .build();
+
+    app.connect_activate(move |app| {
+        let mut main_frame = MainFrame::new(app).expect("Failed to create main window");
+        main_frame.update_button_tooltips();
+        main_frame.show();
+    });
+
+    // Run application
+    app.run();
 } 

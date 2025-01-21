@@ -3,6 +3,7 @@ use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar
 use gio::{Menu, MenuItem};
 use super::{Toolbar, StatusBar, UIComponent};
 use crate::core::Error;
+
 // use glib::Error;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 800;
@@ -88,70 +89,82 @@ impl MainFrame {
     /// Initialize toolbar buttons with their handlers
     fn init_toolbar_buttons(toolbar: &mut Toolbar) {
         // File operations
-        let new_button = toolbar.add_button("new", "document-new", "New");
+        let new_button = toolbar.add_button("new", "/org/eventghost/images/new.png", "New");
         new_button.connect_clicked(|_| println!("New button clicked"));
 
-        let open_button = toolbar.add_button("open", "document-open", "Open");
+        let open_button = toolbar.add_button("open", "/org/eventghost/images/open.png", "Open");
         open_button.connect_clicked(|_| println!("Open button clicked"));
 
-        let save_button = toolbar.add_button("save", "document-save", "Save");
+        let save_button = toolbar.add_button("save", "/org/eventghost/images/save.png", "Save");
         save_button.connect_clicked(|_| println!("Save button clicked"));
         save_button.set_sensitive(false);
 
         toolbar.add_separator();
 
         // Edit operations
-        let cut_button = toolbar.add_button("cut", "edit-cut", "Cut");
+        let cut_button = toolbar.add_button("cut", "/org/eventghost/images/cut.png", "Cut");
         cut_button.connect_clicked(|_| println!("Cut button clicked"));
 
-        let copy_button = toolbar.add_button("copy", "edit-copy", "Copy");
+        let copy_button = toolbar.add_button("copy", "/org/eventghost/images/copy.png", "Copy");
         copy_button.connect_clicked(|_| println!("Copy button clicked"));
 
-        let paste_button = toolbar.add_button("paste", "edit-paste", "Paste");
+        let paste_button = toolbar.add_button("paste", "/org/eventghost/images/paste.png", "Paste");
         paste_button.connect_clicked(|_| println!("Paste button clicked"));
 
         toolbar.add_separator();
 
         // Undo/Redo
-        let undo_button = toolbar.add_button("undo", "edit-undo", "Undo");
+        let undo_button = toolbar.add_button("undo", "/org/eventghost/images/undo.png", "Undo");
         undo_button.connect_clicked(|_| println!("Undo button clicked"));
         undo_button.set_sensitive(false);
 
-        let redo_button = toolbar.add_button("redo", "edit-redo", "Redo");
+        let redo_button = toolbar.add_button("redo", "/org/eventghost/images/redo.png", "Redo");
         redo_button.connect_clicked(|_| println!("Redo button clicked"));
         redo_button.set_sensitive(false);
 
         toolbar.add_separator();
 
         // Add items
-        let add_plugin_button = toolbar.add_button("add-plugin", "list-add", "Add Plugin");
+        let add_plugin_button = toolbar.add_button("add-plugin", "/org/eventghost/images/plugin.png", "Add Plugin");
         add_plugin_button.connect_clicked(|_| println!("Add plugin button clicked"));
 
-        let add_folder_button = toolbar.add_button("add-folder", "folder-new", "Add Folder");
+        let add_folder_button = toolbar.add_button("add-folder", "/org/eventghost/images/folder.png", "Add Folder");
         add_folder_button.connect_clicked(|_| println!("Add folder button clicked"));
 
-        let add_macro_button = toolbar.add_button("add-macro", "insert-object", "Add Macro");
+        let add_macro_button = toolbar.add_button("add-macro", "/org/eventghost/images/macro.png", "Add Macro");
         add_macro_button.connect_clicked(|_| println!("Add macro button clicked"));
 
-        let add_event_button = toolbar.add_button("add-event", "insert-text", "Add Event");
+        let add_event_button = toolbar.add_button("add-event", "/org/eventghost/images/event.png", "Add Event");
         add_event_button.connect_clicked(|_| println!("Add event button clicked"));
 
-        let add_action_button = toolbar.add_button("add-action", "system-run", "Add Action");
+        let add_action_button = toolbar.add_button("add-action", "/org/eventghost/images/action.png", "Add Action");
         add_action_button.connect_clicked(|_| println!("Add action button clicked"));
 
         toolbar.add_separator();
 
         // Execute and tree operations
-        let execute_button = toolbar.add_button("execute", "media-playback-start", "Execute");
+        let execute_button = toolbar.add_button("execute", "/org/eventghost/images/Execute.png", "Execute");
         execute_button.connect_clicked(|_| println!("Execute button clicked"));
 
         toolbar.add_separator();
 
-        let expand_button = toolbar.add_button("expand", "go-down", "Expand");
+        let expand_button = toolbar.add_button("expand", "/org/eventghost/images/expand.png", "Expand");
         expand_button.connect_clicked(|_| println!("Expand button clicked"));
 
-        let collapse_button = toolbar.add_button("collapse", "go-up", "Collapse");
+        let collapse_button = toolbar.add_button("collapse", "/org/eventghost/images/collapse.png", "Collapse");
         collapse_button.connect_clicked(|_| println!("Collapse button clicked"));
+
+        let expand_children_button = toolbar.add_button("expand-children", "/org/eventghost/images/expand_children.png", "Expand Children");
+        expand_children_button.connect_clicked(|_| println!("Expand children button clicked"));
+
+        let collapse_children_button = toolbar.add_button("collapse-children", "/org/eventghost/images/collapse_children.png", "Collapse Children");
+        collapse_children_button.connect_clicked(|_| println!("Collapse children button clicked"));
+
+        let expand_all_button = toolbar.add_button("expand-all", "/org/eventghost/images/expand_all.png", "Expand All");
+        expand_all_button.connect_clicked(|_| println!("Expand all button clicked"));
+
+        let collapse_all_button = toolbar.add_button("collapse-all", "/org/eventghost/images/collapse_all.png", "Collapse All");
+        collapse_all_button.connect_clicked(|_| println!("Collapse all button clicked"));
 
         // Set tooltips
         Self::init_toolbar_tooltips(toolbar);
@@ -173,6 +186,12 @@ impl MainFrame {
         toolbar.set_button_tooltip("add-event", "Add Event (Shift+Ctrl+E)");
         toolbar.set_button_tooltip("add-action", "Add Action (Shift+Ctrl+A)");
         toolbar.set_button_tooltip("execute", "Execute (F5)");
+        toolbar.set_button_tooltip("expand", "Expand");
+        toolbar.set_button_tooltip("collapse", "Collapse");
+        toolbar.set_button_tooltip("expand-children", "Expand Children");
+        toolbar.set_button_tooltip("collapse-children", "Collapse Children");
+        toolbar.set_button_tooltip("expand-all", "Expand All");
+        toolbar.set_button_tooltip("collapse-all", "Collapse All");
     }
 
     /// Create the menu model for the menu bar
@@ -295,7 +314,7 @@ impl MainFrame {
 
         menu_bar
     }
-
+    
     /// Shows the main application window.
     pub fn show(&self) {
         self.window.show();
