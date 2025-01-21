@@ -8,9 +8,10 @@
 - [x] Status bar implementation
 - [x] Basic document handling
 - [x] Keyboard shortcut hints in tooltips
+- [x] Implement event logging view (based on original's log window)
+- [x] Add log view menu controls (time, date, indent)
 
 ## Immediate Tasks
-- [ ] Implement event logging view (based on original's log window)
 - [ ] Add tree view for configuration items
 - [ ] Implement full action handlers for toolbar buttons
 - [ ] Add keyboard shortcut bindings
@@ -18,10 +19,10 @@
 - [ ] Add configuration panel
 
 ## UI Improvements
-- [ ] Match original EventGhost's layout exactly
+- [x] Match original EventGhost's layout for log panel
+- [ ] Match original's layout for other panels
 - [ ] Implement collapsible panels
-- [ ] Add splitter controls between panels
-- [ ] Implement log filtering (like original's checkbox)
+- [x] Add splitter controls between panels
 - [ ] Add icon support for tree items
 - [ ] Match original's toolbar button ordering and grouping
 
@@ -30,7 +31,13 @@
 - [ ] Implement lazy loading for plugins
 - [ ] Optimize tree view for large configurations
 - [ ] Add logging for performance tracking
-- [ ] Implement efficient event handling system
+
+## Log View Improvements
+- [ ] Add search functionality in log
+- [ ] Implement log filtering options
+- [ ] Add log export functionality
+- [ ] Improve log entry formatting
+- [ ] Add log level filtering
 
 ## Advanced Features
 - [ ] Plugin system integration

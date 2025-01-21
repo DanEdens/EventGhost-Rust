@@ -1,7 +1,7 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned};
 use gio::{Menu, MenuItem};
-use super::{Toolbar, StatusBar, UIComponent};
+use super::{Toolbar, StatusBar, LogCtrl, UIComponent};
 use crate::core::Error;
 
 // use glib::Error;
@@ -19,8 +19,12 @@ pub struct MainFrame {
     pub toolbar: Toolbar,
     /// The status bar
     pub status_bar: StatusBar,
+    /// The log control
+    pub log_ctrl: LogCtrl,
     /// The main container
     pub container: Box,
+    /// The paned container for log and tree
+    pub paned: Paned,
 }
 
 impl MainFrame {
@@ -43,8 +47,26 @@ impl MainFrame {
         // Create main vertical container
         let container = Box::new(Orientation::Vertical, 0);
 
+        // Create paned container for log and tree
+        let paned = Paned::new(Orientation::Horizontal);
+        paned.set_wide_handle(true);
+        paned.set_position(280); // Default width for log panel
+
         // Initialize UI components
         let (menu_bar, toolbar, status_bar) = Self::init_ui_components();
+        let log_ctrl = LogCtrl::new();
+
+        // Add log control to left pane
+        paned.set_start_child(Some(log_ctrl.get_widget()));
+
+        // Add components to container
+        container.append(&menu_bar);
+        container.append(&toolbar.widget);
+        container.append(&paned);
+        container.append(&status_bar.widget);
+
+        // Add container to window
+        window.set_child(Some(&container));
 
         // Create MainFrame instance
         let main_frame = MainFrame {
@@ -52,20 +74,14 @@ impl MainFrame {
             menu_bar,
             toolbar,
             status_bar,
+            log_ctrl,
             container,
+            paned,
         };
 
         // Set up the menu model
         let menu_model = main_frame.create_menu_model();
         main_frame.menu_bar.set_menu_model(Some(&menu_model));
-
-        // Add components to container
-        main_frame.container.append(&main_frame.menu_bar);
-        main_frame.container.append(&main_frame.toolbar.widget);
-        main_frame.container.append(&main_frame.status_bar.widget);
-
-        // Add container to window
-        main_frame.window.set_child(Some(&main_frame.container));
 
         Ok(main_frame)
     }
@@ -256,12 +272,16 @@ impl MainFrame {
         let separator = Menu::new();
         view_menu.append_section(None, &separator);
         
-        view_menu.append(Some("Expand"), Some("app.expand"));
-        view_menu.append(Some("Collapse"), Some("app.collapse"));
-        view_menu.append(Some("Expand Children"), Some("app.expand-children"));
-        view_menu.append(Some("Collapse Children"), Some("app.collapse-children"));
-        view_menu.append(Some("Expand All"), Some("app.expand-all"));
-        view_menu.append(Some("Collapse All"), Some("app.collapse-all"));
+        // Log settings submenu
+        let log_menu = Menu::new();
+        log_menu.append(Some("Show Time"), Some("app.log-time"));
+        log_menu.append(Some("Show Date"), Some("app.log-date"));
+        log_menu.append(Some("Indent Log"), Some("app.log-indent"));
+        log_menu.append(Some("Clear Log"), Some("app.log-clear"));
+        
+        let log_item = MenuItem::new(Some("Log Settings"), Some("log"));
+        log_item.set_submenu(Some(&log_menu));
+        view_menu.append_item(&log_item);
         
         let view_item = MenuItem::new(Some("View"), Some("view"));
         view_item.set_submenu(Some(&view_menu));
@@ -345,6 +365,36 @@ impl MainFrame {
     /// Updates button tooltips with additional information (like keyboard shortcuts)
     pub fn update_button_tooltips(&mut self) {
         Self::init_toolbar_tooltips(&mut self.toolbar);
+    }
+
+    /// Connect menu item actions
+    fn connect_menu_actions(&self) {
+        let log_ctrl = &self.log_ctrl;
+        
+        // Log menu actions
+        let action = gio::SimpleAction::new("log-time", None);
+        action.connect_activate(glib::clone!(@weak log_ctrl => move |_, _| {
+            log_ctrl.set_time_logging(!log_ctrl.show_time);
+        }));
+        self.window.add_action(&action);
+
+        let action = gio::SimpleAction::new("log-date", None);
+        action.connect_activate(glib::clone!(@weak log_ctrl => move |_, _| {
+            log_ctrl.set_date_logging(!log_ctrl.show_date);
+        }));
+        self.window.add_action(&action);
+
+        let action = gio::SimpleAction::new("log-indent", None);
+        action.connect_activate(glib::clone!(@weak log_ctrl => move |_, _| {
+            log_ctrl.set_indent(!log_ctrl.indent);
+        }));
+        self.window.add_action(&action);
+
+        let action = gio::SimpleAction::new("log-clear", None);
+        action.connect_activate(glib::clone!(@weak log_ctrl => move |_, _| {
+            log_ctrl.clear();
+        }));
+        self.window.add_action(&action);
     }
 }
 
