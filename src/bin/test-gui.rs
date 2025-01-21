@@ -1,29 +1,29 @@
 use gtk::prelude::*;
-use gtk::Application;
-use eventghost::eg::classes::{MainFrame, add_actions};
+use gtk::{self, Application};
+use gio::Resource;
+use eventghost::eg::classes::MainFrame;
 
 fn main() {
-    // Create GTK application
+    // Initialize GTK
+    gtk::init().expect("Failed to initialize GTK");
+
+    // Load and register resources
+    let resource_bytes = include_bytes!("../resources.gresource");
+    let resource = Resource::from_data(&glib::Bytes::from_static(resource_bytes))
+        .expect("Failed to load resources");
+    gio::resources_register(&resource);
+
+    // Create application
     let app = Application::builder()
-        .application_id("org.eventghost.app")
+        .application_id("org.eventghost.test")
         .build();
 
-    // Add actions before connecting activate signal
-    app.connect_startup(|app| {
-        add_actions(app);
-    });
-
     app.connect_activate(move |app| {
-        // Create main window
         let mut main_frame = MainFrame::new(app).expect("Failed to create main window");
-        
-        // Update tooltips with keyboard shortcuts
         main_frame.update_button_tooltips();
-        
-        // Show window
         main_frame.show();
     });
 
-    // Run the application
+    // Run application
     app.run();
 } 
