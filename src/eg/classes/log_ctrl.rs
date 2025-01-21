@@ -6,6 +6,9 @@ use chrono::{DateTime, Local};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 use super::UIComponent;
+use std::fs::File;
+use std::io::{self, Write, BufRead};
+use std::path::Path;
 
 const MAX_BUFFER_SIZE: usize = 2000;
 const REMOVE_ON_MAX: usize = 200;
@@ -144,11 +147,6 @@ impl LogCtrl {
             for _ in 0..REMOVE_ON_MAX {
                 entries.pop_front();
             }
-            // Update buffer text
-            self.buffer.set_text("");
-            for entry in entries.iter() {
-                self.write_entry(entry);
-            }
         }
         
         entries.push_back(entry.clone());
@@ -243,6 +241,70 @@ impl LogCtrl {
         let entries = self.entries.lock().unwrap();
         for entry in entries.iter() {
             self.write_entry(entry);
+        }
+    }
+
+    pub fn filter_logs(&self, level: LogLevel) {
+        let entries = self.entries.lock().unwrap();
+        self.buffer.set_text(""); // Clear current buffer
+        for entry in entries.iter() {
+            if entry.level == level {
+                self.write_entry(entry);
+            }
+        }
+    }
+
+    pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
+        let entries = self.entries.lock().unwrap();
+        let mut file = File::create(file_path)?;
+        for entry in entries.iter() {
+            writeln!(file, "{} - {}: {}", entry.timestamp, entry.level, entry.message)?;
+        }
+        Ok(())
+    }
+
+    pub fn load_logs(&self, file_path: &str) -> io::Result<()> {
+        let file = File::open(file_path)?;
+        let reader = io::BufReader::new(file);
+        let mut entries = self.entries.lock().unwrap();
+        
+        for line in reader.lines() {
+            let line = line?;
+            // Assuming the log format is "timestamp - level: message"
+            let parts: Vec<&str> = line.split(" - ").collect();
+            if parts.len() == 2 {
+                let timestamp = parts[0].to_string(); // Parse timestamp
+                let level = parts[1].split(":").next().unwrap(); // Parse level
+                let message = parts[1].split(": ").nth(1).unwrap().to_string(); // Parse message
+                
+                // Create LogEntry and push to entries
+                let entry = LogEntry {
+                    timestamp: Local::now(), // Replace with actual parsed timestamp
+                    level: match level {
+                        "Error" => LogLevel::Error,
+                        "Warning" => LogLevel::Warning,
+                        "Info" => LogLevel::Info,
+                        "Debug" => LogLevel::Debug,
+                        "Event" => LogLevel::Event,
+                        _ => LogLevel::Info, // Default level
+                    },
+                    message,
+                    source: None,
+                    indent: 0,
+                };
+                entries.push_back(entry);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn search_logs(&self, query: &str) {
+        let entries = self.entries.lock().unwrap();
+        self.buffer.set_text(""); // Clear current buffer
+        for entry in entries.iter() {
+            if entry.message.contains(query) {
+                self.write_entry(entry);
+            }
         }
     }
 }
