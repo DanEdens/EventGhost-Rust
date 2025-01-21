@@ -1,14 +1,13 @@
 use gtk::prelude::*;
-use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable, ScrolledWindow, Menu, MenuItem};
+use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable, ScrolledWindow};
 use gdk;
 use glib;
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;
-use std::sync::Mutex;
-use super::UIComponent;
+use std::sync::{Mutex, Arc};
 use std::fs::File;
 use std::io::{self, Write, BufRead};
-use std::path::Path;
+use std::fmt;
 
 const MAX_BUFFER_SIZE: usize = 2000;
 const REMOVE_ON_MAX: usize = 200;
@@ -31,14 +30,48 @@ pub enum LogLevel {
     Event,
 }
 
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let level_str = match self {
+            LogLevel::Debug => "Debug",
+            LogLevel::Info => "Info",
+            LogLevel::Warning => "Warning",
+            LogLevel::Error => "Error",
+            LogLevel::Event => "Event",
+        };
+        write!(f, "{}", level_str)
+    }
+}
+
+#[derive(Debug)]
 pub struct LogCtrl {
     pub container: ScrolledWindow,
     pub widget: TextView,
     pub buffer: TextBuffer,
-    pub entries: Mutex<VecDeque<LogEntry>>,
+    pub entries: Arc<Mutex<VecDeque<LogEntry>>>,
     pub show_time: bool,
     pub show_date: bool,
     pub indent: bool,
+}
+
+impl Clone for LogCtrl {
+    fn clone(&self) -> Self {
+        LogCtrl {
+            container: ScrolledWindow::builder()
+                .child(&self.widget)
+                .build(),
+            widget: TextView::builder()
+                .buffer(&self.buffer)
+                .editable(false)
+                .monospace(true)
+                .build(),
+            buffer: self.buffer.clone(),
+            entries: self.entries.clone(),
+            show_time: self.show_time,
+            show_date: self.show_date,
+            indent: self.indent,
+        }
+    }
 }
 
 impl LogCtrl {
@@ -92,49 +125,58 @@ impl LogCtrl {
             
         // Enable scrolling
         widget.set_wrap_mode(gtk::WrapMode::Word);
-
         // Create context menu
-        let menu = Menu::new();
-        let copy_item = MenuItem::with_label("Copy");
-        let select_all_item = MenuItem::with_label("Select All");
-        let clear_item = MenuItem::with_label("Clear Log");
-        
-        menu.append(&copy_item);
-        menu.append(&select_all_item);
-        menu.append(&clear_item);
-        menu.show_all();
+        let menu = gio::Menu::new();
+        let copy_item = gio::MenuItem::new(Some("Copy"), Some("log.copy"));
+        let select_all_item = gio::MenuItem::new(Some("Select All"), Some("log.select-all"));
+        let clear_item = gio::MenuItem::new(Some("Clear Log"), Some("log.clear"));
 
-        // Connect context menu signals
-        widget.connect_button_press_event(move |w, event| {
-            if event.button() == 3 { // Right click
-                menu.popup_at_pointer(Some(event));
-            }
-            Inhibit(false)
-        });
+        menu.append_item(&copy_item);
+        menu.append_item(&select_all_item);
+        menu.append_item(&clear_item);
+
+        // let popover = PopoverMenu::from_model(Some(&menu));
+
+        // // Add context menu controller
+        // let gesture = gtk::GestureClick::new();
+        // gesture.set_button(3); // Right click
+        // gesture.connect_pressed(glib::clone!(@weak popover, @weak widget => move |gesture, _, x, y| {
+        //     if gesture.current_button() == 3 {
+        //         popover.set_parent(&widget);
+        //         popover.set_pointing_to(Some(&gdk::Rectangle::new(
+        //             x as i32,
+        //             y as i32,
+        //             1,
+        //             1
+        //         )));
+        //         popover.popup();
+        //     }
+        // }));
+        // widget.add_controller(gesture);
         
+        // Create the LogCtrl instance
         let log_ctrl = LogCtrl {
             container,
             widget,
             buffer,
-            entries: Mutex::new(VecDeque::with_capacity(MAX_BUFFER_SIZE)),
+            entries: Arc::new(Mutex::new(VecDeque::with_capacity(MAX_BUFFER_SIZE))),
             show_time: true,
             show_date: false,
             indent: true,
         };
 
-        // Connect menu item signals
-        {
-            let log_ctrl_ref = &log_ctrl;
-            copy_item.connect_activate(move |_| {
-                log_ctrl_ref.copy_selected_text();
-            });
-            select_all_item.connect_activate(move |_| {
-                log_ctrl_ref.select_all();
-            });
-            clear_item.connect_activate(move |_| {
-                log_ctrl_ref.clear();
-            });
-        }
+        // Add actions for menu items
+        // let action_group = gio::SimpleActionGroup::new();
+        
+        
+        // Add a welcome message
+        log_ctrl.write(LogEntry {
+            timestamp: Local::now(),
+            level: LogLevel::Info,
+            message: "Welcome to EventGhost".to_string(),
+            source: None,
+            indent: 0,
+        });
 
         log_ctrl
     }
@@ -149,7 +191,10 @@ impl LogCtrl {
             }
         }
         
+        // Add the new entry
         entries.push_back(entry.clone());
+        
+        // Write the new entry to the buffer
         self.write_entry(&entry);
         
         // Scroll to end
@@ -203,14 +248,14 @@ impl LogCtrl {
         self.buffer.set_text("");
     }
 
-    pub fn copy_selected_text(&self) {
-        if let Some((start, end)) = self.buffer.selection_bounds() {
-            if let Some(text) = self.buffer.text(&start, &end, false) {
-                let clipboard = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
-                clipboard.set_text(&text);
-            }
-        }
-    }
+    // pub fn copy_selected_text(&self) {
+    //     if let Some((start, end)) = self.buffer.selection_bounds() {
+    //         let text = self.buffer.text(&start, &end, false);
+    //         let display = self.widget.display();
+    //         let clipboard = display.clipboard();
+    //         clipboard.set_text(&text);
+    //     }
+    // }
 
     pub fn select_all(&self) {
         let start = self.buffer.start_iter();
@@ -244,72 +289,72 @@ impl LogCtrl {
         }
     }
 
-    pub fn filter_logs(&self, level: LogLevel) {
-        let entries = self.entries.lock().unwrap();
-        self.buffer.set_text(""); // Clear current buffer
-        for entry in entries.iter() {
-            if entry.level == level {
-                self.write_entry(entry);
-            }
-        }
-    }
+    // pub fn filter_logs(&self, level: LogLevel) {
+    //     let entries = self.entries.lock().unwrap();
+    //     self.buffer.set_text(""); // Clear current buffer
+    //     for entry in entries.iter() {
+    //         if entry.level == level {
+    //             self.write_entry(entry);
+    //         }
+    //     }
+    // }
 
-    pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
-        let entries = self.entries.lock().unwrap();
-        let mut file = File::create(file_path)?;
-        for entry in entries.iter() {
-            writeln!(file, "{} - {}: {}", entry.timestamp, entry.level, entry.message)?;
-        }
-        Ok(())
-    }
+    // pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
+    //     let entries = self.entries.lock().unwrap();
+    //     let mut file = File::create(file_path)?;
+    //     for entry in entries.iter() {
+    //         writeln!(file, "{} - {}: {}", entry.timestamp, entry.level, entry.message)?;
+    //     }
+    //     Ok(())
+    // }
 
-    pub fn load_logs(&self, file_path: &str) -> io::Result<()> {
-        let file = File::open(file_path)?;
-        let reader = io::BufReader::new(file);
-        let mut entries = self.entries.lock().unwrap();
+    // pub fn load_logs(&self, file_path: &str) -> io::Result<()> {
+    //     let file = File::open(file_path)?;
+    //     let reader = io::BufReader::new(file);
+    //     let mut entries = self.entries.lock().unwrap();
         
-        for line in reader.lines() {
-            let line = line?;
-            // Assuming the log format is "timestamp - level: message"
-            let parts: Vec<&str> = line.split(" - ").collect();
-            if parts.len() == 2 {
-                let timestamp = parts[0].to_string(); // Parse timestamp
-                let level = parts[1].split(":").next().unwrap(); // Parse level
-                let message = parts[1].split(": ").nth(1).unwrap().to_string(); // Parse message
+    //     for line in reader.lines() {
+    //         let line = line?;
+    //         // Assuming the log format is "timestamp - level: message"
+    //         let parts: Vec<&str> = line.split(" - ").collect();
+    //         if parts.len() == 2 {
+    //             let timestamp = parts[0].to_string(); // Parse timestamp
+    //             let level = parts[1].split(":").next().unwrap(); // Parse level
+    //             let message = parts[1].split(": ").nth(1).unwrap().to_string(); // Parse message
                 
-                // Create LogEntry and push to entries
-                let entry = LogEntry {
-                    timestamp: Local::now(), // Replace with actual parsed timestamp
-                    level: match level {
-                        "Error" => LogLevel::Error,
-                        "Warning" => LogLevel::Warning,
-                        "Info" => LogLevel::Info,
-                        "Debug" => LogLevel::Debug,
-                        "Event" => LogLevel::Event,
-                        _ => LogLevel::Info, // Default level
-                    },
-                    message,
-                    source: None,
-                    indent: 0,
-                };
-                entries.push_back(entry);
-            }
-        }
-        Ok(())
-    }
+    //             // Create LogEntry and push to entries
+    //             let entry = LogEntry {
+    //                 timestamp: Local::now(), // Replace with actual parsed timestamp
+    //                 level: match level {
+    //                     "Error" => LogLevel::Error,
+    //                     "Warning" => LogLevel::Warning,
+    //                     "Info" => LogLevel::Info,
+    //                     "Debug" => LogLevel::Debug,
+    //                     "Event" => LogLevel::Event,
+    //                     _ => LogLevel::Info, // Default level
+    //                 },
+    //                 message,
+    //                 source: None,
+    //                 indent: 0,
+    //             };
+    //             entries.push_back(entry);
+    //         }
+    //     }
+    //     Ok(())
+    // }
 
-    pub fn search_logs(&self, query: &str) {
-        let entries = self.entries.lock().unwrap();
-        self.buffer.set_text(""); // Clear current buffer
-        for entry in entries.iter() {
-            if entry.message.contains(query) {
-                self.write_entry(entry);
-            }
-        }
-    }
+    // pub fn search_logs(&self, query: &str) {
+    //     let entries = self.entries.lock().unwrap();
+    //     self.buffer.set_text(""); // Clear current buffer
+    //     for entry in entries.iter() {
+    //         if entry.message.contains(query) {
+    //             self.write_entry(entry);
+    //         }
+    //     }
+    // }
 }
 
-impl UIComponent for LogCtrl {
+impl super::UIComponent for LogCtrl {
     fn get_widget(&self) -> &gtk::Widget {
         self.container.upcast_ref()
     }
