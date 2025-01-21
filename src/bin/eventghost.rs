@@ -1,5 +1,5 @@
-use windows::Win32::Foundation::HINSTANCE;
-use windows::Win32::UI::WindowsAndMessaging::*;
+// use windows::Win32::Foundation::HINSTANCE;
+// use windows::Win32::UI::WindowsAndMessaging::*;
 
 use eventghost::eg::classes::main_frame::MainFrame;
 

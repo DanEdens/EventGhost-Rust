@@ -1,9 +1,10 @@
 use crate::core::Error;
 use crate::core::event::Event;
 use uuid::Uuid;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use super::base::ActionBase;
-// use async_trait::async_trait;
+use async_trait::async_trait;
 
 /// A group of actions that can be executed together
 pub struct ActionGroup {
@@ -33,11 +34,15 @@ impl ActionGroup {
     }
     
     /// Remove an action from the group
-    pub fn remove_action(&mut self, id: Uuid) {
-        self.actions.retain(|a| {
-            let action = a.lock().unwrap();
-            action.get_id() != id
-        });
+    pub async fn remove_action(&mut self, id: Uuid) {
+        let mut new_actions = Vec::new();
+        for a in &self.actions {
+            let action = a.lock().await;
+            if action.get_id() != id {
+                new_actions.push(a.clone());
+            }
+        }
+        self.actions = new_actions;
     }
     
     /// Get all actions in the group
@@ -66,7 +71,7 @@ impl ActionBase for ActionGroup {
     
     async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
         for action in &self.actions {
-            let mut action = action.lock().unwrap();
+            let mut action = action.lock().await;
             action.execute(event).await?;
         }
         Ok(())

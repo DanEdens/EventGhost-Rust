@@ -6,7 +6,7 @@ use crate::eg::EventGhost;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut eg = EventGhost::new().await?;
+    let mut eg = EventGhost::new(); // .await?
     
     // Initialize and start
     eg.start().await?;
@@ -20,6 +20,6 @@ async fn main() -> Result<(), Error> {
     }
     
     // Cleanup
-    eg.stop().await?;
+    eg.stop(); // .await?
     Ok(())
 } 
