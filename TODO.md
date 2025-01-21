@@ -1,97 +1,94 @@
 # TODO List
 
-## Current Focus: Fix Build Errors
+## Current Focus: GTK Framework Implementation
 
-### Import Fixes
-- [ ] Fix CREATESTRUCTA import (move from Foundation to WindowsAndMessaging)
-- [ ] Fix win32 module import path in winapi/mod.rs
-- [ ] Add missing Windows API type imports (WNDCLASSA, BOOL)
-- [ ] Add missing Windows API function imports (RegisterClassA, UpdateWindow, etc.)
+### GTK Migration Roadmap
+- [x] Migrate from Win32 to GTK framework
+- [x] Implement basic application structure with GTK
+- [x] Create MainFrame using GTK widgets
+- [ ] Replace wx-specific UI components with GTK equivalents
+- [ ] Implement GTK-specific window management
+- [ ] Port Win32 message handling to GTK event system
+- [ ] Complete feature parity with previous implementation
 
-### Trait Implementation Fixes
-- [ ] Implement UIComponent trait properly for:
-  - [ ] Toolbar
-  - [ ] StatusBar
-  - [ ] TreeCtrl
-  - [ ] LogCtrl
+### GTK Component Replacement
+- [ ] Convert Toolbar from Win32 to GTK
+  - Implement toolbar creation
+  - Add toolbar item management
+  - Implement toolbar event handling
 
-### Error Handling Fixes
-- [ ] **Fix casting error in `src/win32/utils.rs` (E0606)**
-- [ ] Fix LRESULT error handling (map_err issue)
-- [ ] Fix i32 error handling in Windows API calls
-- [ ] Fix type casting issue in window enumeration callback
+- [ ] Replace StatusBar with GTK equivalent
+  - Create status bar widget
+  - Implement status message updates
+  - Handle status bar interactions
 
-### Previous Tasks (In Progress)
-- [x] Update control constructors to handle HINSTANCE properly:
-  - [x] TreeCtrl
-  - [x] LogCtrl
-  - [x] StatusBar
-  - [x] Toolbar
-- [x] Implement control layout in MainFrame
-- [x] Add window resizing handling
+- [ ] Implement TreeCtrl using GTK TreeView
+  - Create tree view widget
+  - Add item management methods
+  - Implement tree node selection handling
 
-### Testing
-- [ ] Add basic window creation tests
-  - [ ] Implement test for creating a window
-  - [ ] Implement test for window properties
-- [ ] Test window message handling
-  - [ ] Implement test for message processing
-  - [ ] Implement test for message routing
-- [ ] Test control creation and layout
-  - [ ] Implement test for control initialization
-  - [ ] Implement test for control layout
-- [ ] Test window cleanup on drop
-  - [ ] Implement test for cleanup process
-  - [ ] Implement test for resource deallocation
+- [ ] Develop LogCtrl using GTK TextView
+  - Create scrollable text view
+  - Implement log message appending
+  - Add log filtering capabilities
 
-### Code Cleanup
-- [x] Implement items seen as unused imports in the following files:
-  - [x] `src/core/config.rs`
-  - [x] `src/core/logging.rs`
-  - [x] `src/core/named_pipe.rs`
-  - [x] `src/eg/action/common.rs`
-  - [x] `src/win32/window.rs`
-  - [x] `src/win32/utils.rs`
-- [x] Remove unused imports across all files
-- [x] Fix unused variable warnings by implementing or removing them
-- [x] Add proper type annotations where missing
+### GTK-Specific Optimizations
+- [ ] Implement cross-platform UI scaling
+- [ ] Add high DPI support
+- [ ] Optimize widget rendering performance
+- [ ] Implement theme and styling support
+
+### Testing Strategy
+- [x] Basic GTK window creation tests
+- [ ] Comprehensive GTK widget interaction tests
+- [ ] Test cross-platform UI component behavior
+- [ ] Implement UI state persistence tests
+- [ ] Validate event handling across different platforms
 
 ## Completed
 - Implemented basic GTK UI components
-- Added dialog implementations with proper async handling
+- Migrated from Win32 to GTK framework
+- Added dialog implementations with async handling
 - Fixed action handlers and error handling
 - Improved file path handling in dialogs
 - Added Debug trait implementations
-- Fixed ConditionalAction closure type to be cloneable
-- Remove unused imports across all files
-- Fix unused variable warnings by implementing or removing them
-- Add proper type annotations where missing
+- Fixed ConditionalAction closure type
+- Removed unused imports
+- Fixed unused variable warnings
+- Added proper type annotations
 
 ## In Progress
-- Implement proper file type handling in dialogs
 - Complete event type system implementation
 - Implement plugin loading functionality
+- Optimize GTK UI components
+- Improve cross-platform compatibility
 
 ## Implementation Plan
 
+1. GTK UI Component Replacement
+   - Systematically replace Win32 UI components
+   - Ensure feature parity with original implementation
+   - Optimize for cross-platform performance
+
 2. Dialog System
-   - Complete file chooser dialog implementation
-   - Add proper error handling for file operations
-   - Implement dialog result handling
+   - Complete GTK-based file chooser dialog
+   - Implement robust, cross-platform error handling
+   - Create consistent dialog result management
 
 3. Event System
-   - Complete event type implementation
-   - Add proper event payload handling
-   - Implement event routing system
+   - Adapt event handling to GTK signal system
+   - Implement comprehensive event payload management
+   - Create flexible, platform-independent event routing
 
 4. Plugin System
-   - Implement plugin loading mechanism
-   - Add plugin state management
-   - Implement plugin configuration handling
+   - Design plugin loading mechanism for GTK
+   - Implement plugin state management
+   - Create cross-platform plugin configuration handling
 
 ## Next Steps
-2. Implement the missing functionality in Dialog system
-3. Complete the event system implementation
-4. Implement the missing functionality in Plugin system
+1. Complete GTK UI component replacement
+2. Implement comprehensive dialog system
+3. Refactor event handling for GTK
+4. Develop cross-platform plugin infrastructure
 
 
