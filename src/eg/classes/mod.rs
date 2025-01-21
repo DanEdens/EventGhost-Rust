@@ -7,6 +7,7 @@ pub mod menu;
 pub mod toolbar;
 pub mod status_bar;
 pub mod dialog;
+pub mod actions;
 
 // Re-export the main components
 pub use main_frame::MainFrame;
@@ -14,6 +15,7 @@ pub use menu::Menu;
 pub use toolbar::Toolbar;
 pub use status_bar::StatusBar;
 pub use dialog::ConfigDialog;
+pub use actions::add_actions;
 
 // Comment out modules that need GTK conversion
 // pub mod drag_drop;

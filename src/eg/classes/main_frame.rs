@@ -1,6 +1,7 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation};
-use super::{Menu, Toolbar, StatusBar, UIComponent};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar};
+use gio::{Menu, MenuItem};
+use super::{Toolbar, StatusBar, UIComponent};
 use crate::core::Error;
 // use glib::Error;
 
@@ -11,8 +12,8 @@ const DEFAULT_WINDOW_HEIGHT: i32 = 600;
 pub struct MainFrame {
     /// The main GTK application window
     pub(crate) window: ApplicationWindow,
-    /// The main menu
-    pub menu: Menu,
+    /// The main menu bar
+    pub menu_bar: PopoverMenuBar,
     /// The toolbar
     pub toolbar: Toolbar,
     /// The status bar
@@ -22,6 +23,126 @@ pub struct MainFrame {
 }
 
 impl MainFrame {
+    fn create_menu_bar(&self) -> Menu {
+        let menu_bar = Menu::new();
+
+        // File Menu
+        let file_menu = Menu::new();
+        file_menu.append(Some("New"), Some("app.new"));
+        file_menu.append(Some("Open"), Some("app.open"));
+        file_menu.append(Some("Save"), Some("app.save"));
+        file_menu.append(Some("Save As"), Some("app.save-as"));
+        
+        let separator = Menu::new();
+        file_menu.append_section(None, &separator);
+        
+        file_menu.append(Some("Options"), Some("app.options"));
+        
+        let separator = Menu::new();
+        file_menu.append_section(None, &separator);
+        
+        file_menu.append(Some("Restart"), Some("app.restart"));
+        file_menu.append(Some("Restart as Admin"), Some("app.restart-admin"));
+        
+        let separator = Menu::new();
+        file_menu.append_section(None, &separator);
+        
+        file_menu.append(Some("Exit"), Some("app.quit"));
+        
+        let file_item = MenuItem::new(Some("File"), Some("file"));
+        file_item.set_submenu(Some(&file_menu));
+        menu_bar.append_item(&file_item);
+
+        // Edit Menu
+        let edit_menu = Menu::new();
+        edit_menu.append(Some("Undo"), Some("app.undo"));
+        edit_menu.append(Some("Redo"), Some("app.redo"));
+        
+        let separator = Menu::new();
+        edit_menu.append_section(None, &separator);
+        
+        edit_menu.append(Some("Cut"), Some("app.cut"));
+        edit_menu.append(Some("Copy"), Some("app.copy"));
+        edit_menu.append(Some("Python"), Some("app.python"));
+        edit_menu.append(Some("Paste"), Some("app.paste"));
+        edit_menu.append(Some("Delete"), Some("app.delete"));
+        
+        let separator = Menu::new();
+        edit_menu.append_section(None, &separator);
+        
+        edit_menu.append(Some("Find"), Some("app.find"));
+        edit_menu.append(Some("Find Next"), Some("app.find-next"));
+        
+        let edit_item = MenuItem::new(Some("Edit"), Some("edit"));
+        edit_item.set_submenu(Some(&edit_menu));
+        menu_bar.append_item(&edit_item);
+
+        // View Menu
+        let view_menu = Menu::new();
+        view_menu.append(Some("Show Toolbar"), Some("app.show-toolbar"));
+        
+        let separator = Menu::new();
+        view_menu.append_section(None, &separator);
+        
+        view_menu.append(Some("Expand"), Some("app.expand"));
+        view_menu.append(Some("Collapse"), Some("app.collapse"));
+        view_menu.append(Some("Expand Children"), Some("app.expand-children"));
+        view_menu.append(Some("Collapse Children"), Some("app.collapse-children"));
+        view_menu.append(Some("Expand All"), Some("app.expand-all"));
+        view_menu.append(Some("Collapse All"), Some("app.collapse-all"));
+        
+        let view_item = MenuItem::new(Some("View"), Some("view"));
+        view_item.set_submenu(Some(&view_menu));
+        menu_bar.append_item(&view_item);
+
+        // Configuration Menu
+        let config_menu = Menu::new();
+        config_menu.append(Some("Add Plugin"), Some("app.add-plugin"));
+        config_menu.append(Some("Add Folder"), Some("app.add-folder"));
+        config_menu.append(Some("Add Macro"), Some("app.add-macro"));
+        config_menu.append(Some("Add Event"), Some("app.add-event"));
+        config_menu.append(Some("Add Action"), Some("app.add-action"));
+        
+        let separator = Menu::new();
+        config_menu.append_section(None, &separator);
+        
+        config_menu.append(Some("Configure"), Some("app.configure"));
+        config_menu.append(Some("Rename"), Some("app.rename"));
+        config_menu.append(Some("Execute"), Some("app.execute"));
+        
+        let config_item = MenuItem::new(Some("Configuration"), Some("configuration"));
+        config_item.set_submenu(Some(&config_menu));
+        menu_bar.append_item(&config_item);
+
+        // Help Menu
+        let help_menu = Menu::new();
+        help_menu.append(Some("Contents"), Some("app.help-contents"));
+        
+        let separator = Menu::new();
+        help_menu.append_section(None, &separator);
+        
+        help_menu.append(Some("Web Homepage"), Some("app.web-homepage"));
+        help_menu.append(Some("Web Forum"), Some("app.web-forum"));
+        help_menu.append(Some("Web Wiki"), Some("app.web-wiki"));
+        
+        let separator = Menu::new();
+        help_menu.append_section(None, &separator);
+        
+        help_menu.append(Some("Check for Updates"), Some("app.check-update"));
+        
+        let separator = Menu::new();
+        help_menu.append_section(None, &separator);
+        
+        help_menu.append(Some("Python Shell"), Some("app.python-shell"));
+        help_menu.append(Some("About"), Some("app.about"));
+        
+        let help_item = MenuItem::new(Some("Help"), Some("help"));
+        help_item.set_submenu(Some(&help_menu));
+        menu_bar.append_item(&help_item);
+
+        menu_bar
+    }
+
     /// Creates a new MainFrame instance.
     ///
     /// # Arguments
@@ -30,7 +151,6 @@ impl MainFrame {
     /// # Returns
     /// A new MainFrame with a configured GTK window
     pub fn new(app: &Application) -> Result<Self, Error> {
-        // Create main window
         let window = ApplicationWindow::builder()
             .application(app)
             .title("EventGhost")
@@ -38,206 +158,33 @@ impl MainFrame {
             .default_height(DEFAULT_WINDOW_HEIGHT)
             .build();
 
-        // Create main vertical container
         let container = Box::new(Orientation::Vertical, 0);
-        
-        // Create and initialize menu
-        let menu = Menu::new();
-        
-        // Create and initialize toolbar with standard buttons
+        let menu_model = Menu::new();
+        let menu_bar = PopoverMenuBar::from_model(Some(&menu_model));
         let mut toolbar = Toolbar::new();
-        
-        // File operations
-        let new_button = toolbar.add_button("new", "document-new", "New");
-        new_button.connect_clicked(move |_| {
-            println!("New button clicked");
-            // TODO: Implement new document functionality
-        });
-        
-        let open_button = toolbar.add_button("open", "document-open", "Open");
-        open_button.connect_clicked(move |_| {
-            println!("Open button clicked");
-            // TODO: Implement open document functionality
-        });
-        
-        let save_button = toolbar.add_button("save", "document-save", "Save");
-        save_button.connect_clicked(move |_| {
-            println!("Save button clicked");
-            // TODO: Implement save document functionality
-        });
-        
-        toolbar.add_separator();
-        
-        // Edit operations
-        let cut_button = toolbar.add_button("cut", "edit-cut", "Cut");
-        cut_button.connect_clicked(move |_| {
-            println!("Cut button clicked");
-            // TODO: Implement cut functionality
-        });
-        
-        let copy_button = toolbar.add_button("copy", "edit-copy", "Copy");
-        copy_button.connect_clicked(move |_| {
-            println!("Copy button clicked");
-            // TODO: Implement copy functionality
-        });
-        
-        let python_button = toolbar.add_button("python", "text-x-python", "Python");
-        python_button.connect_clicked(move |_| {
-            println!("Python button clicked");
-            // TODO: Implement Python shell functionality
-        });
-        
-        let paste_button = toolbar.add_button("paste", "edit-paste", "Paste");
-        paste_button.connect_clicked(move |_| {
-            println!("Paste button clicked");
-            // TODO: Implement paste functionality
-        });
-        
-        toolbar.add_separator();
-        
-        // Undo/Redo
-        let undo_button = toolbar.add_button("undo", "edit-undo", "Undo");
-        undo_button.connect_clicked(move |_| {
-            println!("Undo button clicked");
-            // TODO: Implement undo functionality
-        });
-        
-        let redo_button = toolbar.add_button("redo", "edit-redo", "Redo");
-        redo_button.connect_clicked(move |_| {
-            println!("Redo button clicked");
-            // TODO: Implement redo functionality
-        });
-        
-        toolbar.add_separator();
-        
-        // Add items
-        let add_plugin_button = toolbar.add_button("add-plugin", "list-add", "Add Plugin");
-        add_plugin_button.connect_clicked(move |_| {
-            println!("Add plugin button clicked");
-            // TODO: Implement add plugin functionality
-        });
-        
-        let add_folder_button = toolbar.add_button("add-folder", "folder-new", "Add Folder");
-        add_folder_button.connect_clicked(move |_| {
-            println!("Add folder button clicked");
-            // TODO: Implement add folder functionality
-        });
-        
-        let add_macro_button = toolbar.add_button("add-macro", "insert-object", "Add Macro");
-        add_macro_button.connect_clicked(move |_| {
-            println!("Add macro button clicked");
-            // TODO: Implement add macro functionality
-        });
-        
-        let add_event_button = toolbar.add_button("add-event", "insert-text", "Add Event");
-        add_event_button.connect_clicked(move |_| {
-            println!("Add event button clicked");
-            // TODO: Implement add event functionality
-        });
-        
-        let add_action_button = toolbar.add_button("add-action", "system-run", "Add Action");
-        add_action_button.connect_clicked(move |_| {
-            println!("Add action button clicked");
-            // TODO: Implement add action functionality
-        });
-        
-        toolbar.add_separator();
-        
-        // Toggle and execute
-        let disabled_button = toolbar.add_button("disabled", "dialog-error", "Disabled");
-        disabled_button.connect_clicked(move |_| {
-            println!("Disabled button clicked");
-            // TODO: Implement disable/enable functionality
-        });
-        
-        toolbar.add_separator();
-        
-        let execute_button = toolbar.add_button("execute", "media-playback-start", "Execute");
-        execute_button.connect_clicked(move |_| {
-            println!("Execute button clicked");
-            // TODO: Implement execute functionality
-        });
-        
-        toolbar.add_separator();
-        
-        // Tree operations
-        let expand_button = toolbar.add_button("expand", "go-down", "Expand");
-        expand_button.connect_clicked(move |_| {
-            println!("Expand button clicked");
-            // TODO: Implement expand functionality
-        });
-        
-        let collapse_button = toolbar.add_button("collapse", "go-up", "Collapse");
-        collapse_button.connect_clicked(move |_| {
-            println!("Collapse button clicked");
-            // TODO: Implement collapse functionality
-        });
-        
-        let expand_children_button = toolbar.add_button("expand-children", "view-list-tree", "Expand Children");
-        expand_children_button.connect_clicked(move |_| {
-            println!("Expand children button clicked");
-            // TODO: Implement expand children functionality
-        });
-        
-        let collapse_children_button = toolbar.add_button("collapse-children", "view-list", "Collapse Children");
-        collapse_children_button.connect_clicked(move |_| {
-            println!("Collapse children button clicked");
-            // TODO: Implement collapse children functionality
-        });
-        
-        let expand_all_button = toolbar.add_button("expand-all", "zoom-fit-best", "Expand All");
-        expand_all_button.connect_clicked(move |_| {
-            println!("Expand all button clicked");
-            // TODO: Implement expand all functionality
-        });
-        
-        let collapse_all_button = toolbar.add_button("collapse-all", "zoom-original", "Collapse All");
-        collapse_all_button.connect_clicked(move |_| {
-            println!("Collapse all button clicked");
-            // TODO: Implement collapse all functionality
-        });
-        
-        // Initially disable some buttons
-        save_button.set_sensitive(false);
-        undo_button.set_sensitive(false);
-        redo_button.set_sensitive(false);
-        
-        // Set tooltips with keyboard shortcuts
-        toolbar.set_button_tooltip("new", "New (Ctrl+N)");
-        toolbar.set_button_tooltip("open", "Open (Ctrl+O)");
-        toolbar.set_button_tooltip("save", "Save (Ctrl+S)");
-        toolbar.set_button_tooltip("cut", "Cut (Ctrl+X)");
-        toolbar.set_button_tooltip("copy", "Copy (Ctrl+C)");
-        toolbar.set_button_tooltip("paste", "Paste (Ctrl+V)");
-        toolbar.set_button_tooltip("undo", "Undo (Ctrl+Z)");
-        toolbar.set_button_tooltip("redo", "Redo (Ctrl+Y)");
-        toolbar.set_button_tooltip("add-plugin", "Add Plugin (Shift+Ctrl+P)");
-        toolbar.set_button_tooltip("add-folder", "Add Folder (Shift+Ctrl+N)");
-        toolbar.set_button_tooltip("add-macro", "Add Macro (Shift+Ctrl+M)");
-        toolbar.set_button_tooltip("add-event", "Add Event (Shift+Ctrl+E)");
-        toolbar.set_button_tooltip("add-action", "Add Action (Shift+Ctrl+A)");
-        toolbar.set_button_tooltip("disabled", "Disabled (Ctrl+D)");
-        toolbar.set_button_tooltip("execute", "Execute (F5)");
-        
-        // Create status bar
         let status_bar = StatusBar::new();
-        
-        // Add components to container
-        container.append(&menu.widget);
-        container.append(&toolbar.widget);
-        
-        // Add container to window
-        window.set_child(Some(&container));
-        
-        // Create MainFrame instance
+
+        // Create main frame instance first
         let main_frame = MainFrame {
             window,
-            menu,
+            menu_bar,
             toolbar,
             status_bar,
             container,
         };
+
+        // Create and add menu bar
+        let menu_model = main_frame.create_menu_bar();
+        main_frame.menu_bar.set_menu_model(Some(&menu_model));
+        main_frame.container.append(&main_frame.menu_bar);
         
+        // Add toolbar and status bar
+        main_frame.container.append(&main_frame.toolbar.widget);
+        main_frame.container.append(&main_frame.status_bar.widget);
+        
+        // Add container to window
+        main_frame.window.set_child(Some(&main_frame.container));
+
         Ok(main_frame)
     }
     

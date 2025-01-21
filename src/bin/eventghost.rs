@@ -1,13 +1,17 @@
 use gtk::prelude::*;
 use gtk::Application;
-
-use eventghost::eg::classes::main_frame::MainFrame;
+use eventghost::eg::classes::{MainFrame, add_actions};
 
 fn main() {
     // Create GTK application
     let app = Application::builder()
         .application_id("org.eventghost.app")
         .build();
+
+    // Add actions before connecting activate signal
+    app.connect_startup(|app| {
+        add_actions(app);
+    });
 
     app.connect_activate(move |app| {
         // Create main window
