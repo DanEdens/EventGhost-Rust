@@ -5,6 +5,7 @@ use gtk::Widget;
 pub mod main_frame;
 pub mod menu;
 pub mod toolbar;
+
 pub mod status_bar;
 pub mod dialog;
 pub mod actions;
@@ -19,7 +20,7 @@ pub use actions::add_actions;
 
 // Comment out modules that need GTK conversion
 // pub mod drag_drop;
-// pub mod log_ctrl;
+pub mod log_ctrl;
 // pub mod plugin_config;
 // pub mod property_grid;
 // pub mod tree_ctrl;

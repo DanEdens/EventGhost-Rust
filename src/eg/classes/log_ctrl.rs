@@ -1,5 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable, ScrolledWindow, Menu, MenuItem};
+use gdk;
 use glib;
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;

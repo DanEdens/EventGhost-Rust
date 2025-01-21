@@ -27,6 +27,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 bitflags = "2.4"
 gtk = { version = "0.6", package = "gtk4", features = ["v4_8"] }
+gdk = "0.6" 
 gio = { version = "0.17", features = ["v2_66"] }
 glib = { version = "0.17", features = ["v2_66"] }
 windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }

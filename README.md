@@ -62,6 +62,8 @@ We are implementing the plugin system in phases:
 ### Building
 ```bash
 # Clone the repository
+pacman -S mingw-w64-x86_64-pkg-config mingw-w64-x86_64-gtk3
+
 git clone https://github.com/DanEdens/EventGhost-Rust
 cd EventGhost-Rust
 
