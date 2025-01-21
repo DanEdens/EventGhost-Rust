@@ -1,94 +1,80 @@
-# TODO List
+# EventGhost-Rust TODO List
 
-## Current Focus: GTK Framework Implementation
+## Current Focus: GTK UI Implementation
 
-### GTK Migration Roadmap
-- [x] Migrate from Win32 to GTK framework
-- [x] Implement basic application structure with GTK
-- [x] Create MainFrame using GTK widgets
-- [ ] Replace wx-specific UI components with GTK equivalents
-- [ ] Implement GTK-specific window management
-- [ ] Port Win32 message handling to GTK event system
-- [ ] Complete feature parity with previous implementation
+### Completed
+- [x] Basic GTK window framework
+- [x] Menu bar implementation with full menu structure
+- [x] Toolbar implementation with icons and tooltips
+- [x] Status bar basic implementation
+- [x] Basic MainFrame structure
+- [x] Action system foundation
+- [x] Initial test framework
 
-### GTK Component Replacement
-- [ ] Convert Toolbar from Win32 to GTK
-  - Implement toolbar creation
-  - Add toolbar item management
-  - Implement toolbar event handling
+### In Progress
+- [ ] Event logging system
+- [ ] Tree view implementation
+- [ ] Plugin panel integration
+- [ ] Configuration system
+- [ ] Keyboard shortcut system
 
-- [ ] Replace StatusBar with GTK equivalent
-  - Create status bar widget
-  - Implement status message updates
-  - Handle status bar interactions
+### Core Components
+1. Event System
+   - [ ] Event capture and monitoring
+   - [ ] Event filtering
+   - [ ] Event logging view
+   - [ ] Event handling pipeline
 
-- [ ] Implement TreeCtrl using GTK TreeView
-  - Create tree view widget
-  - Add item management methods
-  - Implement tree node selection handling
+2. Plugin System
+   - [ ] Plugin loading mechanism
+   - [ ] Plugin configuration UI
+   - [ ] Plugin event handling
+   - [ ] Plugin state management
 
-- [ ] Develop LogCtrl using GTK TextView
-  - Create scrollable text view
-  - Implement log message appending
-  - Add log filtering capabilities
+3. Configuration Management
+   - [ ] Tree view for configuration items
+   - [ ] Item properties panel
+   - [ ] Configuration persistence
+   - [ ] Import/Export functionality
 
-### GTK-Specific Optimizations
-- [ ] Implement cross-platform UI scaling
-- [ ] Add high DPI support
-- [ ] Optimize widget rendering performance
-- [ ] Implement theme and styling support
+4. UI Components
+   - [ ] Collapsible panels
+   - [ ] Splitter controls
+   - [ ] Context menus
+   - [ ] Drag and drop support
+   - [ ] Icon management
 
 ### Testing Strategy
-- [x] Basic GTK window creation tests
-- [ ] Comprehensive GTK widget interaction tests
-- [ ] Test cross-platform UI component behavior
-- [ ] Implement UI state persistence tests
-- [ ] Validate event handling across different platforms
+1. Unit Tests
+   - [ ] Event system tests
+   - [ ] Plugin system tests
+   - [ ] Configuration system tests
+   - [ ] UI component tests
 
-## Completed
-- Implemented basic GTK UI components
-- Migrated from Win32 to GTK framework
-- Added dialog implementations with async handling
-- Fixed action handlers and error handling
-- Improved file path handling in dialogs
-- Added Debug trait implementations
-- Fixed ConditionalAction closure type
-- Removed unused imports
-- Fixed unused variable warnings
-- Added proper type annotations
+2. Integration Tests
+   - [ ] Full workflow tests
+   - [ ] Plugin interaction tests
+   - [ ] Configuration persistence tests
+   - [ ] Event handling tests
 
-## In Progress
-- Complete event type system implementation
-- Implement plugin loading functionality
-- Optimize GTK UI components
-- Improve cross-platform compatibility
+### Documentation
+- [ ] API Documentation
+- [ ] User Guide
+- [ ] Developer Guide
+- [ ] Plugin Development Guide
 
-## Implementation Plan
+## Next Milestone Goals
+1. Complete event logging view
+2. Implement tree view for configuration
+3. Add plugin panel and management
+4. Implement keyboard shortcuts
+5. Add configuration dialogs
 
-1. GTK UI Component Replacement
-   - Systematically replace Win32 UI components
-   - Ensure feature parity with original implementation
-   - Optimize for cross-platform performance
-
-2. Dialog System
-   - Complete GTK-based file chooser dialog
-   - Implement robust, cross-platform error handling
-   - Create consistent dialog result management
-
-3. Event System
-   - Adapt event handling to GTK signal system
-   - Implement comprehensive event payload management
-   - Create flexible, platform-independent event routing
-
-4. Plugin System
-   - Design plugin loading mechanism for GTK
-   - Implement plugin state management
-   - Create cross-platform plugin configuration handling
-
-## Next Steps
-1. Complete GTK UI component replacement
-2. Implement comprehensive dialog system
-3. Refactor event handling for GTK
-4. Develop cross-platform plugin infrastructure
+## Long-term Goals
+- [ ] Feature parity with Python EventGhost
+- [ ] Improved performance and resource usage
+- [ ] Enhanced plugin ecosystem
+- [ ] Cross-platform support
+- [ ] Modern UI/UX improvements
 
 
