@@ -29,6 +29,7 @@ bitflags = "2.4"
 gtk = { version = "0.6", package = "gtk4", features = ["v4_8"] }
 gio = { version = "0.17", features = ["v2_66"] }
 glib = { version = "0.17", features = ["v2_66"] }
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }
 
 [dev-dependencies]
 tokio-test = "0.4" 

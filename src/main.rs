@@ -6,7 +6,7 @@ use crate::eg::EventGhost;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut eg = EventGhost::new().expect("Failed to create EventGhost instance"); /
+    let mut eg = EventGhost::new().expect("Failed to create EventGhost instance");
     
     // Initialize and start
     eg.start().await?;
