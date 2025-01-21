@@ -1,5 +1,6 @@
-use windows::Win32::Foundation::HWND;
-use crate::core::Error;
+use gtk::prelude::*;
+use gtk::{self, Box, CheckButton, Statusbar};
+// use glib;
 use super::UIComponent;
 
 #[derive(Debug, Clone)]
@@ -17,71 +18,63 @@ pub enum StatusPartStyle {
 }
 
 pub struct StatusBar {
-    hwnd: HWND,
-    parent: HWND,
-    is_visible: bool,
-    parts: Vec<StatusPart>,
+    pub widget: Box,
+    status_bar: Statusbar,
+    check_box: CheckButton,
+    context_id: u32,
 }
 
 impl StatusBar {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new() -> Self {
+        // Create horizontal box for status bar items
+        let widget = Box::new(gtk::Orientation::Horizontal, 5);
+        widget.set_margin_start(5);
+        widget.set_margin_end(5);
+        
+        // Create status bar
+        let status_bar = Statusbar::new();
+        let context_id = status_bar.context_id("main");
+        
+        // Create checkbox for "Log only assigned events"
+        let check_box = CheckButton::with_label("Log only assigned and activated events");
+        check_box.set_active(false);
+        
+        // Pack widgets
+        widget.append(&status_bar);
+        widget.append(&check_box);
+        
+        StatusBar {
+            widget,
+            status_bar,
+            check_box,
+            context_id,
+        }
     }
-
-    pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
+    
+    pub fn set_status_text(&self, text: &str) {
+        self.status_bar.remove_all(self.context_id);
+        self.status_bar.push(self.context_id, text);
     }
-
-    /// Set the text for a specific part
-    pub fn set_text(&mut self, part_index: usize, text: &str) -> Result<(), Error> {
-        todo!()
+    
+    pub fn set_check_box_state(&self, checked: bool) {
+        self.check_box.set_active(checked);
     }
-
-    /// Set progress value (0-100) for a progress-style part
-    pub fn set_progress(&mut self, part_index: usize, progress: i32) -> Result<(), Error> {
-        todo!()
+    
+    pub fn get_check_box_state(&self) -> bool {
+        self.check_box.is_active()
     }
-
-    /// Add a new part to the status bar
-    pub fn add_part(&mut self, part: StatusPart) -> Result<(), Error> {
-        todo!()
-    }
-
-    /// Remove a part from the status bar
-    pub fn remove_part(&mut self, part_index: usize) -> Result<(), Error> {
-        todo!()
-    }
-
-    /// Get the text of a specific part
-    pub fn get_text(&self, part_index: usize) -> Option<String> {
-        todo!()
-    }
-
-    /// Set the minimum height of the status bar
-    pub fn set_min_height(&mut self, height: i32) -> Result<(), Error> {
-        todo!()
-    }
-
-    /// Get the rect of a specific part
-    pub fn get_part_rect(&self, part_index: usize) -> Result<Option<windows::Win32::Foundation::RECT>, Error> {
-        todo!()
+    
+    pub fn set_check_box_color(&self, enabled: bool) {
+        if enabled {
+            self.check_box.add_css_class("success");
+        } else {
+            self.check_box.remove_css_class("success");
+        }
     }
 }
 
 impl UIComponent for StatusBar {
-    fn get_hwnd(&self) -> HWND {
-        self.hwnd
-    }
-
-    fn show(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn hide(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn is_visible(&self) -> bool {
-        self.is_visible
+    fn get_widget(&self) -> &gtk::Widget {
+        self.widget.upcast_ref()
     }
 } 

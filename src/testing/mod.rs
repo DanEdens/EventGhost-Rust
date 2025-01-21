@@ -5,17 +5,18 @@
 //! - Test helpers
 //! - Integration test framework
 
-pub mod mocks;
-pub mod helpers;
 pub mod fixtures;
+pub mod helpers;
+pub mod mocks;
+
+#[cfg(test)]
+pub mod test {
+    pub use super::fixtures::*;
+    pub use super::helpers::*;
+    pub use super::mocks::*;
+}
 
 // Re-export common testing utilities
 pub use mocks::*;
 pub use helpers::*;
-pub use fixtures::*;
-
-// Windows API testing
-pub mod win32 {
-    pub use super::mocks::win32::*;
-    pub use super::helpers::win32::*;
-} 
+pub use fixtures::*; 

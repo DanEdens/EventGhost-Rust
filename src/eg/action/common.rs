@@ -1,12 +1,15 @@
-use super::base::{ActionBase, ActionInfo, ActionError};
+use super::base::{ActionBase, ActionError};
 use super::item::ActionItem;
 use crate::core::Error;
 use crate::core::event::Event;
-use crate::eg::classes::ConfigDialog;
+// use crate::eg::classes::dialog::ConfigDialog;
 use uuid::Uuid;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
+use async_trait::async_trait;
+use std::sync::Arc;
+use tokio::runtime::Runtime;
 
 /// Creates an action that executes a shell command
 pub fn shell_command_action(
@@ -65,9 +68,12 @@ where
         move |_| {
             let event = event_generator();
             // TODO: Send event through event system
+            // print the unused var
+            println!("Event: {:?}", event);
             Ok(())
         },
     )
+
 }
 
 /// Creates an action that executes only if a condition is met
@@ -81,13 +87,21 @@ pub fn conditional_action<F>(
 where
     F: Fn(Option<&dyn Event>) -> bool + Send + Sync + Clone + 'static,
 {
-    let conditional = ConditionalAction::new(action, condition.clone());
+    let conditional = ConditionalAction::new(name.to_string(), description.to_string(), plugin_id, condition, action);
     ActionItem::new(
         name,
         description,
         plugin_id,
-        move |event| conditional.clone_action().execute(event)
-    ).with_can_execute(condition)
+        move |event| {
+            let mut action = conditional.clone_action();
+            if action.can_execute(Some(event)) {
+                let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
+                rt.block_on(action.execute(event))
+            } else {
+                Ok(())
+            }
+        }
+    )
 }
 
 /// Creates an action that repeats another action a specified number of times
@@ -103,76 +117,97 @@ pub fn repeat_action(
         description,
         plugin_id,
         move |event| {
+            let mut action = action.clone_action();
+            let rt = Runtime::new().map_err(|e| Error::Other(e.to_string()))?;
             for _ in 0..count {
-                action.clone_action().execute(event)?;
+                rt.block_on(action.execute(event))?;
             }
             Ok(())
-        },
+        }
     )
 }
 
-pub struct ConditionalAction<F> {
+/// A conditional action that only executes if a condition is met
+pub struct ConditionalAction<F>
+where
+    F: Fn(Option<&dyn Event>) -> bool + Send + Sync + 'static,
+{
+    id: Uuid,
+    name: String,
+    description: String,
+    plugin_id: Uuid,
+    condition: Arc<F>,
     action: Box<dyn ActionBase>,
-    condition: F,
 }
 
 impl<F> ConditionalAction<F>
 where
     F: Fn(Option<&dyn Event>) -> bool + Send + Sync + 'static,
 {
-    pub fn new(mut action: Box<dyn ActionBase>, condition: F) -> Self {
-        Self { action, condition }
-    }
-
-    pub fn get_action(&self) -> &Box<dyn ActionBase> {
-        &self.action
-    }
-
-    pub fn get_condition(&self) -> &F {
-        &self.condition
+    /// Create a new conditional action
+    pub fn new(
+        name: String,
+        description: String,
+        plugin_id: Uuid,
+        condition: F,
+        action: Box<dyn ActionBase>,
+    ) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name,
+            description,
+            plugin_id,
+            condition: Arc::new(condition),
+            action,
+        }
     }
 }
 
+#[async_trait]
 impl<F> ActionBase for ConditionalAction<F>
 where
-    F: Fn(Option<&dyn Event>) -> bool + Send + Sync + Clone + 'static,
+    F: Fn(Option<&dyn Event>) -> bool + Send + Sync + 'static,
 {
-    fn get_name(&self) -> &str {
-        self.action.get_name()
-    }
-
-    fn get_description(&self) -> &str {
-        self.action.get_description()
-    }
-
     fn get_id(&self) -> Uuid {
-        self.action.get_id()
+        self.id
     }
-
+    
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+    
+    fn get_description(&self) -> &str {
+        &self.description
+    }
+    
     fn get_plugin_id(&self) -> Uuid {
-        self.action.get_plugin_id()
+        self.plugin_id
     }
-
-    fn configure(&mut self) -> Option<ConfigDialog> {
-        self.action.configure()
-    }
-
+    
     fn can_execute(&self, event: Option<&dyn Event>) -> bool {
-        (self.condition)(event) && self.action.can_execute(event)
+        (self.condition)(event)
     }
-
+    
     fn clone_action(&self) -> Box<dyn ActionBase> {
         Box::new(ConditionalAction {
-            action: self.action.clone_action(),
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            plugin_id: self.plugin_id,
             condition: self.condition.clone(),
+            action: self.action.clone_action(),
         })
     }
-
-    fn execute(&mut self, event: Option<&dyn Event>) -> Result<(), Error> {
-        if (self.condition)(event) {
-            self.action.execute(event)
+    
+    async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
+        if self.can_execute(Some(event)) {
+            self.action.execute(event).await
         } else {
             Ok(())
         }
+    }
+    
+    fn configure(&mut self) -> Result<bool, Error> {
+        self.action.configure()
     }
 } 

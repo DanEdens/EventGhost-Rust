@@ -1,37 +1,31 @@
-use windows::Win32::Foundation::{HWND, LPARAM, WPARAM, LRESULT};
-use windows::Win32::UI::WindowsAndMessaging::*;
-use crate::core::Error;
+use gtk::prelude::*;
+use gtk::{self, Application, ApplicationWindow};
+use gio;
+// use glib;
 
-pub mod utils;
-
-/// Window procedure callback type
-pub type WindowProc = unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT;
-
-/// Register a window class with the given name and window procedure
-pub fn register_window_class(class_name: &str, window_proc: WindowProc) -> Result<(), Error> {
-    todo!()
+pub fn init_application() -> gtk::Application {
+    let application = Application::new(
+        Some("org.eventghost.app"),
+        gio::ApplicationFlags::FLAGS_NONE,
+    );
+    
+    application.connect_activate(|app| {
+        let window = ApplicationWindow::new(app);
+        window.set_title(Some("EventGhost"));
+        window.set_default_size(800, 600);
+        window.show();
+    });
+    
+    application
 }
 
-/// Create a window with the given class name and window name
-pub fn create_window(
-    class_name: &str,
-    window_name: &str,
-    style: u32,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    parent: Option<HWND>,
-) -> Result<HWND, Error> {
-    todo!()
-}
-
-/// Send a message to a window
-pub fn send_message(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
-    todo!()
-}
-
-/// Post a message to a window's message queue
-pub fn post_message(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> Result<(), Error> {
-    todo!()
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_application_initialization() {
+        let app = init_application();
+        assert_eq!(app.application_id(), Some(glib::GString::from("org.eventghost.app")));
+    }
 } 

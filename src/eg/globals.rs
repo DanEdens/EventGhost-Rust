@@ -1,5 +1,6 @@
 use crate::eg::bunch::Bunch;
-use crate::core::constants::{DEFAULT_DEBUG_LEVEL, DEFAULT_ENCODING};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use crate::core::Error;
 
 /// Global state container for EventGhost
@@ -7,9 +8,9 @@ pub struct Globals {
     /// Dynamic property storage
     pub bunch: Bunch,
     /// Current debug level
-    pub debug_level: i32,
+    pub debug_level: Arc<Mutex<u32>>,
     /// System encoding for text operations
-    pub system_encoding: String,
+    pub encoding: Arc<Mutex<String>>,
     /// Current program counter for macro execution
     pub program_counter: Option<usize>,
     /// Flag to stop execution
@@ -20,17 +21,23 @@ pub struct Globals {
     pub plugin_dir: String,
 }
 
-impl Globals {
-    pub fn new() -> Self {
+impl Default for Globals {
+    fn default() -> Self {
         Self {
             bunch: Bunch::new(),
-            debug_level: DEFAULT_DEBUG_LEVEL,
-            system_encoding: DEFAULT_ENCODING.to_string(),
+            debug_level: Arc::new(Mutex::new(1)),
+            encoding: Arc::new(Mutex::new("utf-8".to_string())),
             program_counter: None,
             stop_execution_flag: false,
             config_dir: String::new(),
             plugin_dir: String::new(),
         }
+    }
+}
+
+impl Globals {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn initialize(&mut self) -> Result<(), Error> {
@@ -64,5 +71,25 @@ impl Globals {
     /// Remove a global variable
     pub fn remove_var(&mut self, name: &str) {
         self.bunch.remove(name);
+    }
+
+    pub async fn set_debug_level(&self, level: u32) {
+        let mut debug_level = self.debug_level.lock().await;
+        *debug_level = level;
+    }
+    
+    pub async fn get_debug_level(&self) -> u32 {
+        let debug_level = self.debug_level.lock().await;
+        *debug_level
+    }
+    
+    pub async fn set_encoding(&self, encoding: String) {
+        let mut enc = self.encoding.lock().await;
+        *enc = encoding;
+    }
+    
+    pub async fn get_encoding(&self) -> String {
+        let enc = self.encoding.lock().await;
+        enc.clone()
     }
 } 

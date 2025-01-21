@@ -9,19 +9,32 @@
 //! - Logging system
 //! - Error handling
 
-pub mod error;
-pub mod event;
 pub mod config;
+pub mod event;
 pub mod plugin;
+pub mod error;
 pub mod logging;
 pub mod named_pipe;
-pub mod constants;
 
 pub use error::Error;
-pub use event::{Event, EventType, EventPayload, EventHandler, EventManager};
-pub use plugin::{Plugin, PluginInfo};
-pub use crate::eg::classes::PropertySource;
+pub use config::Config;
 
-// Re-export commonly used types
+// Plugin types - Basic functionality only for now
 pub use plugin::registry::PluginRegistry;
-pub use plugin::loader::PluginLoader; 
+pub use plugin::loader::PluginLoader;
+pub use plugin::Plugin;
+pub use plugin::PluginInfo;
+
+// Event types
+pub use event::Event;
+pub use event::EventManager;
+pub use event::EventHandler;
+
+// Re-export config types
+pub use config::ConfigStore;
+pub use config::ConfigError;
+
+// TODO: Phase 2 - Advanced plugin functionality
+// pub use plugin::manager::PluginManager;
+// pub use plugin::config::PluginConfig;
+// pub use plugin::config::GlobalConfig; 

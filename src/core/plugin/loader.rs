@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use tokio::sync::RwLock;
 use std::sync::Arc;
-use crate::core::Error;
+// use crate::core::Error;
 use super::Plugin;
 
 #[derive(Debug, thiserror::Error)]
@@ -9,11 +9,13 @@ pub enum LoaderError {
     #[error("Failed to load plugin: {0}")]
     LoadFailed(String),
     #[error("Plugin not found: {0}")]
-    NotFound(PathBuf),
+    NotFound(String),
     #[error("Invalid plugin: {0}")]
     Invalid(String),
-    #[error(transparent)]
-    Other(#[from] Error),
+    #[error("IO error: {0}")]
+    Io(String),
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
 pub struct PluginLoader {

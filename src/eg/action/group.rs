@@ -1,92 +1,97 @@
-use super::base::{ActionBase, ActionInfo};
 use crate::core::Error;
 use crate::core::event::Event;
-use crate::eg::classes::ConfigDialog;
 use uuid::Uuid;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use super::base::ActionBase;
+use async_trait::async_trait;
 
+/// A group of actions that can be executed together
 pub struct ActionGroup {
-    info: ActionInfo,
-    actions: Vec<Box<dyn ActionBase>>,
+    id: Uuid,
+    name: String,
+    description: String,
+    plugin_id: Uuid,
+    actions: Vec<Arc<Mutex<Box<dyn ActionBase>>>>,
 }
 
 impl ActionGroup {
+    /// Create a new action group
     pub fn new(name: &str, description: &str, plugin_id: Uuid) -> Self {
-        Self {
-            info: ActionInfo {
-                name: name.to_string(),
-                description: description.to_string(),
-                id: Uuid::new_v4(),
-                plugin_id,
-            },
+        ActionGroup {
+            id: Uuid::new_v4(),
+            name: name.to_string(),
+            description: description.to_string(),
+            plugin_id,
             actions: Vec::new(),
         }
     }
-
+    
+    /// Add an action to the group
     pub fn add_action(&mut self, action: Box<dyn ActionBase>) {
+        let action = Arc::new(Mutex::new(action));
         self.actions.push(action);
     }
-
-    pub fn remove_action(&mut self, id: Uuid) -> Option<Box<dyn ActionBase>> {
-        if let Some(index) = self.actions.iter().position(|a| a.get_id() == id) {
-            Some(self.actions.remove(index))
-        } else {
-            None
+    
+    /// Remove an action from the group
+    pub async fn remove_action(&mut self, id: Uuid) {
+        let mut new_actions = Vec::new();
+        for a in &self.actions {
+            let action = a.lock().await;
+            if action.get_id() != id {
+                new_actions.push(a.clone());
+            }
         }
+        self.actions = new_actions;
     }
-
-    pub fn get_actions(&self) -> &[Box<dyn ActionBase>] {
+    
+    /// Get all actions in the group
+    pub fn get_actions(&self) -> &[Arc<Mutex<Box<dyn ActionBase>>>] {
         &self.actions
-    }
-
-    pub fn get_actions_mut(&mut self) -> &mut [Box<dyn ActionBase>] {
-        &mut self.actions
     }
 }
 
+#[async_trait::async_trait]
 impl ActionBase for ActionGroup {
-    fn get_name(&self) -> &str {
-        &self.info.name
-    }
-
-    fn get_description(&self) -> &str {
-        &self.info.description
-    }
-
     fn get_id(&self) -> Uuid {
-        self.info.id
+        self.id
     }
-
+    
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+    
+    fn get_description(&self) -> &str {
+        &self.description
+    }
+    
     fn get_plugin_id(&self) -> Uuid {
-        self.info.plugin_id
+        self.plugin_id
     }
-
-    fn configure(&mut self) -> Option<ConfigDialog> {
-        None // Groups don't have configuration
-    }
-
-    fn execute(&mut self, event: Option<&dyn Event>) -> Result<(), Error> {
-        for action in &mut self.actions {
-            action.execute(event)?;
+    
+    async fn execute(&mut self, event: &dyn Event) -> Result<(), Error> {
+        for action in &self.actions {
+            let mut action = action.lock().await;
+            action.execute(event).await?;
         }
         Ok(())
     }
-
+    
     fn can_execute(&self, event: Option<&dyn Event>) -> bool {
-        self.actions.iter().any(|action| action.can_execute(event))
+        // Groups can always execute
+        // print the unused var
+        println!("Event: {:?}", event);
+        true
     }
+    
 
     fn clone_action(&self) -> Box<dyn ActionBase> {
-        let mut group = ActionGroup::new(
-            &self.info.name,
-            &self.info.description,
-            self.info.plugin_id,
-        );
-        group.info.id = self.info.id;
-        
-        for action in &self.actions {
-            group.add_action(action.clone_action());
-        }
-        
-        Box::new(group)
+        Box::new(ActionGroup {
+            id: self.id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            plugin_id: self.plugin_id,
+            actions: self.actions.clone(),
+        })
     }
 } 

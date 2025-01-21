@@ -1,73 +1,91 @@
-use windows::Win32::Foundation::HWND;
-use crate::core::Error;
+use gtk::prelude::*;
+use gtk::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter};
+use glib;
 use super::UIComponent;
 
 pub struct TreeItem {
-    pub id: String,
-    pub text: String,
-    pub icon_index: i32,
-    pub selected_icon_index: i32,
     pub data: Option<Box<dyn std::any::Any + Send + Sync>>,
+    pub iter: TreeIter,
 }
 
 pub struct TreeCtrl {
-    hwnd: HWND,
-    parent: HWND,
-    is_visible: bool,
+    pub container: gtk::Box,
+    pub tree_view: TreeView,
+    pub store: TreeStore,
+    selection: TreeSelection,
 }
 
 impl TreeCtrl {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new() -> Self {
+        let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let store = TreeStore::new(&[glib::Type::STRING]);
+        let tree_view = TreeView::new();
+        tree_view.set_model(Some(&store));
+        
+        let selection = tree_view.selection();
+        
+        container.append(&tree_view);
+        
+        TreeCtrl {
+            container,
+            tree_view,
+            store,
+            selection,
+        }
+    }
+    
+    pub fn expand_item(&self, iter: &gtk::TreeIter) {
+        if let Some(path) = self.store.path(iter) {
+            self.tree_view.expand_row(&path, false);
+        } else {
+            eprintln!("Could not find path for the given iter.");
+        }
+    }
+    
+    pub fn collapse_item(&self, iter: &gtk::TreeIter) {
+        if let Some(path) = self.store.path(iter) {
+            self.tree_view.collapse_row(&path);
+        } else {
+            eprintln!("Could not find path for the given iter.");
+        }
+    }
+    
+    pub fn expand_all(&self) {
+        self.tree_view.expand_all();
+    }
+    
+    pub fn collapse_all(&self) {
+        self.tree_view.collapse_all();
+    }
+    
+    pub fn get_selection(&self) -> &TreeSelection {
+        &self.selection
+    }
+    
+    pub fn get_path(&self, iter: &TreeIter) -> Option<TreePath> {
+        Some(self.store.path(iter))
     }
 
-    pub fn initialize(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn add_item(&mut self, parent: Option<&TreeItem>, item: TreeItem) -> Result<TreeItem, Error> {
-        todo!()
-    }
-
-    pub fn remove_item(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn get_selected_item(&self) -> Result<Option<TreeItem>, Error> {
-        todo!()
-    }
-
-    pub fn expand_item(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn collapse_item(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn set_image_list(&mut self, image_list: HWND) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn ensure_visible(&mut self, item: &TreeItem) -> Result<(), Error> {
-        todo!()
+    pub fn get_iter(&self, path: &TreePath) -> Option<TreeIter> {
+        self.store.iter(path)
     }
 }
 
 impl UIComponent for TreeCtrl {
-    fn get_hwnd(&self) -> HWND {
-        self.hwnd
+    fn get_widget(&self) -> &gtk::Widget {
+        self.container.upcast_ref()
     }
+}
 
-    fn show(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn hide(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn is_visible(&self) -> bool {
-        self.is_visible
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_tree_ctrl_initialization() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let tree_ctrl = TreeCtrl::new();
+        assert!(tree_ctrl.container.is_visible());
     }
 } 

@@ -1,142 +1,94 @@
-# EventGhost-Rust TODO List
+# TODO List
 
-## Core Implementation Progress
+## Current Focus: GTK Framework Implementation
 
-### Completed
-- [x] Project setup and initial structure
-- [x] Basic documentation framework
-- [x] System architecture and wireframe
-  - [x] Core plugin traits and interfaces
-  - [x] Plugin discovery system skeleton
-  - [x] Dependency management design
-  - [x] Plugin lifecycle management
+### GTK Migration Roadmap
+- [x] Migrate from Win32 to GTK framework
+- [x] Implement basic application structure with GTK
+- [x] Create MainFrame using GTK widgets
+- [ ] Replace wx-specific UI components with GTK equivalents
+- [ ] Implement GTK-specific window management
+- [ ] Port Win32 message handling to GTK event system
+- [ ] Complete feature parity with previous implementation
 
-### In Progress - Phase 1: Plugin Loading & Metadata
-- [ ] Plugin File Format
-  - [ ] Define plugin manifest format
-  - [ ] Create plugin file structure
-  - [ ] Implement metadata extraction
-  - [ ] Add version parsing
-- [ ] Dynamic Loading
-  - [ ] Safe library loading
-  - [ ] Symbol resolution
-  - [ ] Plugin initialization
-  - [ ] Error handling
-- [ ] Plugin Registry Enhancement
-  - [ ] Metadata caching
-  - [ ] State tracking
-  - [ ] Health monitoring
-  - [ ] Registry persistence
+### GTK Component Replacement
+- [ ] Convert Toolbar from Win32 to GTK
+  - Implement toolbar creation
+  - Add toolbar item management
+  - Implement toolbar event handling
 
-### Pending - Phase 2: Discovery & Hot-Reloading
-- [ ] File System Integration
-  - [ ] Directory watching
-  - [ ] Change detection
-  - [ ] File validation
-  - [ ] Recursive scanning
-- [ ] Hot-Reloading
-  - [ ] Safe unloading
-  - [ ] State transfer
-  - [ ] Reload coordination
-  - [ ] Rollback mechanism
-- [ ] Version Management
-  - [ ] Semantic version parsing
-  - [ ] Requirement checking
-  - [ ] Conflict resolution
-  - [ ] Upgrade handling
+- [ ] Replace StatusBar with GTK equivalent
+  - Create status bar widget
+  - Implement status message updates
+  - Handle status bar interactions
 
-### Future - Phase 3: Dependencies & Communication
-- [ ] Dependency Resolution
-  - [ ] Graph building
-  - [ ] Circular detection
-  - [ ] Optional dependencies
-  - [ ] Version constraints
-- [ ] Inter-Plugin Communication
-  - [ ] Message system
-  - [ ] Event routing
-  - [ ] Capability negotiation
-  - [ ] Resource management
-- [ ] Plugin Isolation
-  - [ ] Sandboxing
-  - [ ] Resource limits
-  - [ ] Error isolation
-  - [ ] Cleanup mechanisms
+- [ ] Implement TreeCtrl using GTK TreeView
+  - Create tree view widget
+  - Add item management methods
+  - Implement tree node selection handling
 
-### Future - Phase 4: Configuration & UI
-- [ ] Configuration System
-  - [ ] Schema system
-  - [ ] Validation
-  - [ ] Persistence
-  - [ ] Migration tools
-- [ ] Plugin UI Integration
-  - [ ] Framework integration
-  - [ ] Settings panels
-  - [ ] Dynamic updates
-  - [ ] State persistence
-- [ ] Plugin Management UI
-  - [ ] Plugin browser
-  - [ ] Installation UI
-  - [ ] Update management
-  - [ ] Dependency viewer
+- [ ] Develop LogCtrl using GTK TextView
+  - Create scrollable text view
+  - Implement log message appending
+  - Add log filtering capabilities
 
-## Testing Infrastructure
-- [x] Test utilities and helpers
-- [x] Mock implementations
-- [x] Integration test framework
-- [ ] Plugin test framework
-- [ ] Unit test coverage
-- [ ] Performance benchmarks
-- [ ] Platform-specific tests
+### GTK-Specific Optimizations
+- [ ] Implement cross-platform UI scaling
+- [ ] Add high DPI support
+- [ ] Optimize widget rendering performance
+- [ ] Implement theme and styling support
 
-## Documentation Tasks
-- [x] Documentation structure
-- [x] API documentation skeleton
-- [ ] Plugin development guide
-- [ ] User guide
-- [ ] Architecture documentation
-- [ ] Migration guide
+### Testing Strategy
+- [x] Basic GTK window creation tests
+- [ ] Comprehensive GTK widget interaction tests
+- [ ] Test cross-platform UI component behavior
+- [ ] Implement UI state persistence tests
+- [ ] Validate event handling across different platforms
+
+## Completed
+- Implemented basic GTK UI components
+- Migrated from Win32 to GTK framework
+- Added dialog implementations with async handling
+- Fixed action handlers and error handling
+- Improved file path handling in dialogs
+- Added Debug trait implementations
+- Fixed ConditionalAction closure type
+- Removed unused imports
+- Fixed unused variable warnings
+- Added proper type annotations
+
+## In Progress
+- Complete event type system implementation
+- Implement plugin loading functionality
+- Optimize GTK UI components
+- Improve cross-platform compatibility
+
+## Implementation Plan
+
+1. GTK UI Component Replacement
+   - Systematically replace Win32 UI components
+   - Ensure feature parity with original implementation
+   - Optimize for cross-platform performance
+
+2. Dialog System
+   - Complete GTK-based file chooser dialog
+   - Implement robust, cross-platform error handling
+   - Create consistent dialog result management
+
+3. Event System
+   - Adapt event handling to GTK signal system
+   - Implement comprehensive event payload management
+   - Create flexible, platform-independent event routing
+
+4. Plugin System
+   - Design plugin loading mechanism for GTK
+   - Implement plugin state management
+   - Create cross-platform plugin configuration handling
 
 ## Next Steps
-1. Begin with plugin manifest format design
-2. Implement basic metadata extraction
-3. Create initial loading mechanism
-4. Add basic version validation
+1. Complete GTK UI component replacement
+2. Implement comprehensive dialog system
+3. Refactor event handling for GTK
+4. Develop cross-platform plugin infrastructure
 
-## Current Error Resolution Plan
 
-### Completed Tasks ✓
-- [x] Fix struct field errors (plugin_dir in PluginRegistry)
-- [x] Fix Event trait bounds mismatch in macro_.rs (get_trigger_event return type)
-- [x] Fix imports in globals.rs (Bunch)
-- [x] Fix imports in tree/mod.rs (Macro_)
-- [x] Fix ConfigDialog imports and implementation
-- [x] Fix error trait implementations for RegistryError and LoaderError
-- [x] Fix error trait implementations for ConfigError and ActionError
-- [x] Fix ConditionalAction implementation and closure issues
-
-### Code Cleanup
-- [ ] Fix unused imports (154 warnings)
-- [ ] Fix naming conventions for enum variants (ALIGN_RIGHT -> AlignRight, etc.)
-- [ ] Add underscore prefix to intentionally unused variables
-- [ ] Remove or implement unused methods and structs
-
-### Next Implementation Priority
-1. Plugin Loading System
-   - [ ] Implement plugin loading from directory
-   - [ ] Add plugin unloading support
-   - [ ] Add plugin configuration handling
-
-2. Event System
-   - [ ] Implement event dispatching
-   - [ ] Add event filtering
-   - [ ] Support custom event types
-
-3. Action System
-   - [ ] Complete action execution pipeline
-   - [ ] Add action configuration support
-   - [ ] Implement action validation
-
-4. Configuration System
-   - [ ] Implement ConfigDialog functionality
-   - [ ] Add property grid support
-   - [ ] Support plugin configuration

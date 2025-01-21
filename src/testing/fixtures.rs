@@ -16,15 +16,24 @@ impl PluginTestFixture {
         unimplemented!()
     }
 
+
     pub async fn send_event(&mut self, event: Box<dyn Event>) {
+        // print the unused var event
+        println!("Event: {:?}", event);
         // TODO: Implement event sending
         unimplemented!()
     }
 
+
+
     pub async fn assert_event_handled(&self, event_id: &str) {
+        // print the unused var event_id
+        println!("Event ID: {:?}", event_id);
         // TODO: Implement event assertion
         unimplemented!()
+
     }
+
 }
 
 /// Test fixture for configuration tests
@@ -37,19 +46,22 @@ pub struct ConfigTestFixture {
 impl ConfigTestFixture {
     pub fn new() -> Self {
         // TODO: Implement config test fixture
-        unimplemented!()
+        unimplemented!();
     }
 
     pub async fn save_config(&mut self) -> Result<(), crate::core::Error> {
         // TODO: Implement config saving
-        unimplemented!()
+        unimplemented!();
     }
 
     pub async fn assert_config_saved(&self, expected: &Config) {
+        // print the unused var expected
+        println!("Expected: {:?}", expected);
         // TODO: Implement config assertion
-        unimplemented!()
+        unimplemented!();
     }
 }
+
 
 /// Test fixture for integration tests
 pub struct IntegrationTestFixture {

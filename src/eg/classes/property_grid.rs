@@ -1,6 +1,8 @@
-use windows::Win32::Foundation::HWND;
-use crate::core::Error;
+use gtk::prelude::*;
+use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererText};
+use gtk::glib;
 use super::UIComponent;
+use crate::core::Error;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -158,95 +160,76 @@ pub trait PropertySource: Send + Sync + Debug {
 
 #[derive(Debug)]
 pub struct PropertyGrid {
-    hwnd: HWND,
-    properties: HashMap<String, Property>,
-    categories: Vec<String>,
-    source: Option<Box<dyn PropertySource>>,
-    is_visible: bool,
+    pub widget: Box,
+    pub tree_view: TreeView,
+    pub store: TreeStore,
 }
 
 impl PropertyGrid {
-    pub fn new(parent: HWND) -> Result<Self, Error> {
-        todo!()
+    pub fn new() -> Self {
+        let widget = Box::new(gtk::Orientation::Vertical, 0);
+        let store = TreeStore::new(&[
+            glib::Type::STRING, // Name
+            glib::Type::STRING, // Value
+            glib::Type::STRING, // Type
+        ]);
+        
+        let tree_view = TreeView::new();
+        tree_view.set_model(Some(&store));
+        
+        // Add columns
+        let name_renderer = CellRendererText::new();
+        let name_column = TreeViewColumn::new();
+        name_column.pack_start(&name_renderer, true);
+        name_column.add_attribute(&name_renderer, "text", 0);
+        name_column.set_title("Property");
+        tree_view.append_column(&name_column);
+        
+        let value_renderer = CellRendererText::new();
+        let value_column = TreeViewColumn::new();
+        value_column.pack_start(&value_renderer, true);
+        value_column.add_attribute(&value_renderer, "text", 1);
+        value_column.set_title("Value");
+        tree_view.append_column(&value_column);
+        
+        widget.append(&tree_view);
+        
+        PropertyGrid {
+            widget,
+            tree_view,
+            store,
+        }
     }
-
-    pub fn set_source(&mut self, source: Box<dyn PropertySource>) -> Result<(), Error> {
-        todo!()
+    
+    pub fn set_property(&self, name: &str, value: &str, prop_type: &str) {
+        let iter = self.store.append(None);
+        self.store.set(&iter, &[
+            (0, &name),
+            (1, &value),
+            (2, &prop_type),
+        ]);
     }
-
-    pub fn clear_source(&mut self) {
-        todo!()
-    }
-
-    pub fn refresh(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn expand_all(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn collapse_all(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn get_selected_property(&self) -> Option<&Property> {
-        todo!()
-    }
-
-    pub fn set_category_sort(&mut self, sort_alphabetically: bool) -> Result<(), Error> {
-        todo!()
+    
+    pub fn clear(&self) {
+        self.store.clear();
     }
 }
 
 impl UIComponent for PropertyGrid {
-    fn get_hwnd(&self) -> HWND {
-        self.hwnd
-    }
-
-    fn show(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn hide(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn is_visible(&self) -> bool {
-        self.is_visible
+    fn get_widget(&self) -> &gtk::Widget {
+        self.widget.upcast_ref()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    struct TestObject {
-        name: String,
-        count: i32,
-        enabled: bool,
-    }
-
-    impl PropertySource for TestObject {
-        fn get_properties(&self) -> Vec<Property> {
-            vec![
-                Property::new("name", "General", PropertyValue::String(self.name.clone()))
-                    .with_description("The object name"),
-                Property::new("count", "General", PropertyValue::Int(self.count))
-                    .with_description("Count value"),
-                Property::new("enabled", "State", PropertyValue::Bool(self.enabled))
-                    .with_description("Enable/disable the object"),
-            ]
-        }
-
-        fn set_property(&mut self, name: &str, value: PropertyValue) -> Result<(), Error> {
-            match (name, value) {
-                ("name", PropertyValue::String(s)) => self.name = s,
-                ("count", PropertyValue::Int(i)) => self.count = i,
-                ("enabled", PropertyValue::Bool(b)) => self.enabled = b,
-                _ => return Err(Error::Config("Invalid property".into())),
-            }
-            Ok(())
-        }
+    
+    #[test]
+    fn test_property_grid_initialization() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let grid = PropertyGrid::new();
+        assert!(grid.widget.is_visible());
     }
 } 

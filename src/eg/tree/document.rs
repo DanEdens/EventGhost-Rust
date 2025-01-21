@@ -43,9 +43,11 @@ impl Document {
     pub fn save(&mut self) -> Result<(), Error> {
         if let Some(path) = &self.file_path {
             // TODO: Implement save logic
+            println!("Saving document to {}", path.display());
             self.is_modified = false;
             Ok(())
         } else {
+
             Err(Error::Tree("No file path set".into()))
         }
     }
