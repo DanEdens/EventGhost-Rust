@@ -1,6 +1,5 @@
 use gtk::prelude::*;
 use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable, ScrolledWindow};
-use gdk;
 use glib;
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;
@@ -209,12 +208,12 @@ impl LogCtrl {
         gesture.connect_pressed(glib::clone!(@weak popover, @weak widget => move |gesture, _, x, y| {
             if gesture.current_button() == 3 {
                 popover.set_parent(&widget);
-                popover.set_pointing_to(Some(&gdk::Rectangle {
-                    x: x as i32,
-                    y: y as i32,
-                    width: 1,
-                    height: 1,
-                }));
+                popover.set_pointing_to(Some(&gtk::gdk::Rectangle::new(
+                    x as i32,
+                    y as i32,
+                    1,
+                    1
+                )));
                 popover.popup();
             }
         }));
@@ -467,14 +466,13 @@ impl LogCtrl {
 
     pub fn copy_selected_text(&self) -> Option<String> {
         if let Some((start, end)) = self.buffer.selection_bounds() {
-            if let Some(text) = self.buffer.text(&start, &end, false) {
-                if let Some(display) = self.widget.display() {
-                    display.clipboard().set_text(&text);
-                    return Some(text.to_string());
-                }
-            }
+            let text = self.buffer.text(&start, &end, false);
+            let display = self.widget.display();
+            display.clipboard().set_text(&text);
+            Some(text.to_string())
+        } else {
+            None
         }
-        None
     }
 
     pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
