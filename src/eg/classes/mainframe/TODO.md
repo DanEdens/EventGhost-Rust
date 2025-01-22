@@ -27,17 +27,17 @@
 - [ ] Match original's toolbar button ordering and grouping
 
 ## Log View Improvements
-- [ ] Add search functionality in log
+- [ ] Implement dynamic log entry formatting based on log level
+- [ ] Implement log saving and loading from a file
+- [ ] Implement detailed log entry parsing when loading from a file
 - [ ] Implement log filtering options
 - [ ] Add log export functionality
-- [ ] Improve log entry formatting
 - [ ] Add log level filtering
+- [ ] Add search functionality in log
 - [ ] Implement context menu functionality for log entries
 - [ ] Implement clipboard functionality for copying selected text
-- [ ] Implement log saving and loading from a file
-- [ ] Implement dynamic log entry formatting based on log level
 - [ ] Add event handling for context menu items (e.g., "Copy", "Select All", "Clear Log")
-- [ ] Implement detailed log entry parsing when loading from a file
+- [ ] Improve log entry formatting
 
 ## StatusBar Feature Enhancements
 - [ ] Implement event handling for checkbox state changes in Rust version.
