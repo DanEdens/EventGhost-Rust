@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook};
 use gio::{Menu, MenuItem};
 use super::{Toolbar, StatusBar};
 use crate::eg::classes::log_ctrl::LogCtrl;
@@ -29,6 +29,8 @@ pub struct MainFrame {
     pub container: Box,
     /// The paned container for log and tree
     pub paned: Paned,
+    /// The notebook for tabs
+    pub notebook: Notebook,
 }
 
 impl MainFrame {
@@ -65,10 +67,24 @@ impl MainFrame {
         paned.set_position(400); // Set initial position
         main_box.append(&paned);
 
+        // Create notebook for tabs
+        let notebook = Notebook::new();
+        notebook.set_scrollable(true);
+        notebook.set_show_border(true);
+        paned.set_start_child(Some(&notebook));
+
         // Create log window
         let log_ctrl = LogCtrl::new();
         log_ctrl.container.set_size_request(400, 300); // Set minimum size
-        paned.set_start_child(Some(&log_ctrl.container));
+        
+        // Add log tab
+        let log_label = gtk::Label::new(Some("Log"));
+        notebook.append_page(&log_ctrl.container, Some(&log_label));
+
+        // Add configuration tab (placeholder)
+        let config_box = Box::new(Orientation::Vertical, 0);
+        let config_label = gtk::Label::new(Some("Configuration"));
+        notebook.append_page(&config_box, Some(&config_label));
 
         // Add status bar at the bottom
         main_box.append(&status_bar.widget);
@@ -82,6 +98,7 @@ impl MainFrame {
             log_ctrl,
             container: main_box,
             paned,
+            notebook,
         };
 
         // Set up the menu model
