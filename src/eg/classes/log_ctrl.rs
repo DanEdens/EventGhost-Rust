@@ -8,6 +8,7 @@ use std::sync::{Mutex, Arc};
 use std::fs::File;
 use std::io::{self, Write, BufRead};
 use std::fmt;
+use std::cell::Cell;
 
 const MAX_BUFFER_SIZE: usize = 2000;
 const REMOVE_ON_MAX: usize = 200;
@@ -52,6 +53,7 @@ pub struct LogCtrl {
     pub show_time: bool,
     pub show_date: bool,
     pub indent: bool,
+    is_odd: Cell<bool>,
 }
 
 impl Clone for LogCtrl {
@@ -70,6 +72,7 @@ impl Clone for LogCtrl {
             show_time: self.show_time,
             show_date: self.show_date,
             indent: self.indent,
+            is_odd: Cell::new(self.is_odd.get()),
         }
     }
 }
@@ -79,32 +82,76 @@ impl LogCtrl {
         // Create text tag table and buffer
         let tag_table = TextTagTable::new();
         
-        // Create tags for different message types
-        let error_tag = TextTag::builder()
-            .name("error")
+        // Create tags for different message types with alternating backgrounds
+        let error_tag_odd = TextTag::builder()
+            .name("error_odd")
+            .foreground("red")
+            .background("#FFE8E8")
+            .build();
+        tag_table.add(&error_tag_odd);
+        
+        let error_tag_even = TextTag::builder()
+            .name("error_even")
             .foreground("red")
             .background("#FFE0E0")
             .build();
-        tag_table.add(&error_tag);
+        tag_table.add(&error_tag_even);
         
-        let warning_tag = TextTag::builder()
-            .name("warning") 
+        let warning_tag_odd = TextTag::builder()
+            .name("warning_odd") 
+            .foreground("#C04000")
+            .background("#FFFFF0")
+            .build();
+        tag_table.add(&warning_tag_odd);
+        
+        let warning_tag_even = TextTag::builder()
+            .name("warning_even") 
             .foreground("#C04000")
             .background("#FFFFD0")
             .build();
-        tag_table.add(&warning_tag);
+        tag_table.add(&warning_tag_even);
         
-        let info_tag = TextTag::builder()
-            .name("info")
+        let info_tag_odd = TextTag::builder()
+            .name("info_odd")
             .foreground("blue")
+            .background("#F8F8F8")
             .build();
-        tag_table.add(&info_tag);
+        tag_table.add(&info_tag_odd);
+        
+        let info_tag_even = TextTag::builder()
+            .name("info_even")
+            .foreground("blue")
+            .background("#FFFFFF")
+            .build();
+        tag_table.add(&info_tag_even);
 
-        let event_tag = TextTag::builder()
-            .name("event")
+        let event_tag_odd = TextTag::builder()
+            .name("event_odd")
             .foreground("green")
+            .background("#F8F8F8")
             .build();
-        tag_table.add(&event_tag);
+        tag_table.add(&event_tag_odd);
+        
+        let event_tag_even = TextTag::builder()
+            .name("event_even")
+            .foreground("green")
+            .background("#FFFFFF")
+            .build();
+        tag_table.add(&event_tag_even);
+        
+        let debug_tag_odd = TextTag::builder()
+            .name("debug_odd")
+            .foreground("gray")
+            .background("#F8F8F8")
+            .build();
+        tag_table.add(&debug_tag_odd);
+        
+        let debug_tag_even = TextTag::builder()
+            .name("debug_even")
+            .foreground("gray")
+            .background("#FFFFFF")
+            .build();
+        tag_table.add(&debug_tag_even);
             
         // Create buffer with tags
         let buffer = TextBuffer::builder()
@@ -163,6 +210,7 @@ impl LogCtrl {
             show_time: true,
             show_date: false,
             indent: true,
+            is_odd: Cell::new(false),
         };
 
         // Add actions for menu items
@@ -197,6 +245,9 @@ impl LogCtrl {
         // Write the new entry to the buffer
         self.write_entry(&entry);
         
+        // Toggle odd/even state safely using Cell
+        self.is_odd.set(!self.is_odd.get());
+        
         // Scroll to end
         let mut end_iter = self.buffer.end_iter();
         self.widget.scroll_to_iter(&mut end_iter, 0.0, false, 0.0, 0.0);
@@ -227,11 +278,11 @@ impl LogCtrl {
         
         // Insert text with appropriate tag
         let tag_name = match entry.level {
-            LogLevel::Error => Some("error"),
-            LogLevel::Warning => Some("warning"),
-            LogLevel::Info => Some("info"),
-            LogLevel::Event => Some("event"),
-            LogLevel::Debug => None,
+            LogLevel::Error => Some(if self.is_odd.get() { "error_odd" } else { "error_even" }),
+            LogLevel::Warning => Some(if self.is_odd.get() { "warning_odd" } else { "warning_even" }),
+            LogLevel::Info => Some(if self.is_odd.get() { "info_odd" } else { "info_even" }),
+            LogLevel::Event => Some(if self.is_odd.get() { "event_odd" } else { "event_even" }),
+            LogLevel::Debug => Some(if self.is_odd.get() { "debug_odd" } else { "debug_even" }),
         };
         
         if let Some(tag_name) = tag_name {
@@ -299,49 +350,78 @@ impl LogCtrl {
     //     }
     // }
 
-    // pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
-    //     let entries = self.entries.lock().unwrap();
-    //     let mut file = File::create(file_path)?;
-    //     for entry in entries.iter() {
-    //         writeln!(file, "{} - {}: {}", entry.timestamp, entry.level, entry.message)?;
-    //     }
-    //     Ok(())
-    // }
-
-    // pub fn load_logs(&self, file_path: &str) -> io::Result<()> {
-    //     let file = File::open(file_path)?;
-    //     let reader = io::BufReader::new(file);
-    //     let mut entries = self.entries.lock().unwrap();
+    pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
+        let mut file = File::create(file_path)?;
+        let entries = self.entries.lock().unwrap();
         
-    //     for line in reader.lines() {
-    //         let line = line?;
-    //         // Assuming the log format is "timestamp - level: message"
-    //         let parts: Vec<&str> = line.split(" - ").collect();
-    //         if parts.len() == 2 {
-    //             let timestamp = parts[0].to_string(); // Parse timestamp
-    //             let level = parts[1].split(":").next().unwrap(); // Parse level
-    //             let message = parts[1].split(": ").nth(1).unwrap().to_string(); // Parse message
+        for entry in entries.iter() {
+            // Format: timestamp|level|source|indent|message
+            let source = entry.source.as_deref().unwrap_or("");
+            let line = format!(
+                "{}|{}|{}|{}|{}\n",
+                entry.timestamp.format("%Y-%m-%d %H:%M:%S"),
+                entry.level,
+                source,
+                entry.indent,
+                entry.message
+            );
+            file.write_all(line.as_bytes())?;
+        }
+        Ok(())
+    }
+
+    pub fn load_logs(&self, file_path: &str) -> io::Result<()> {
+        let file = File::open(file_path)?;
+        let reader = io::BufReader::new(file);
+        let mut entries = self.entries.lock().unwrap();
+        
+        // Clear existing entries
+        entries.clear();
+        self.buffer.set_text("");
+        
+        for line in reader.lines() {
+            let line = line?;
+            let parts: Vec<&str> = line.split('|').collect();
+            
+            if parts.len() == 5 {
+                let timestamp = DateTime::parse_from_str(parts[0], "%Y-%m-%d %H:%M:%S")
+                    .map(|dt| dt.with_timezone(&Local))
+                    .unwrap_or_else(|_| Local::now());
                 
-    //             // Create LogEntry and push to entries
-    //             let entry = LogEntry {
-    //                 timestamp: Local::now(), // Replace with actual parsed timestamp
-    //                 level: match level {
-    //                     "Error" => LogLevel::Error,
-    //                     "Warning" => LogLevel::Warning,
-    //                     "Info" => LogLevel::Info,
-    //                     "Debug" => LogLevel::Debug,
-    //                     "Event" => LogLevel::Event,
-    //                     _ => LogLevel::Info, // Default level
-    //                 },
-    //                 message,
-    //                 source: None,
-    //                 indent: 0,
-    //             };
-    //             entries.push_back(entry);
-    //         }
-    //     }
-    //     Ok(())
-    // }
+                let level = match parts[1] {
+                    "Error" => LogLevel::Error,
+                    "Warning" => LogLevel::Warning,
+                    "Info" => LogLevel::Info,
+                    "Debug" => LogLevel::Debug,
+                    "Event" => LogLevel::Event,
+                    _ => LogLevel::Info,
+                };
+                
+                let source = if parts[2].is_empty() {
+                    None
+                } else {
+                    Some(parts[2].to_string())
+                };
+                
+                let indent = parts[3].parse().unwrap_or(0);
+                let message = parts[4].to_string();
+                
+                let entry = LogEntry {
+                    timestamp,
+                    level,
+                    message,
+                    source,
+                    indent,
+                };
+                
+                // Add entry to buffer
+                entries.push_back(entry.clone());
+                self.write_entry(&entry);
+            }
+        }
+        
+        Ok(())
+    }
 
     // pub fn search_logs(&self, query: &str) {
     //     let entries = self.entries.lock().unwrap();
