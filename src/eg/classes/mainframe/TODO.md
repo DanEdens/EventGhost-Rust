@@ -46,6 +46,15 @@
 - [ ] Implement repositioning logic for the Rust status bar based on size events.
 - [ ] Add logging/debugging functionality to the Rust version similar to the Python version.
 
+## TreeCtrl Improvements
+- [ ] Implement drag and drop functionality similar to Python version.
+- [ ] Add event handlers for tree actions (e.g., OnBeginDragEvent, OnEndLabelEditEvent).
+- [ ] Implement `EditControlProxy` functionality for label editing in Rust.
+- [ ] Integrate `UndoHandler` for node operations in Rust version.
+- [ ] Enhance selection change handling and notifications.
+- [ ] Add context menu handling similar to Python version.
+- [ ] Implement comprehensive tests for `TreeCtrl` functionalities.
+
 ## Next Steps (Priority Order)
 1. Complete event logging view implementation
 2. Add tree view for configuration
