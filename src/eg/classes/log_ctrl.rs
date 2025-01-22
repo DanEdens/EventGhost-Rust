@@ -172,39 +172,58 @@ impl LogCtrl {
             
         // Enable scrolling
         widget.set_wrap_mode(gtk::WrapMode::Word);
+
         // Create context menu
         let menu = gio::Menu::new();
+        
+        // Add Copy action
         let copy_item = gio::MenuItem::new(Some("Copy"), Some("log.copy"));
-        let select_all_item = gio::MenuItem::new(Some("Select All"), Some("log.select-all"));
-        let clear_item = gio::MenuItem::new(Some("Clear Log"), Some("log.clear"));
-
         menu.append_item(&copy_item);
+        
+        // Add Select All action
+        let select_all_item = gio::MenuItem::new(Some("Select All"), Some("log.select-all"));
         menu.append_item(&select_all_item);
-        menu.append_item(&clear_item);
-
-        // let popover = PopoverMenu::from_model(Some(&menu));
-
-        // // Add context menu controller
-        // let gesture = gtk::GestureClick::new();
-        // gesture.set_button(3); // Right click
-        // gesture.connect_pressed(glib::clone!(@weak popover, @weak widget => move |gesture, _, x, y| {
-        //     if gesture.current_button() == 3 {
-        //         popover.set_parent(&widget);
-        //         popover.set_pointing_to(Some(&gdk::Rectangle::new(
-        //             x as i32,
-        //             y as i32,
-        //             1,
-        //             1
-        //         )));
-        //         popover.popup();
-        //     }
-        // }));
-        // widget.add_controller(gesture);
+        
+        // Add separator
+        menu.append(None, Some("log.separator"));
+        
+        // Add Filter submenu
+        let filter_menu = gio::Menu::new();
+        filter_menu.append(Some("Show All"), Some("log.filter.all"));
+        filter_menu.append(Some("Show Info Only"), Some("log.filter.info"));
+        filter_menu.append(Some("Show Warnings Only"), Some("log.filter.warning"));
+        filter_menu.append(Some("Show Errors Only"), Some("log.filter.error"));
+        filter_menu.append(Some("Show Events Only"), Some("log.filter.event"));
+        filter_menu.append(Some("Show Debug Only"), Some("log.filter.debug"));
+        menu.append_submenu(Some("Filter"), &filter_menu);
+        
+        // Add Clear action
+        menu.append(Some("Clear Log"), Some("log.clear"));
+        
+        // Create popover menu
+        let popover = gtk::PopoverMenu::from_model(Some(&menu));
+        
+        // Add context menu controller
+        let gesture = gtk::GestureClick::new();
+        gesture.set_button(3); // Right click
+        gesture.connect_pressed(glib::clone!(@weak popover, @weak widget => move |gesture, _, x, y| {
+            if gesture.current_button() == 3 {
+                popover.set_parent(&widget);
+                popover.set_pointing_to(Some(&gdk::Rectangle {
+                    x: x as i32,
+                    y: y as i32,
+                    width: 1,
+                    height: 1,
+                }));
+                popover.popup();
+            }
+        }));
+        widget.add_controller(gesture);
         
         // Create the LogCtrl instance
         let log_ctrl = LogCtrl {
             container,
-            widget,
+            widget: widget.clone(),
             buffer,
             entries: Arc::new(Mutex::new(VecDeque::with_capacity(MAX_BUFFER_SIZE))),
             show_time: true,
@@ -213,9 +232,77 @@ impl LogCtrl {
             is_odd: Cell::new(false),
         };
 
-        // Add actions for menu items
-        // let action_group = gio::SimpleActionGroup::new();
+        // Add actions
+        let action_group = gio::SimpleActionGroup::new();
         
+        // Copy action
+        let copy_action = gio::SimpleAction::new("copy", None);
+        let log_ctrl_copy = log_ctrl.clone();
+        copy_action.connect_activate(move |_, _| {
+            log_ctrl_copy.copy_selected_text();
+        });
+        action_group.add_action(&copy_action);
+        
+        // Select All action
+        let select_all_action = gio::SimpleAction::new("select-all", None);
+        let log_ctrl_select = log_ctrl.clone();
+        select_all_action.connect_activate(move |_, _| {
+            log_ctrl_select.select_all();
+        });
+        action_group.add_action(&select_all_action);
+        
+        // Filter actions
+        let filter_all_action = gio::SimpleAction::new("filter.all", None);
+        let log_ctrl_all = log_ctrl.clone();
+        filter_all_action.connect_activate(move |_, _| {
+            log_ctrl_all.filter_logs(None);
+        });
+        action_group.add_action(&filter_all_action);
+
+        let filter_info_action = gio::SimpleAction::new("filter.info", None);
+        let log_ctrl_info = log_ctrl.clone();
+        filter_info_action.connect_activate(move |_, _| {
+            log_ctrl_info.filter_logs(Some(LogLevel::Info));
+        });
+        action_group.add_action(&filter_info_action);
+
+        let filter_warning_action = gio::SimpleAction::new("filter.warning", None);
+        let log_ctrl_warning = log_ctrl.clone();
+        filter_warning_action.connect_activate(move |_, _| {
+            log_ctrl_warning.filter_logs(Some(LogLevel::Warning));
+        });
+        action_group.add_action(&filter_warning_action);
+
+        let filter_error_action = gio::SimpleAction::new("filter.error", None);
+        let log_ctrl_error = log_ctrl.clone();
+        filter_error_action.connect_activate(move |_, _| {
+            log_ctrl_error.filter_logs(Some(LogLevel::Error));
+        });
+        action_group.add_action(&filter_error_action);
+
+        let filter_event_action = gio::SimpleAction::new("filter.event", None);
+        let log_ctrl_event = log_ctrl.clone();
+        filter_event_action.connect_activate(move |_, _| {
+            log_ctrl_event.filter_logs(Some(LogLevel::Event));
+        });
+        action_group.add_action(&filter_event_action);
+
+        let filter_debug_action = gio::SimpleAction::new("filter.debug", None);
+        let log_ctrl_debug = log_ctrl.clone();
+        filter_debug_action.connect_activate(move |_, _| {
+            log_ctrl_debug.filter_logs(Some(LogLevel::Debug));
+        });
+        action_group.add_action(&filter_debug_action);
+        
+        // Clear action
+        let clear_action = gio::SimpleAction::new("clear", None);
+        let log_ctrl_clear = log_ctrl.clone();
+        clear_action.connect_activate(move |_, _| {
+            log_ctrl_clear.clear();
+        });
+        action_group.add_action(&clear_action);
+        
+        widget.insert_action_group("log", Some(&action_group));
         
         // Add a welcome message
         log_ctrl.write(LogEntry {
@@ -299,15 +386,6 @@ impl LogCtrl {
         self.buffer.set_text("");
     }
 
-    // pub fn copy_selected_text(&self) {
-    //     if let Some((start, end)) = self.buffer.selection_bounds() {
-    //         let text = self.buffer.text(&start, &end, false);
-    //         let display = self.widget.display();
-    //         let clipboard = display.clipboard();
-    //         clipboard.set_text(&text);
-    //     }
-    // }
-
     pub fn select_all(&self) {
         let start = self.buffer.start_iter();
         let end = self.buffer.end_iter();
@@ -340,15 +418,64 @@ impl LogCtrl {
         }
     }
 
-    // pub fn filter_logs(&self, level: LogLevel) {
-    //     let entries = self.entries.lock().unwrap();
-    //     self.buffer.set_text(""); // Clear current buffer
-    //     for entry in entries.iter() {
-    //         if entry.level == level {
-    //             self.write_entry(entry);
-    //         }
-    //     }
-    // }
+    pub fn filter_logs(&self, level: Option<LogLevel>) {
+        let entries = self.entries.lock().unwrap();
+        self.buffer.set_text(""); // Clear current buffer
+        self.is_odd.set(false); // Reset alternating colors
+        
+        for entry in entries.iter() {
+            if level.map_or(true, |l| entry.level == l) {
+                self.write_entry(entry);
+                self.is_odd.set(!self.is_odd.get());
+            }
+        }
+    }
+
+    pub fn search_logs(&self, query: &str, case_sensitive: bool) {
+        let entries = self.entries.lock().unwrap();
+        self.buffer.set_text(""); // Clear current buffer
+        self.is_odd.set(false); // Reset alternating colors
+        
+        let query = if !case_sensitive {
+            query.to_lowercase()
+        } else {
+            query.to_string()
+        };
+        
+        for entry in entries.iter() {
+            let message = if !case_sensitive {
+                entry.message.to_lowercase()
+            } else {
+                entry.message.clone()
+            };
+            
+            let source_match = entry.source.as_ref().map_or(false, |s| {
+                let source = if !case_sensitive {
+                    s.to_lowercase()
+                } else {
+                    s.clone()
+                };
+                source.contains(&query)
+            });
+            
+            if message.contains(&query) || source_match {
+                self.write_entry(entry);
+                self.is_odd.set(!self.is_odd.get());
+            }
+        }
+    }
+
+    pub fn copy_selected_text(&self) -> Option<String> {
+        if let Some((start, end)) = self.buffer.selection_bounds() {
+            if let Some(text) = self.buffer.text(&start, &end, false) {
+                if let Some(display) = self.widget.display() {
+                    display.clipboard().set_text(&text);
+                    return Some(text.to_string());
+                }
+            }
+        }
+        None
+    }
 
     pub fn save_logs(&self, file_path: &str) -> io::Result<()> {
         let mut file = File::create(file_path)?;
@@ -422,16 +549,6 @@ impl LogCtrl {
         
         Ok(())
     }
-
-    // pub fn search_logs(&self, query: &str) {
-    //     let entries = self.entries.lock().unwrap();
-    //     self.buffer.set_text(""); // Clear current buffer
-    //     for entry in entries.iter() {
-    //         if entry.message.contains(query) {
-    //             self.write_entry(entry);
-    //         }
-    //     }
-    // }
 }
 
 impl super::UIComponent for LogCtrl {
