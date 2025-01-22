@@ -18,8 +18,21 @@ fn main() {
 
     // Create application
     let app = Application::builder()
-        .application_id("org.eventghost")
+        .application_id("org.eventghost.rust")
         .build();
+
+    app.connect_startup(|app| {
+        // Load CSS
+        let provider = gtk::CssProvider::new();
+        provider.load_from_data(include_str!("eg/styles/log.css"));
+        
+        // Add provider for the default screen
+        gtk::style_context_add_provider_for_display(
+            &gtk::gdk::Display::default().expect("Could not connect to a display."),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    });
 
     app.connect_activate(move |app| {
         let mut main_frame = MainFrame::new(app).expect("Failed to create main window");

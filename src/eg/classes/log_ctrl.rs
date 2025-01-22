@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, TextView, TextBuffer, TextTag, TextTagTable, ScrolledWindow};
+use gtk::{self, TreeView, TreeViewColumn, CellRendererText, CellRendererPixbuf, ScrolledWindow, ListStore};
 use glib;
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;
@@ -19,6 +19,8 @@ pub struct LogEntry {
     pub message: String,
     pub source: Option<String>,
     pub indent: usize,
+    pub show_time: bool,
+    pub show_date: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -28,6 +30,28 @@ pub enum LogLevel {
     Warning,
     Error,
     Event,
+}
+
+impl LogLevel {
+    fn icon_name(&self) -> &'static str {
+        match self {
+            LogLevel::Debug => "dialog-information",
+            LogLevel::Info => "dialog-information",
+            LogLevel::Warning => "dialog-warning",
+            LogLevel::Error => "dialog-error",
+            LogLevel::Event => "dialog-information",
+        }
+    }
+
+    fn get_colors(&self) -> (&'static str, &'static str) {
+        match self {
+            LogLevel::Debug => ("#666666", "#ffffff"),
+            LogLevel::Info => ("#000000", "#ffffff"),
+            LogLevel::Warning => ("#7f4f00", "#ffffff"),
+            LogLevel::Error => ("#cc0000", "#ffffff"),
+            LogLevel::Event => ("#000099", "#ffffff"),
+        }
+    }
 }
 
 impl fmt::Display for LogLevel {
@@ -46,31 +70,54 @@ impl fmt::Display for LogLevel {
 #[derive(Debug)]
 pub struct LogCtrl {
     pub container: ScrolledWindow,
-    pub widget: TextView,
-    pub buffer: TextBuffer,
+    pub widget: TreeView,
+    pub store: ListStore,
     pub entries: Arc<Mutex<VecDeque<LogEntry>>>,
     pub show_time: bool,
     pub show_date: bool,
     pub indent: bool,
+    pub auto_scroll: bool,
     is_odd: Cell<bool>,
 }
 
 impl Clone for LogCtrl {
     fn clone(&self) -> Self {
+        // Create a new TreeView with the same model
+        let widget = TreeView::with_model(&self.store);
+        widget.set_headers_visible(false);
+        widget.set_enable_search(true);
+        widget.set_search_column(1); // Search in the text column
+        
+        // Add icon column
+        let icon_renderer = CellRendererPixbuf::new();
+        let icon_column = TreeViewColumn::new();
+        icon_column.pack_start(&icon_renderer, false);
+        icon_column.add_attribute(&icon_renderer, "icon-name", 0);
+        widget.append_column(&icon_column);
+        
+        // Add text column
+        let text_renderer = CellRendererText::new();
+        let text_column = TreeViewColumn::new();
+        text_column.pack_start(&text_renderer, true);
+        text_column.add_attribute(&text_renderer, "text", 1);
+        text_column.add_attribute(&text_renderer, "foreground", 2);
+        text_column.add_attribute(&text_renderer, "background", 3);
+        widget.append_column(&text_column);
+        
+        // Create scrolled window
+        let container = ScrolledWindow::builder()
+            .child(&widget)
+            .build();
+            
         LogCtrl {
-            container: ScrolledWindow::builder()
-                .child(&self.widget)
-                .build(),
-            widget: TextView::builder()
-                .buffer(&self.buffer)
-                .editable(false)
-                .monospace(true)
-                .build(),
-            buffer: self.buffer.clone(),
+            container,
+            widget,
+            store: self.store.clone(),
             entries: self.entries.clone(),
             show_time: self.show_time,
             show_date: self.show_date,
             indent: self.indent,
+            auto_scroll: self.auto_scroll,
             is_odd: Cell::new(self.is_odd.get()),
         }
     }
@@ -78,100 +125,45 @@ impl Clone for LogCtrl {
 
 impl LogCtrl {
     pub fn new() -> Self {
-        // Create text tag table and buffer
-        let tag_table = TextTagTable::new();
+        // Create list store with columns:
+        // 0: icon name (String)
+        // 1: text (String)
+        // 2: foreground color (String)
+        // 3: background color (String)
+        let store = ListStore::new(&[
+            glib::Type::STRING, // icon name
+            glib::Type::STRING, // text
+            glib::Type::STRING, // foreground color
+            glib::Type::STRING, // background color
+        ]);
         
-        // Create tags for different message types with alternating backgrounds
-        let error_tag_odd = TextTag::builder()
-            .name("error_odd")
-            .foreground("red")
-            .background("#FFE8E8")
-            .build();
-        tag_table.add(&error_tag_odd);
+        // Create tree view
+        let widget = TreeView::with_model(&store);
+        widget.set_headers_visible(false);
+        widget.set_enable_search(true);
+        widget.set_search_column(1); // Search in the text column
         
-        let error_tag_even = TextTag::builder()
-            .name("error_even")
-            .foreground("red")
-            .background("#FFE0E0")
-            .build();
-        tag_table.add(&error_tag_even);
+        // Add icon column
+        let icon_renderer = CellRendererPixbuf::new();
+        let icon_column = TreeViewColumn::new();
+        icon_column.pack_start(&icon_renderer, false);
+        icon_column.add_attribute(&icon_renderer, "icon-name", 0);
+        widget.append_column(&icon_column);
         
-        let warning_tag_odd = TextTag::builder()
-            .name("warning_odd") 
-            .foreground("#C04000")
-            .background("#FFFFF0")
-            .build();
-        tag_table.add(&warning_tag_odd);
-        
-        let warning_tag_even = TextTag::builder()
-            .name("warning_even") 
-            .foreground("#C04000")
-            .background("#FFFFD0")
-            .build();
-        tag_table.add(&warning_tag_even);
-        
-        let info_tag_odd = TextTag::builder()
-            .name("info_odd")
-            .foreground("blue")
-            .background("#F8F8F8")
-            .build();
-        tag_table.add(&info_tag_odd);
-        
-        let info_tag_even = TextTag::builder()
-            .name("info_even")
-            .foreground("blue")
-            .background("#FFFFFF")
-            .build();
-        tag_table.add(&info_tag_even);
-
-        let event_tag_odd = TextTag::builder()
-            .name("event_odd")
-            .foreground("green")
-            .background("#F8F8F8")
-            .build();
-        tag_table.add(&event_tag_odd);
-        
-        let event_tag_even = TextTag::builder()
-            .name("event_even")
-            .foreground("green")
-            .background("#FFFFFF")
-            .build();
-        tag_table.add(&event_tag_even);
-        
-        let debug_tag_odd = TextTag::builder()
-            .name("debug_odd")
-            .foreground("gray")
-            .background("#F8F8F8")
-            .build();
-        tag_table.add(&debug_tag_odd);
-        
-        let debug_tag_even = TextTag::builder()
-            .name("debug_even")
-            .foreground("gray")
-            .background("#FFFFFF")
-            .build();
-        tag_table.add(&debug_tag_even);
+        // Add text column
+        let text_renderer = CellRendererText::new();
+        let text_column = TreeViewColumn::new();
+        text_column.pack_start(&text_renderer, true);
+        text_column.add_attribute(&text_renderer, "text", 1);
+        text_column.add_attribute(&text_renderer, "foreground", 2);
+        text_column.add_attribute(&text_renderer, "background", 3);
+        widget.append_column(&text_column);
             
-        // Create buffer with tags
-        let buffer = TextBuffer::builder()
-            .tag_table(&tag_table)
-            .build();
-            
-        // Create text view
-        let widget = TextView::builder()
-            .buffer(&buffer)
-            .editable(false)
-            .monospace(true)
-            .build();
-
         // Create scrolled window container
         let container = ScrolledWindow::builder()
             .child(&widget)
             .build();
             
-        // Enable scrolling
-        widget.set_wrap_mode(gtk::WrapMode::Word);
-
         // Create context menu
         let menu = gio::Menu::new();
         
@@ -222,12 +214,13 @@ impl LogCtrl {
         // Create the LogCtrl instance
         let log_ctrl = LogCtrl {
             container,
-            widget: widget.clone(),
-            buffer,
+            widget,
+            store,
             entries: Arc::new(Mutex::new(VecDeque::with_capacity(MAX_BUFFER_SIZE))),
             show_time: true,
             show_date: false,
             indent: true,
+            auto_scroll: true,
             is_odd: Cell::new(false),
         };
 
@@ -301,7 +294,7 @@ impl LogCtrl {
         });
         action_group.add_action(&clear_action);
         
-        widget.insert_action_group("log", Some(&action_group));
+        log_ctrl.widget.insert_action_group("log", Some(&action_group));
         
         // Add a welcome message
         log_ctrl.write(LogEntry {
@@ -310,6 +303,8 @@ impl LogCtrl {
             message: "Welcome to EventGhost".to_string(),
             source: None,
             indent: 0,
+            show_time: true,
+            show_date: false,
         });
 
         log_ctrl
@@ -322,21 +317,23 @@ impl LogCtrl {
         if entries.len() >= MAX_BUFFER_SIZE {
             for _ in 0..REMOVE_ON_MAX {
                 entries.pop_front();
+                if let Some(iter) = self.store.iter_first() {
+                    self.store.remove(&iter);
+                }
             }
         }
         
         // Add the new entry
         entries.push_back(entry.clone());
         
-        // Write the new entry to the buffer
+        // Write the new entry to the list
         self.write_entry(&entry);
         
         // Toggle odd/even state safely using Cell
         self.is_odd.set(!self.is_odd.get());
         
         // Scroll to end
-        let mut end_iter = self.buffer.end_iter();
-        self.widget.scroll_to_iter(&mut end_iter, 0.0, false, 0.0, 0.0);
+        self.scroll_to_end();
     }
 
     fn write_entry(&self, entry: &LogEntry) {
@@ -357,38 +354,62 @@ impl LogCtrl {
             prefix.push_str(&"  ".repeat(entry.indent));
         }
         
-        let full_text = format!("{}{}\n", prefix, entry.message);
+        let full_text = format!("{}{}", prefix, entry.message);
         
-        // Get end iterator
-        let mut end_iter = self.buffer.end_iter();
-        
-        // Insert text with appropriate tag
-        let tag_name = match entry.level {
-            LogLevel::Error => Some(if self.is_odd.get() { "error_odd" } else { "error_even" }),
-            LogLevel::Warning => Some(if self.is_odd.get() { "warning_odd" } else { "warning_even" }),
-            LogLevel::Info => Some(if self.is_odd.get() { "info_odd" } else { "info_even" }),
-            LogLevel::Event => Some(if self.is_odd.get() { "event_odd" } else { "event_even" }),
-            LogLevel::Debug => Some(if self.is_odd.get() { "debug_odd" } else { "debug_even" }),
+        // Get colors based on log level and odd/even state
+        let (fg_color, bg_color) = match entry.level {
+            LogLevel::Error => {
+                if self.is_odd.get() {
+                    ("#FF0000", "#FFE8E8")
+                } else {
+                    ("#FF0000", "#FFE0E0")
+                }
+            }
+            LogLevel::Warning => {
+                if self.is_odd.get() {
+                    ("#C04000", "#FFFFF0")
+                } else {
+                    ("#C04000", "#FFFFD0")
+                }
+            }
+            LogLevel::Info => {
+                if self.is_odd.get() {
+                    ("#0000FF", "#F8F8F8")
+                } else {
+                    ("#0000FF", "#FFFFFF")
+                }
+            }
+            LogLevel::Event => {
+                if self.is_odd.get() {
+                    ("#008000", "#F8F8F8")
+                } else {
+                    ("#008000", "#FFFFFF")
+                }
+            }
+            LogLevel::Debug => {
+                if self.is_odd.get() {
+                    ("#808080", "#F8F8F8")
+                } else {
+                    ("#808080", "#FFFFFF")
+                }
+            }
         };
         
-        if let Some(tag_name) = tag_name {
-            if let Some(tag) = self.buffer.tag_table().lookup(tag_name) {
-                self.buffer.insert_with_tags(&mut end_iter, &full_text, &[&tag]);
-            }
-        } else {
-            self.buffer.insert(&mut end_iter, &full_text);
-        }
+        // Add row to store using proper GTK4 API
+        let iter = self.store.append();
+        self.store.set_value(&iter, 0, &entry.level.icon_name().to_value());
+        self.store.set_value(&iter, 1, &full_text.to_value());
+        self.store.set_value(&iter, 2, &fg_color.to_value());
+        self.store.set_value(&iter, 3, &bg_color.to_value());
     }
     
     pub fn clear(&self) {
         self.entries.lock().unwrap().clear();
-        self.buffer.set_text("");
+        self.store.clear();
     }
 
     pub fn select_all(&self) {
-        let start = self.buffer.start_iter();
-        let end = self.buffer.end_iter();
-        self.buffer.select_range(&start, &end);
+        self.widget.selection().select_all();
     }
     
     pub fn set_time_logging(&mut self, enabled: bool) {
@@ -407,8 +428,8 @@ impl LogCtrl {
     }
 
     fn refresh_view(&self) {
-        // Clear buffer
-        self.buffer.set_text("");
+        // Clear store
+        self.store.clear();
         
         // Rewrite all entries with new formatting
         let entries = self.entries.lock().unwrap();
@@ -418,21 +439,20 @@ impl LogCtrl {
     }
 
     pub fn filter_logs(&self, level: Option<LogLevel>) {
-        let entries = self.entries.lock().unwrap();
-        self.buffer.set_text(""); // Clear current buffer
-        self.is_odd.set(false); // Reset alternating colors
-        
-        for entry in entries.iter() {
-            if level.map_or(true, |l| entry.level == l) {
-                self.write_entry(entry);
-                self.is_odd.set(!self.is_odd.get());
+        self.store.clear();
+        if let Ok(entries) = self.entries.lock() {
+            for entry in entries.iter() {
+                if level.is_none() || level.unwrap() == entry.level {
+                    self.write_entry(entry);
+                }
             }
         }
     }
 
     pub fn search_logs(&self, query: &str, case_sensitive: bool) {
-        let entries = self.entries.lock().unwrap();
-        self.buffer.set_text(""); // Clear current buffer
+        // Clear store
+        self.store.clear();
+        
         self.is_odd.set(false); // Reset alternating colors
         
         let query = if !case_sensitive {
@@ -441,6 +461,7 @@ impl LogCtrl {
             query.to_string()
         };
         
+        let entries = self.entries.lock().unwrap();
         for entry in entries.iter() {
             let message = if !case_sensitive {
                 entry.message.to_lowercase()
@@ -464,14 +485,13 @@ impl LogCtrl {
         }
     }
 
-    pub fn copy_selected_text(&self) -> Option<String> {
-        if let Some((start, end)) = self.buffer.selection_bounds() {
-            let text = self.buffer.text(&start, &end, false);
-            let display = self.widget.display();
-            display.clipboard().set_text(&text);
-            Some(text.to_string())
-        } else {
-            None
+    pub fn copy_selected_text(&self) {
+        let selection = self.widget.selection();
+        if let Some((model, iter)) = selection.selected() {
+            if let Ok(text) = model.get_value(&iter, 1).get::<String>() {
+                let clipboard = self.widget.clipboard();
+                clipboard.set_text(&text);
+            }
         }
     }
 
@@ -502,7 +522,7 @@ impl LogCtrl {
         
         // Clear existing entries
         entries.clear();
-        self.buffer.set_text("");
+        self.store.clear();
         
         for line in reader.lines() {
             let line = line?;
@@ -537,6 +557,8 @@ impl LogCtrl {
                     message,
                     source,
                     indent,
+                    show_time: true,
+                    show_date: false,
                 };
                 
                 // Add entry to buffer
@@ -547,11 +569,68 @@ impl LogCtrl {
         
         Ok(())
     }
+
+    pub fn scroll_to_end(&self) {
+        let n_rows = self.store.iter_n_children(None);
+        if n_rows > 0 {
+            let path = gtk::TreePath::from_indices(&[(n_rows - 1) as i32]);
+            gtk::prelude::TreeViewExt::set_cursor(&self.widget, &path, None, false);
+        }
+    }
+
+    pub fn append_entry(&self, entry: LogEntry) {
+        let full_text = entry.get_formatted_text();
+        let (fg_color, bg_color) = entry.level.get_colors();
+        
+        let iter = self.store.append();
+        let icon_name = entry.level.icon_name();
+        self.store.set_value(&iter, 0, &icon_name.to_value());
+        self.store.set_value(&iter, 1, &full_text.to_value());
+        self.store.set_value(&iter, 2, &fg_color.to_value());
+        self.store.set_value(&iter, 3, &bg_color.to_value());
+        
+        if self.auto_scroll {
+            self.scroll_to_end();
+        }
+    }
 }
 
 impl super::UIComponent for LogCtrl {
     fn get_widget(&self) -> &gtk::Widget {
         self.container.upcast_ref()
+    }
+}
+
+impl LogEntry {
+    fn get_formatted_text(&self) -> String {
+        let mut text = String::new();
+        
+        // Add timestamp if enabled
+        if self.show_time {
+            if self.show_date {
+                text.push_str(&self.timestamp.format("%Y-%m-%d %H:%M:%S").to_string());
+            } else {
+                text.push_str(&self.timestamp.format("%H:%M:%S").to_string());
+            }
+            text.push_str(" - ");
+        }
+        
+        // Add source if available
+        if let Some(source) = &self.source {
+            text.push_str(source);
+            text.push_str(": ");
+        }
+        
+        // Add indentation if enabled
+        if self.indent > 0 {
+            for _ in 0..self.indent {
+                text.push_str("    ");
+            }
+        }
+        
+        // Add message
+        text.push_str(&self.message);
+        text
     }
 }
 
@@ -572,6 +651,8 @@ mod tests {
             message: "Test info message".to_string(),
             source: None,
             indent: 0,
+            show_time: true,
+            show_date: false,
         });
         
         log_ctrl.write(LogEntry {
@@ -580,6 +661,8 @@ mod tests {
             message: "Test error message".to_string(),
             source: None,
             indent: 1,
+            show_time: true,
+            show_date: false,
         });
         
         // Verify entries were stored

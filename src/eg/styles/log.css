@@ -1,0 +1,75 @@
+/* Log window styles */
+
+/* Error messages */
+.error-odd {
+    color: #FF0000;
+    background-color: #FFE8E8;
+}
+
+.error-even {
+    color: #FF0000;
+    background-color: #FFE0E0;
+}
+
+/* Warning messages */
+.warning-odd {
+    color: #C04000;
+    background-color: #FFFFF0;
+}
+
+.warning-even {
+    color: #C04000;
+    background-color: #FFFFD0;
+}
+
+/* Info messages */
+.info-odd {
+    color: #0000FF;
+    background-color: #F8F8F8;
+}
+
+.info-even {
+    color: #0000FF;
+    background-color: #FFFFFF;
+}
+
+/* Event messages */
+.event-odd {
+    color: #008000;
+    background-color: #F8F8F8;
+}
+
+.event-even {
+    color: #008000;
+    background-color: #FFFFFF;
+}
+
+/* Debug messages */
+.debug-odd {
+    color: #808080;
+    background-color: #F8F8F8;
+}
+
+.debug-even {
+    color: #808080;
+    background-color: #FFFFFF;
+}
+
+/* Common styles */
+label {
+    font-family: monospace;
+    padding: 2px 4px;
+}
+
+listbox {
+    background-color: #FFFFFF;
+}
+
+listboxrow:selected {
+    background-color: #0078D7;
+    color: #FFFFFF;
+}
+
+listboxrow:selected label {
+    color: #FFFFFF;
+} 
