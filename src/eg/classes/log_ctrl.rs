@@ -102,12 +102,18 @@ impl Clone for LogCtrl {
         text_column.add_attribute(&text_renderer, "text", 1);
         text_column.add_attribute(&text_renderer, "foreground", 2);
         text_column.add_attribute(&text_renderer, "background", 3);
+        text_column.set_expand(true);
         widget.append_column(&text_column);
         
-        // Create scrolled window
-        let container = ScrolledWindow::builder()
-            .child(&widget)
-            .build();
+        // Create scrolled window container
+        let container = ScrolledWindow::new();
+        container.set_child(Some(&widget));
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+        container.set_min_content_width(400);
+        container.set_min_content_height(300);
+        container.set_propagate_natural_height(true);
+        container.set_propagate_natural_width(true);
             
         LogCtrl {
             container,
@@ -157,12 +163,18 @@ impl LogCtrl {
         text_column.add_attribute(&text_renderer, "text", 1);
         text_column.add_attribute(&text_renderer, "foreground", 2);
         text_column.add_attribute(&text_renderer, "background", 3);
+        text_column.set_expand(true); // Allow text column to expand
         widget.append_column(&text_column);
             
-        // Create scrolled window container
-        let container = ScrolledWindow::builder()
-            .child(&widget)
-            .build();
+        // Create scrolled window container with proper size and expansion
+        let container = ScrolledWindow::new();
+        container.set_child(Some(&widget));
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+        container.set_min_content_width(400);
+        container.set_min_content_height(300);
+        container.set_propagate_natural_height(true);
+        container.set_propagate_natural_width(true);
             
         // Create context menu
         let menu = gio::Menu::new();
@@ -306,6 +318,17 @@ impl LogCtrl {
             show_time: true,
             show_date: false,
         });
+        // Add a second message so we can test the window
+        log_ctrl.write(LogEntry {
+            timestamp: Local::now(),
+            level: LogLevel::Info,
+            message: "This is being implemented in rust, and is WIP ".to_string(),
+            source: None,
+            indent: 0,
+            show_time: true,
+            show_date: false,
+        });
+        
 
         log_ctrl
     }

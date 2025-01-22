@@ -44,33 +44,34 @@ impl MainFrame {
         let window = ApplicationWindow::builder()
             .application(app)
             .title("EventGhost")
-            .default_width(DEFAULT_WINDOW_WIDTH)
-            .default_height(DEFAULT_WINDOW_HEIGHT)
+            .default_width(800)
+            .default_height(600)
             .build();
 
-        // Create main vertical container
-        let container = Box::new(Orientation::Vertical, 0);
-
-        // Create paned container for log and tree
-        let paned = Paned::new(Orientation::Horizontal);
-        paned.set_wide_handle(true);
-        paned.set_position(280); // Default width for log panel
+        // Create main box
+        let main_box = Box::new(Orientation::Vertical, 0);
+        window.set_child(Some(&main_box));
 
         // Initialize UI components
         let (menu_bar, toolbar, status_bar) = Self::init_ui_components();
+
+        // Add components to container in correct order
+        main_box.append(&menu_bar);
+        main_box.append(&toolbar.widget);
+
+        // Create horizontal paned container
+        let paned = Paned::new(Orientation::Horizontal);
+        paned.set_wide_handle(true);
+        paned.set_position(400); // Set initial position
+        main_box.append(&paned);
+
+        // Create log window
         let log_ctrl = LogCtrl::new();
+        log_ctrl.container.set_size_request(400, 300); // Set minimum size
+        paned.set_start_child(Some(&log_ctrl.container));
 
-        // Add log control to left pane
-        paned.set_start_child(Some(log_ctrl.get_widget()));
-
-        // Add components to container
-        container.append(&menu_bar);
-        container.append(&toolbar.widget);
-        container.append(&paned);
-        container.append(&status_bar.widget);
-
-        // Add container to window
-        window.set_child(Some(&container));
+        // Add status bar at the bottom
+        main_box.append(&status_bar.widget);
 
         // Create MainFrame instance
         let main_frame = MainFrame {
@@ -79,7 +80,7 @@ impl MainFrame {
             toolbar,
             status_bar,
             log_ctrl,
-            container,
+            container: main_box,
             paned,
         };
 
