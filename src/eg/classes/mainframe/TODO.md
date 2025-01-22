@@ -26,42 +26,25 @@
 - [ ] Add icon support for tree items
 - [ ] Match original's toolbar button ordering and grouping
 
-## Performance and Optimization
-- [ ] Profile and optimize component initialization
-- [ ] Implement lazy loading for plugins
-- [ ] Optimize tree view for large configurations
-- [ ] Add logging for performance tracking
-
 ## Log View Improvements
 - [ ] Add search functionality in log
 - [ ] Implement log filtering options
 - [ ] Add log export functionality
 - [ ] Improve log entry formatting
 - [ ] Add log level filtering
+- [ ] Implement context menu functionality for log entries
+- [ ] Implement clipboard functionality for copying selected text
+- [ ] Implement log saving and loading from a file
+- [ ] Implement dynamic log entry formatting based on log level
+- [ ] Add event handling for context menu items (e.g., "Copy", "Select All", "Clear Log")
+- [ ] Implement detailed log entry parsing when loading from a file
 
-## Advanced Features
-- [ ] Plugin system integration
-- [ ] Event monitoring and capture
-- [ ] Macro recording functionality
-- [ ] Plugin configuration dialogs
-- [ ] Advanced search and filter capabilities
-- [ ] Custom layout and workspace saving
-- [ ] Multi-document support
-
-## Testing
-- [x] Basic window creation tests
-- [ ] Event handling tests
-- [ ] Plugin system tests
-- [ ] Configuration persistence tests
-- [ ] UI interaction tests
-- [ ] Keyboard shortcut tests
-
-## Documentation
-- [x] Add inline documentation
-- [x] Create README.md
-- [ ] Document plugin API
-- [ ] Create user guide
-- [ ] Add developer documentation for UI components
+## StatusBar Feature Enhancements
+- [ ] Implement event handling for checkbox state changes in Rust version.
+- [ ] Manage status bar context ID similarly to the Python version.
+- [ ] Add icon handling to the Rust status bar to reflect processing state.
+- [ ] Implement repositioning logic for the Rust status bar based on size events.
+- [ ] Add logging/debugging functionality to the Rust version similar to the Python version.
 
 ## Next Steps (Priority Order)
 1. Complete event logging view implementation
@@ -71,13 +54,3 @@
 5. Implement configuration dialogs
 6. Add event monitoring system
 
-## Community and Feedback
-- [ ] Set up feedback channels
-- [ ] Create contribution guidelines
-- [ ] Implement user suggestion tracking system
-
-## Long-term Goals
-- [ ] Feature parity with Python EventGhost
-- [ ] Cross-platform compatibility
-- [ ] Performance benchmarking
-- [ ] Advanced scripting support
