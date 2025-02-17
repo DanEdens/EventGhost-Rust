@@ -43,4 +43,18 @@ fn main() {
 
     println!("cargo:rerun-if-changed=src/resources.gresource.xml");
     println!("cargo:rerun-if-changed=src/images/");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let plugins_dir = out_dir.join("plugins");
+
+    // Create plugins directory if it doesn't exist
+    std::fs::create_dir_all(&plugins_dir).unwrap();
+
+    // Build logger plugin
+    println!("cargo:rustc-cdylib-link-arg=--out-implib=plugins/logger.dll");
+    println!("cargo:rustc-link-search=native={}", plugins_dir.display());
+    println!("cargo:rustc-link-lib=dylib=logger");
+
+    // Rerun build script if plugin source changes
+    println!("cargo:rerun-if-changed=src/plugins/logger/mod.rs");
 } 

@@ -7,6 +7,10 @@ edition = "2021"
 name = "test-gui"
 path = "src/bin/test-gui.rs"
 
+[lib]
+name = "eventghost"
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
@@ -39,4 +43,10 @@ tokio-test = "0.4"
 pkg-config = "0.3"
 
 [features]
-default = [] 
+default = []
+plugin_hot_reload = []
+
+[workspace]
+members = [
+    "plugins/logger",
+] 
