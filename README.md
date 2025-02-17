@@ -1,155 +1,115 @@
 # EventGhost-Rust
 
-A modern, fast, and extensible automation tool written in Rust. This is a reimplementation of the original [EventGhost](http://www.eventghost.net/) project.
+A Rust implementation of EventGhost, a powerful automation tool for Windows. This project aims to modernize EventGhost while maintaining compatibility with existing plugins and configurations.
 
-## Project Status
+## Features
 
-We are currently in the early development phase, focusing on building a robust plugin system. Here's our current progress:
+### Core Features
+- [x] Modern GTK4-based user interface
+- [x] Configuration persistence with JSON serialization
+- [x] Drag-and-drop support for configuration items
+- [x] Plugin system architecture
+- [x] Event handling system
+- [x] Logging system with filtering and search
 
-### Completed
-- ✅ Project foundation and architecture
-- ✅ Core plugin system design
-- ✅ Documentation framework
-- ✅ Basic test infrastructure
-- ✅ Initial Win32 API integration
+### UI Components
+- [x] Main window with menu bar and toolbar
+- [x] Log window with real-time updates
+- [x] Configuration tree view
+- [x] Configuration dialogs for items:
+  - [x] Plugins
+  - [x] Folders
+  - [x] Macros
+  - [x] Events
+  - [x] Actions
 
-### Project Structure
-```
-src/
-├── core/      # Core functionality and shared components
-├── win32/     # Windows-specific implementations
-├── testing/   # Test utilities and helpers
-├── eg/        # EventGhost-specific functionality
-├── lib.rs     # Library root
-└── main.rs    # Application entry point
-```
-
-### In Progress
-We are implementing the plugin system in phases:
-
-1. **Current Phase: Win32 Integration & Plugin Foundation**
-   - Win32 API bindings
-   - Core event system
-   - Plugin manifest format
-   - Dynamic library loading
-
-2. **Upcoming: Plugin System Core**
-   - Plugin registry system
-   - Metadata management
-   - File system monitoring
-   - Hot-reload support
-
-3. **Future: Plugin Features**
-   - Dependency resolution
-   - Inter-plugin messaging
-   - Resource management
-   - Plugin isolation
-
-4. **Final Phase: Configuration & UI**
-   - Configuration system
-   - Plugin UI integration
-   - Management interface
-   - Settings persistence
+### Configuration Management
+- [x] JSON-based configuration storage
+- [x] Auto-save functionality
+- [x] Hierarchical configuration structure
+- [x] CRUD operations for all item types
+- [x] Drag-and-drop reordering
 
 ## Getting Started
 
 ### Prerequisites
-- Rust 1.75+ (we use the latest stable features)
-- Cargo
-- Windows 10/11 
-- Visual Studio Build Tools (for Win32 development)
+- Rust 1.70 or later
+- GTK4 development libraries
+- Windows 10 or later
 
-### Building
+### Building from Source
+1. Install Rust using [rustup](https://rustup.rs/)
+2. Install GTK4 development libraries:
+   ```bash
+   # Windows (using MSYS2)
+   pacman -S mingw-w64-x86_64-gtk4
+
+   # Linux
+   sudo apt install libgtk-4-dev
+   ```
+3. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/EventGhost-Rust.git
+   cd EventGhost-Rust
+   ```
+4. Build the project:
+   ```bash
+   cargo build --release
+   ```
+
+### Running
 ```bash
-# Clone the repository
-pacman -S mingw-w64-x86_64-pkg-config mingw-w64-x86_64-gtk3
+cargo run --release
+```
 
-git clone https://github.com/DanEdens/EventGhost-Rust
-cd EventGhost-Rust
+## Development
 
-# Build the project
-cargo build
+### Project Structure
+```
+src/
+├── core/           # Core functionality
+├── eg/            # EventGhost-specific code
+│   ├── classes/   # UI components
+│   ├── config/    # Configuration handling
+│   └── plugins/   # Plugin system
+├── main.rs        # Application entry point
+└── resources/     # Application resources
+```
 
-# Run tests
+### Coding Standards
+- Follow Rust standard naming conventions
+- Use meaningful commit messages following conventional commits
+- Write tests for new functionality
+- Document public APIs
+- Keep code modular and maintainable
+
+### Testing
+Run the test suite:
+```bash
 cargo test
 ```
-   
 
 ## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details. Here's how you can help:
-
-1. **Code Contributions**
-   - Review open issues
-   - Submit pull requests
-   - Discuss design in Issues
-
-2. **Documentation**
-   - Improve existing docs
-   - Add examples
-   - Write tutorials
-   - Report unclear sections
-
-3. **Testing**
-   - Report bugs
-   - Suggest features
-   - Test on different platforms
-   - Performance testing
-
-## Documentation
-
-Our documentation is organized into several sections:
-
-- [Documentation Overview](docs/README.md)
-- Architecture Documentation:
-  - [Core Architecture](docs/architecture/ARCHITECTURE.md)
-  - [Plugin Architecture](docs/architecture/PLUGIN_ARCHITECTURE.md)
-  - [Inital supported plugins](docs/plugins/README.md)
-  - [GUI Architecture](docs/architecture/GUI_ARCHITECTURE.md)
-  - [Lessons Learned](docs/architecture/LESSONS_LEARNED.md)
-- API Documentation:
-
-  - [Core API](docs/api/core/README.md)
-  - [Plugin API](docs/api/plugins/README.md)
-  - [GUI API](docs/api/gui/README.md)
-- Guides:
-  - [User Guide](docs/guides/user/README.md)
-  - [Developer Guide](docs/guides/developer/README.md)
-  - [Migration Guide](docs/guides/migration/README.md)
-
-## Project Structure
-```
-.
-├── src/               # Source code
-│   ├── core/         # Core functionality
-│   ├── win32/        # Windows API integration
-│   ├── testing/      # Test utilities
-│   ├── eg/          # EventGhost-specific code
-│   ├── lib.rs       # Library root
-│   └── main.rs      # Application entry
-├── docs/             # Documentation
-│   ├── api/         # API documentation
-│   ├── guides/      # User and developer guides
-│   ├── architecture/# Design documents
-│   └── examples/    # Code examples
-└── target/           # Build outputs
-```
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to your branch
+5. Create a Pull Request
 
 ## License
-
-This project is licensed under the GNU General Public License v2.0 - see the [gpl-2.0.md](gpl-2.0.md) file for details.
+This project is licensed under the GPL-2.0 License - see the LICENSE file for details.
 
 ## Acknowledgments
+- Original EventGhost project and contributors
+- GTK4 team for the excellent UI toolkit
+- Rust community for the amazing ecosystem
 
-- Original EventGhost team for their pioneering work
-- Rust community for excellent tools and libraries
-
+## Current Status
+This project is under active development. Current focus areas:
+- Implementing remaining core functionality
+- Improving UI/UX
+- Adding plugin compatibility layer
+- Enhancing configuration management
 
 ## Roadmap
-
-See our [Implementation Plan](docs/architecture/IMPLEMENTATION_PLAN.md) for detailed development phases and milestones.
-
-## Contact
-
-- GitHub Issues: For bug reports and feature requests
-- Discussions: For questions and community interaction
+See [TODO.md](TODO.md) for planned features and enhancements.
