@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode};
 use gio::{Menu, SimpleAction, SimpleActionGroup};
+use gdk4::ModifierType;
 use glib;
 use uuid::Uuid;
 use std::cell::RefCell;
@@ -56,12 +57,12 @@ impl ConfigView {
         
         // Set up drag and drop
         tree_view.drag_source_set(
-            gdk::ModifierType::BUTTON1_MASK,
-            &[gtk::gdk::DragAction::MOVE],
+            ModifierType::BUTTON1_MASK,
+            &[gdk4::DragAction::MOVE],
         );
         tree_view.drag_dest_set(
             gtk::DestDefaults::ALL,
-            &[gtk::gdk::DragAction::MOVE],
+            &[gdk4::DragAction::MOVE],
         );
         
         // Handle drag-and-drop signals
