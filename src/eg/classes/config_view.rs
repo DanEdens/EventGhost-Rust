@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter};
+use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode};
 use gio::{Menu, SimpleAction, SimpleActionGroup};
 use glib;
 use uuid::Uuid;
@@ -48,6 +48,60 @@ impl ConfigView {
         // Create tree view
         let tree_view = TreeView::with_model(&tree_store);
         tree_view.set_headers_visible(true);
+        tree_view.set_reorderable(true);
+        tree_view.selection().set_mode(SelectionMode::Single);
+        
+        // Set up drag and drop
+        tree_view.drag_source_set(
+            gdk::ModifierType::BUTTON1_MASK,
+            &[gtk::gdk::DragAction::MOVE],
+        );
+        tree_view.drag_dest_set(
+            gtk::DestDefaults::ALL,
+            &[gtk::gdk::DragAction::MOVE],
+        );
+        
+        // Handle drag-and-drop signals
+        tree_view.connect_drag_data_received(
+            glib::clone!(@weak tree_store => move |tree_view, _, x, y, selection_data, _, _| {
+                if let Some(target_path) = tree_view.path_at_pos(x as i32, y as i32).map(|(path, _, _, _)| path) {
+                    if let Some(source_path_str) = selection_data.text() {
+                        if let Some(source_path) = TreePath::from_str(&source_path_str).ok() {
+                            // Get source and target iterators
+                            if let (Some(source_iter), Some(target_iter)) = (
+                                tree_store.iter(&source_path),
+                                tree_store.iter(&target_path)
+                            ) {
+                                // Don't allow dropping on the same path
+                                if source_path != target_path {
+                                    // Get the target's parent
+                                    let target_parent = tree_store.iter_parent(&target_iter);
+                                    
+                                    // Copy the row to the new location
+                                    let new_iter = tree_store.insert_after(target_parent.as_ref(), Some(&target_iter));
+                                    for i in 0..tree_store.n_columns() {
+                                        if let Some(value) = tree_store.value(&source_iter, i).get::<String>().ok() {
+                                            tree_store.set_value(&new_iter, i as u32, &value.to_value());
+                                        }
+                                    }
+                                    
+                                    // Remove the original row
+                                    tree_store.remove(&source_iter);
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        );
+        
+        tree_view.connect_drag_data_get(move |tree_view, _, selection_data, _, _| {
+            if let Some((_, iter)) = tree_view.selection().selected() {
+                if let Some(path) = tree_view.model().unwrap().path(&iter) {
+                    selection_data.set_text(&path.to_string());
+                }
+            }
+        });
         
         // Add icon column
         let column = TreeViewColumn::new();
