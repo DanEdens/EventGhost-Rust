@@ -26,10 +26,10 @@
 - [ ] Event Handling  
   - [x] Event bus / message passing
   - [x] Event dispatch and routing
-- [ ] Macro Execution
-  - [ ] Macro execution engine
-  - [ ] Map events to macros
-  - [ ] Flow control (if/else, loops, waits)
+- [x] Macro Execution
+  - [x] Macro execution engine
+  - [x] Map events to macros
+  - [x] Flow control (if/else, loops, waits)
 - [ ] Action Execution  
   - [ ] Execute action sequences
   - [ ] Builtin actions
@@ -55,7 +55,7 @@
 - [x] Contributor guide
 
 ## Next Steps
-1. Set up event routing system
+1. Implement action execution system
 2. Create common plugins
 3. Add import/export functionality
 4. Set up deployment pipeline
