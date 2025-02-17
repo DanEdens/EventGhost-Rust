@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore};
 use gio::{Menu, MenuItem};
 use super::{Toolbar, StatusBar};
 use crate::eg::classes::log_ctrl::LogCtrl;
@@ -25,6 +25,8 @@ pub struct MainFrame {
     pub status_bar: StatusBar,
     /// The log control
     pub log_ctrl: LogCtrl,
+    /// The configuration view
+    pub config_view: ConfigView,
     /// The main container
     pub container: Box,
     /// The paned container for log and tree
@@ -81,10 +83,12 @@ impl MainFrame {
         let log_label = gtk::Label::new(Some("Log"));
         notebook.append_page(&log_ctrl.container, Some(&log_label));
 
-        // Add configuration tab (placeholder)
-        let config_box = Box::new(Orientation::Vertical, 0);
+        // Create configuration view
+        let config_view = ConfigView::new();
+
+        // Add configuration tab
         let config_label = gtk::Label::new(Some("Configuration"));
-        notebook.append_page(&config_box, Some(&config_label));
+        notebook.append_page(&config_view.container, Some(&config_label));
 
         // Add status bar at the bottom
         main_box.append(&status_bar.widget);
@@ -96,6 +100,7 @@ impl MainFrame {
             toolbar,
             status_bar,
             log_ctrl,
+            config_view,
             container: main_box,
             paned,
             notebook,
@@ -421,6 +426,82 @@ impl MainFrame {
             log_ctrl.clear();
         });
         self.window.add_action(&action);
+    }
+}
+
+/// Represents the configuration view for EventGhost.
+pub struct ConfigView {
+    /// The main container for the configuration view
+    pub container: Box,
+    /// The tree view displaying the configuration hierarchy
+    tree_view: TreeView,
+    /// The tree store holding the configuration data
+    tree_store: TreeStore,
+}
+
+impl ConfigView {
+    /// Creates a new ConfigView instance.
+    ///
+    /// # Returns
+    /// A new ConfigView with a configured container and tree view
+    pub fn new() -> Self {
+        // Create main container
+        let container = Box::new(Orientation::Vertical, 0);
+
+        // Create tree store with columns:
+        // 0: item name (String)
+        // 1: item type (String)
+        // 2: icon name (String)
+        let tree_store = TreeStore::new(&[
+            glib::Type::STRING, // item name
+            glib::Type::STRING, // item type
+            glib::Type::STRING, // icon name
+        ]);
+        
+        // Create tree view
+        let tree_view = TreeView::with_model(&tree_store);
+        tree_view.set_headers_visible(true);
+        
+        // Add columns to tree view
+        let column = gtk::TreeViewColumn::new();
+        let cell = gtk::CellRendererPixbuf::new();
+        column.pack_start(&cell, false);
+        column.add_attribute(&cell, "icon-name", 2);
+        tree_view.append_column(&column);
+        
+        let column = gtk::TreeViewColumn::new();
+        column.set_title("Name");
+        let cell = gtk::CellRendererText::new();
+        column.pack_start(&cell, true);
+        column.add_attribute(&cell, "text", 0);
+        tree_view.append_column(&column);
+        
+        let column = gtk::TreeViewColumn::new();
+        column.set_title("Type");
+        let cell = gtk::CellRendererText::new();
+        column.pack_start(&cell, true);
+        column.add_attribute(&cell, "text", 1);
+        tree_view.append_column(&column);
+        
+        // Add some initial data to the tree store
+        let iter = tree_store.append(None);
+        tree_store.set_value(&iter, 0, &"Plugins".to_value());
+        tree_store.set_value(&iter, 1, &"Folder".to_value());
+        tree_store.set_value(&iter, 2, &"folder".to_value());
+        
+        let iter = tree_store.append(None);
+        tree_store.set_value(&iter, 0, &"Macros".to_value());
+        tree_store.set_value(&iter, 1, &"Folder".to_value());
+        tree_store.set_value(&iter, 2, &"folder".to_value());
+        
+        // Add tree view to container
+        container.append(&tree_view);
+
+        ConfigView { 
+            container,
+            tree_view,
+            tree_store,
+        }
     }
 }
 

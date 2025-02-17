@@ -1,0 +1,3 @@
+   Compiling eventghost v0.1.0 (C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.80s
+     Running `target\debug\eventghost.exe`
