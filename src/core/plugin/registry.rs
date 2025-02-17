@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 // use crate::core::Error;
 use crate::core::config::Config;
-use super::traits::{Plugin, PluginInfo };
+use super::traits::{Plugin, PluginInfo, PluginState};
 // PluginState
 use super::loader::{PluginLoader, LoaderError};
 // use crate::core::error::{RegistryError};
@@ -66,94 +66,210 @@ impl PluginRegistry {
         })
     }
 
-    /// Load a plugin from a file
-    pub async fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
-        // print the unused var path
-        println!("Loading plugin from: {:?}", path);
-        Ok(Uuid::new_v4())  // TODO: Implement actual loading
+    /// Load all plugins from the plugin directory
+    pub async fn load_all(&mut self) -> Result<(), RegistryError> {
+        let mut plugins = self.plugins.write().await;
+        let mut configs = self.configs.write().await;
+        
+        // Clear existing plugins
+        plugins.clear();
+        configs.clear();
+        
+        // Load plugins from directory
+        let entries = tokio::fs::read_dir(&self.plugin_dir)
+            .await
+            .map_err(|e| RegistryError::Io(e.to_string()))?;
+            
+        let mut entries = entries.peekable();
+        while let Some(entry) = entries.next().await {
+            let entry = entry.map_err(|e| RegistryError::Io(e.to_string()))?;
+            let path = entry.path();
+            
+            if let Some(ext) = path.extension() {
+                if ext == "dll" || ext == "so" {
+                    match self.load_plugin(path).await {
+                        Ok(id) => {
+                            println!("Loaded plugin: {}", id);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to load plugin: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(())
     }
 
+    /// Unload all plugins
+    pub async fn unload_all(&mut self) -> Result<(), RegistryError> {
+        let mut plugins = self.plugins.write().await;
+        for plugin in plugins.iter() {
+            let mut plugin = plugin.write().await;
+            if plugin.get_state() == PluginState::Running {
+                plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+            }
+        }
+        plugins.clear();
+        self.configs.write().await.clear();
+        Ok(())
+    }
+
+    /// Load a plugin from a file
+    pub async fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+        // Load plugin using loader
+        let mut plugin = self.loader.load_plugin(&path).await?;
+        
+        // Initialize plugin
+        plugin.initialize().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        
+        // Get plugin info
+        let info = plugin.get_info();
+        let id = info.id;
+        
+        // Check if plugin already exists
+        {
+            let plugins = self.plugins.read().await;
+            for existing in plugins.iter() {
+                let existing = existing.read().await;
+                if existing.get_info().id == id {
+                    return Err(RegistryError::AlreadyExists(id));
+                }
+            }
+        }
+        
+        // Add plugin to registry
+        {
+            let mut plugins = self.plugins.write().await;
+            plugins.push(Arc::new(RwLock::new(plugin)));
+        }
+        
+        // Add default config if plugin is configurable
+        if let Some(config) = plugin.get_config() {
+            self.configs.write().await.insert(id, config.clone());
+        }
+        
+        Ok(id)
+    }
 
     /// Unload a plugin
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // print the unused var id
-        println!("Unloading plugin: {:?}", id);
-        Ok(())  // TODO: Implement actual unloading
+        let mut plugins = self.plugins.write().await;
+        
+        // Find plugin index
+        let index = plugins.iter().position(|p| {
+            let plugin = p.blocking_read();
+            plugin.get_info().id == id
+        }).ok_or_else(|| RegistryError::NotFound(id.to_string()))?;
+        
+        // Stop plugin if running
+        {
+            let plugin = &plugins[index];
+            let mut plugin = plugin.write().await;
+            if plugin.get_state() == PluginState::Running {
+                plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+            }
+        }
+        
+        // Remove plugin
+        plugins.remove(index);
+        self.configs.write().await.remove(&id);
+        
+        Ok(())
     }
-
 
     /// Get a plugin by ID
     pub async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin>>>, RegistryError> {
+        let plugins = self.plugins.read().await;
+        for plugin in plugins.iter() {
+            let plugin_ref = plugin.read().await;
+            if plugin_ref.get_info().id == id {
+                return Ok(plugin.clone());
+            }
+        }
         Err(RegistryError::NotFound(id.to_string()))
     }
 
     /// Get all loaded plugins
     pub async fn get_plugins(&self) -> Vec<PluginInfo> {
-        // TODO: Implement plugin listing
-        unimplemented!()
+        let plugins = self.plugins.read().await;
+        let mut infos = Vec::new();
+        for plugin in plugins.iter() {
+            let plugin = plugin.read().await;
+            infos.push(plugin.get_info());
+        }
+        infos
     }
 
     /// Start a plugin
     pub async fn start_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // print the unused var id
-        println!("Starting plugin: {:?}", id);
-        Ok(())
+        let plugin = self.get_plugin(id).await?;
+        let mut plugin = plugin.write().await;
+        
+        if plugin.get_state() != PluginState::Initialized {
+            return Err(RegistryError::InvalidState(
+                format!("Plugin must be initialized before starting, current state: {:?}", 
+                    plugin.get_state())
+            ));
+        }
+        
+        plugin.start().await.map_err(|e| RegistryError::Plugin(e.to_string()))
     }
-
 
     /// Stop a plugin
     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        // print the unused var id
-        println!("Stopping plugin: {:?}", id);
-        Ok(())
+        let plugin = self.get_plugin(id).await?;
+        let mut plugin = plugin.write().await;
+        
+        if plugin.get_state() != PluginState::Running {
+            return Err(RegistryError::InvalidState(
+                format!("Plugin must be running before stopping, current state: {:?}", 
+                    plugin.get_state())
+            ));
+        }
+        
+        plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))
     }
-
 
     /// Update plugin configuration
     pub async fn update_plugin_config(&self, id: Uuid, config: Config) -> Result<(), RegistryError> {
-        // print the unused var config
-        println!("Updating plugin configuration: {:?}", config);
-        // print the unused var id
-        println!("ID: {:?}", id);
+        let plugin = self.get_plugin(id).await?;
+        let mut plugin = plugin.write().await;
+        
+        plugin.update_config(config.clone()).await
+            .map_err(|e| RegistryError::Plugin(e.to_string()))?;
+            
+        self.configs.write().await.insert(id, config);
+        
         Ok(())
     }
 
-
     /// Get plugin configuration
-
-    pub async fn get_plugin_config(&self, id: Uuid) -> Result<Config, RegistryError> {
-        Err(RegistryError::NotFound(id.to_string()))
-    }
-
-    pub async fn load_all(&self) -> Result<(), RegistryError> {
-        Ok(())  // TODO: Implement actual loading
-    }
-
-    pub async fn unload_all(&self) -> Result<(), RegistryError> {
-        Ok(())  // TODO: Implement actual unloading
+    pub async fn get_plugin_config(&self, id: Uuid) -> Result<Option<Config>, RegistryError> {
+        Ok(self.configs.read().await.get(&id).cloned())
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use tempfile::tempdir;
-
-//     #[tokio::test]
-//     async fn test_plugin_loading() {
-//         // TODO: Implement loading tests
-//         unimplemented!()
-//     }
-
-//     #[tokio::test]
-//     async fn test_plugin_lifecycle() {
-//         // TODO: Implement lifecycle tests
-//         unimplemented!()
-//     }
-
-//     #[tokio::test]
-//     async fn test_plugin_config() {
-//         // TODO: Implement config tests
-//         unimplemented!()
-//     }
-// } 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::mocks::MockPlugin;
+    use tempfile::tempdir;
+    
+    #[tokio::test]
+    async fn test_plugin_registry() {
+        let temp_dir = tempdir().unwrap();
+        let registry = PluginRegistry::new(temp_dir.path().to_path_buf()).unwrap();
+        
+        // Test loading all plugins
+        registry.load_all().await.unwrap();
+        
+        // Test getting plugins
+        let plugins = registry.get_plugins().await;
+        assert!(plugins.is_empty());
+        
+        // Test unloading all plugins
+        registry.unload_all().await.unwrap();
+    }
+} 

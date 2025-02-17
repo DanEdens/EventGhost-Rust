@@ -18,8 +18,10 @@
 
 ## Core
 - [ ] Plugin System
-  - [ ] Plugin traits and registry
-  - [ ] Plugin discovery and loading
+  - [x] Plugin traits and registry
+  - [x] Plugin discovery and loading infrastructure
+  - [ ] Dynamic library loading implementation
+  - [ ] Plugin hot-reloading
   - [ ] Route events to/from plugins
 - [ ] Event Handling  
   - [ ] Event bus / message passing
@@ -52,9 +54,9 @@
 - [x] Contributor guide
 
 ## Next Steps
-1. Complete plugin system implementation
-2. Implement event handling and macro execution
-3. Add import/export functionality for configurations
+1. Complete dynamic library loading for plugins
+2. Implement plugin hot-reloading
+3. Set up event routing system
 4. Create common plugins
 5. Set up deployment pipeline
 
