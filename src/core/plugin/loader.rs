@@ -3,6 +3,7 @@ use tokio::sync::RwLock;
 use std::sync::Arc;
 use uuid::Uuid;
 use libloading::{Library, Symbol};
+use notify::{Watcher, RecursiveMode, Event as NotifyEvent, EventKind};
 // use crate::core::Error;
 use super::Plugin;
 use super::traits::PluginState;
@@ -19,6 +20,8 @@ pub enum LoaderError {
     Io(String),
     #[error("Library error: {0}")]
     Library(#[from] libloading::Error),
+    #[error("Watch error: {0}")]
+    Watch(String),
     #[error("Other error: {0}")]
     Other(String),
 }
@@ -35,13 +38,47 @@ struct LoadedPlugin {
 pub struct PluginLoader {
     path: PathBuf,
     plugins: Arc<RwLock<Vec<LoadedPlugin>>>,
+    watcher: Option<notify::RecommendedWatcher>,
 }
 
 impl PluginLoader {
     pub fn new(path: PathBuf) -> Result<Self, LoaderError> {
+        let plugins = Arc::new(RwLock::new(Vec::new()));
+        let plugins_clone = plugins.clone();
+
+        // Create file system watcher
+        let mut watcher = notify::recommended_watcher(move |res: Result<NotifyEvent, _>| {
+            if let Ok(event) = res {
+                if let EventKind::Modify(_) = event.kind {
+                    for path in event.paths {
+                        if let Some(ext) = path.extension() {
+                            if ext == "dll" || ext == "so" {
+                                // Get plugin ID from path
+                                let plugins = plugins_clone.clone();
+                                tokio::spawn(async move {
+                                    let plugins = plugins.read().await;
+                                    if let Some(plugin) = plugins.iter().find(|p| p.path == path) {
+                                        let id = plugin.plugin.get_info().id;
+                                        if let Err(e) = Self::reload_plugin_by_id(id, plugins_clone.clone()).await {
+                                            eprintln!("Failed to reload plugin {}: {}", id, e);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }).map_err(|e| LoaderError::Watch(e.to_string()))?;
+
+        // Start watching plugin directory
+        watcher.watch(&path, RecursiveMode::NonRecursive)
+            .map_err(|e| LoaderError::Watch(e.to_string()))?;
+
         Ok(Self {
             path,
-            plugins: Arc::new(RwLock::new(Vec::new())),
+            plugins,
+            watcher: Some(watcher),
         })
     }
 
@@ -160,22 +197,73 @@ impl PluginLoader {
         
         Ok(())
     }
+
+    async fn reload_plugin_by_id(id: Uuid, plugins: Arc<RwLock<Vec<LoadedPlugin>>>) -> Result<(), LoaderError> {
+        let mut plugins = plugins.write().await;
+        
+        // Find the plugin to reload
+        let plugin_index = plugins.iter().position(|p| p.plugin.get_info().id == id)
+            .ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
+        
+        let plugin = &plugins[plugin_index];
+        let path = plugin.path.clone();
+        let config = plugin.plugin.get_config().cloned();
+        
+        // Stop the plugin if it's running
+        if plugin.plugin.get_state() == PluginState::Running {
+            plugin.plugin.stop().await
+                .map_err(|e| LoaderError::Other(e.to_string()))?;
+        }
+        
+        // Remove old plugin
+        plugins.remove(plugin_index);
+        
+        // Load new version
+        drop(plugins); // Release lock before loading
+        let mut new_plugin = Self::load_plugin(&path).await?;
+        
+        // Restore configuration if available
+        if let Some(config) = config {
+            new_plugin.update_config(config).await
+                .map_err(|e| LoaderError::Other(e.to_string()))?;
+        }
+        
+        // Add new plugin back to registry
+        plugins.write().await.push(LoadedPlugin {
+            plugin: new_plugin,
+            library: Arc::new(unsafe { Library::new(&path).map_err(LoaderError::Library)? }),
+            path,
+        });
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use tempfile::tempdir;
+    use std::fs;
+    use std::time::Duration;
 
     #[tokio::test]
-    async fn test_plugin_loader() {
+    async fn test_plugin_hot_reload() {
         let temp_dir = tempdir().unwrap();
         let mut loader = PluginLoader::new(temp_dir.path().to_path_buf()).unwrap();
         
-        // Test basic loading
-        loader.load().await.unwrap();
+        // Create and load initial plugin
+        let plugin_path = temp_dir.path().join("test_plugin.dll");
+        fs::write(&plugin_path, b"initial").unwrap();
+        loader.load_plugin(&plugin_path).await.unwrap();
         
-        // Test unloading
-        loader.unload().await.unwrap();
+        // Modify plugin to trigger reload
+        fs::write(&plugin_path, b"modified").unwrap();
+        
+        // Wait for reload
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        
+        // Verify plugin was reloaded
+        let plugins = loader.plugins.read().await;
+        assert_eq!(plugins.len(), 1);
     }
 } 

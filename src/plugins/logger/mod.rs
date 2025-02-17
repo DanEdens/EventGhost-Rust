@@ -24,7 +24,10 @@ impl LoggerPlugin {
                 author: "EventGhost-Rust Team".to_string(),
                 homepage: None,
                 platforms: vec!["windows".to_string()],
-                capabilities: vec![PluginCapability::EventHandler],
+                capabilities: vec![
+                    PluginCapability::EventHandler,
+                    PluginCapability::HotReload,
+                ],
             },
             state: PluginState::Created,
             config: None,
@@ -39,7 +42,10 @@ impl Plugin for LoggerPlugin {
     }
 
     fn get_capabilities(&self) -> Vec<PluginCapability> {
-        vec![PluginCapability::EventHandler]
+        vec![
+            PluginCapability::EventHandler,
+            PluginCapability::HotReload,
+        ]
     }
 
     fn get_state(&self) -> PluginState {

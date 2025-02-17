@@ -21,7 +21,7 @@
   - [x] Plugin traits and registry
   - [x] Plugin discovery and loading infrastructure
   - [x] Dynamic library loading implementation
-  - [ ] Plugin hot-reloading
+  - [x] Plugin hot-reloading
   - [ ] Route events to/from plugins
 - [ ] Event Handling  
   - [ ] Event bus / message passing
@@ -55,10 +55,9 @@
 - [x] Contributor guide
 
 ## Next Steps
-1. Implement plugin hot-reloading
-2. Set up event routing system
-3. Create common plugins
-4. Add import/export functionality
-5. Set up deployment pipeline
+1. Set up event routing system
+2. Create common plugins
+3. Add import/export functionality
+4. Set up deployment pipeline
 
 

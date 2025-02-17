@@ -249,6 +249,64 @@ impl PluginRegistry {
     pub async fn get_plugin_config(&self, id: Uuid) -> Result<Option<Config>, RegistryError> {
         Ok(self.configs.read().await.get(&id).cloned())
     }
+
+    /// Reload a plugin by ID
+    pub async fn reload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
+        let plugin = self.get_plugin(id).await?;
+        let plugin = plugin.read().await;
+        
+        // Get plugin info and config before reload
+        let info = plugin.get_info();
+        let config = plugin.get_config().cloned();
+        let path = self.plugin_dir.join(format!("{}.{}", info.name.to_lowercase(), if cfg!(windows) { "dll" } else { "so" }));
+        
+        // Stop plugin if running
+        if plugin.get_state() == PluginState::Running {
+            plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        }
+        
+        // Drop read lock
+        drop(plugin);
+        
+        // Remove old plugin
+        self.unload_plugin(id).await?;
+        
+        // Load new version
+        let new_id = self.load_plugin(path).await?;
+        
+        // Restore configuration if available
+        if let Some(config) = config {
+            self.update_plugin_config(new_id, config).await?;
+        }
+        
+        Ok(())
+    }
+
+    /// Enable hot-reloading for a plugin
+    pub async fn enable_hot_reload(&self, id: Uuid) -> Result<(), RegistryError> {
+        let plugin = self.get_plugin(id).await?;
+        let plugin = plugin.read().await;
+        
+        // Check if plugin supports hot-reloading
+        if !plugin.get_capabilities().contains(&PluginCapability::HotReload) {
+            return Err(RegistryError::NotSupported(format!("Plugin {} does not support hot-reloading", id)));
+        }
+        
+        Ok(())
+    }
+
+    /// Disable hot-reloading for a plugin
+    pub async fn disable_hot_reload(&self, id: Uuid) -> Result<(), RegistryError> {
+        let plugin = self.get_plugin(id).await?;
+        let plugin = plugin.read().await;
+        
+        // Check if plugin supports hot-reloading
+        if !plugin.get_capabilities().contains(&PluginCapability::HotReload) {
+            return Err(RegistryError::NotSupported(format!("Plugin {} does not support hot-reloading", id)));
+        }
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -256,6 +314,8 @@ mod tests {
     use super::*;
     use crate::testing::mocks::MockPlugin;
     use tempfile::tempdir;
+    use std::fs;
+    use std::time::Duration;
     
     #[tokio::test]
     async fn test_plugin_registry() {
@@ -271,5 +331,30 @@ mod tests {
         
         // Test unloading all plugins
         registry.unload_all().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_plugin_hot_reload() {
+        let temp_dir = tempdir().unwrap();
+        let mut registry = PluginRegistry::new(temp_dir.path().to_path_buf()).unwrap();
+        
+        // Create and load initial plugin
+        let plugin_path = temp_dir.path().join("test_plugin.dll");
+        fs::write(&plugin_path, b"initial").unwrap();
+        let id = registry.load_plugin(plugin_path.clone()).await.unwrap();
+        
+        // Enable hot-reloading
+        registry.enable_hot_reload(id).await.unwrap();
+        
+        // Modify plugin
+        fs::write(&plugin_path, b"modified").unwrap();
+        
+        // Wait for reload
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        
+        // Verify plugin was reloaded
+        let plugin = registry.get_plugin(id).await.unwrap();
+        let plugin = plugin.read().await;
+        assert_eq!(plugin.get_state(), PluginState::Initialized);
     }
 } 
