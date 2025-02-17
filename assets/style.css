@@ -1,0 +1,97 @@
+/* Main window styles */
+window {
+    background-color: #f0f0f0;
+}
+
+/* Tree view styles */
+treeview {
+    background-color: white;
+    border: 1px solid #ccc;
+}
+
+treeview:selected {
+    background-color: #4a90d9;
+    color: white;
+}
+
+/* Dialog styles */
+dialog {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+dialog > box {
+    margin: 8px;
+}
+
+/* Entry styles */
+entry {
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+entry:focus {
+    border-color: #4a90d9;
+}
+
+/* Button styles */
+button {
+    min-height: 24px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: linear-gradient(to bottom, #ffffff, #f0f0f0);
+}
+
+button:hover {
+    background: linear-gradient(to bottom, #f0f0f0, #e5e5e5);
+}
+
+button:active {
+    background: #e0e0e0;
+}
+
+/* Grid styles */
+grid {
+    row-spacing: 8px;
+    column-spacing: 8px;
+}
+
+/* Label styles */
+label {
+    padding: 4px;
+}
+
+/* Scrolled window styles */
+scrolledwindow {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Toolbar styles */
+toolbar {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    padding: 4px;
+}
+
+/* Menu styles */
+menu {
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 0;
+}
+
+menuitem {
+    padding: 6px 12px;
+}
+
+menuitem:hover {
+    background-color: #4a90d9;
+    color: white;
+} 
