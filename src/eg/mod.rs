@@ -4,6 +4,8 @@ pub mod classes;
 pub mod winapi;
 pub mod bunch;
 pub mod globals;
+pub mod config;
+pub mod styles;
 
 use crate::core::event::EventManager;
 use crate::core::PluginRegistry;
@@ -11,6 +13,8 @@ use crate::core::Error;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::path::PathBuf;
+
+pub use classes::*;
 
 pub struct EventGhost {
     event_manager: EventManager,
