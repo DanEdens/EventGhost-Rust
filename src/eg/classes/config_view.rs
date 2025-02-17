@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::eg::config::{Config, ConfigItem, Plugin, Folder, Macro, Event, Action};
+use super::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
 
 /// Column indices for the tree store
 const COL_NAME: i32 = 0;
@@ -115,55 +116,116 @@ impl ConfigView {
         let action_group = SimpleActionGroup::new();
         
         // Add actions
+        let tree_view = self.tree_view.clone();
         let tree_store = self.tree_store.clone();
         let config = self.config.clone();
 
         let add_plugin_action = SimpleAction::new("add-plugin", None);
-        add_plugin_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Add plugin");
-            // TODO: Show add plugin dialog
+        add_plugin_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            let dialog = PluginDialog::new();
+            if let Some(plugin) = dialog.run_for_new() {
+                if let Some((model, iter)) = tree_view.selection().selected() {
+                    let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                    config_view.add_item_to_tree(ConfigItem::Plugin(plugin), Some(&iter));
+                }
+            }
         }));
         action_group.add_action(&add_plugin_action);
 
         let add_folder_action = SimpleAction::new("add-folder", None);
-        add_folder_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Add folder");
-            // TODO: Show add folder dialog
+        add_folder_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            let dialog = FolderDialog::new();
+            if let Some(folder) = dialog.run_for_new() {
+                if let Some((model, iter)) = tree_view.selection().selected() {
+                    let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                    config_view.add_item_to_tree(ConfigItem::Folder(folder), Some(&iter));
+                }
+            }
         }));
         action_group.add_action(&add_folder_action);
 
         let add_macro_action = SimpleAction::new("add-macro", None);
-        add_macro_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Add macro");
-            // TODO: Show add macro dialog
+        add_macro_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            let dialog = MacroDialog::new();
+            if let Some(macro_) = dialog.run_for_new() {
+                if let Some((model, iter)) = tree_view.selection().selected() {
+                    let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                    config_view.add_item_to_tree(ConfigItem::Macro(macro_), Some(&iter));
+                }
+            }
         }));
         action_group.add_action(&add_macro_action);
 
         let add_event_action = SimpleAction::new("add-event", None);
-        add_event_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Add event");
-            // TODO: Show add event dialog
+        add_event_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            let dialog = EventDialog::new();
+            if let Some(event) = dialog.run_for_new() {
+                if let Some((model, iter)) = tree_view.selection().selected() {
+                    let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                    config_view.add_item_to_tree(ConfigItem::Event(event), Some(&iter));
+                }
+            }
         }));
         action_group.add_action(&add_event_action);
 
         let add_action_action = SimpleAction::new("add-action", None);
-        add_action_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Add action");
-            // TODO: Show add action dialog
+        add_action_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            let dialog = ActionDialog::new();
+            if let Some(action) = dialog.run_for_new() {
+                if let Some((model, iter)) = tree_view.selection().selected() {
+                    let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                    config_view.add_item_to_tree(ConfigItem::Action(action), Some(&iter));
+                }
+            }
         }));
         action_group.add_action(&add_action_action);
 
         let edit_action = SimpleAction::new("edit", None);
-        edit_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Edit item");
-            // TODO: Show edit dialog
+        edit_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            if let Some((model, iter)) = tree_view.selection().selected() {
+                if let Some(id_str) = model.get_value(&iter, COL_ID as i32).get::<String>().ok() {
+                    if let Ok(id) = Uuid::parse_str(&id_str) {
+                        let config = config.borrow();
+                        if let Some(item) = config.find_item(id) {
+                            let edited_item = match item {
+                                ConfigItem::Plugin(plugin) => {
+                                    let dialog = PluginDialog::new();
+                                    dialog.run_for_edit(plugin).map(ConfigItem::Plugin)
+                                }
+                                ConfigItem::Folder(folder) => {
+                                    let dialog = FolderDialog::new();
+                                    dialog.run_for_edit(folder).map(ConfigItem::Folder)
+                                }
+                                ConfigItem::Macro(macro_) => {
+                                    let dialog = MacroDialog::new();
+                                    dialog.run_for_edit(macro_).map(ConfigItem::Macro)
+                                }
+                                ConfigItem::Event(event) => {
+                                    let dialog = EventDialog::new();
+                                    dialog.run_for_edit(event).map(ConfigItem::Event)
+                                }
+                                ConfigItem::Action(action) => {
+                                    let dialog = ActionDialog::new();
+                                    dialog.run_for_edit(action).map(ConfigItem::Action)
+                                }
+                            };
+                            if let Some(edited_item) = edited_item {
+                                let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config: config.clone() };
+                                config_view.update_item_in_tree(&iter, &edited_item);
+                            }
+                        }
+                    }
+                }
+            }
         }));
         action_group.add_action(&edit_action);
 
         let delete_action = SimpleAction::new("delete", None);
-        delete_action.connect_activate(glib::clone!(@weak tree_store, @weak config => move |_, _| {
-            println!("Delete item");
-            // TODO: Show delete confirmation
+        delete_action.connect_activate(glib::clone!(@weak tree_view, @weak tree_store, @weak config => move |_, _| {
+            if let Some((_, iter)) = tree_view.selection().selected() {
+                let config_view = ConfigView { container: Box::new(gtk::Orientation::Vertical, 0), tree_view: tree_view.clone(), tree_store, config };
+                config_view.remove_item_from_tree(&iter);
+            }
         }));
         action_group.add_action(&delete_action);
 
