@@ -7,6 +7,12 @@ use crate::core::Error;
 use std::sync::{Arc, Mutex};
 use gdk::DragAction;
 use super::UIComponent;
+use gtk::TreeView;
+use gtk::TreeStore;
+use gtk::TreeIter;
+use gtk::TreePath;
+use gdk4::ModifierType;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub enum DragData {
@@ -235,6 +241,61 @@ impl DropTargetWrapper {
     }
 }
 
+/// Enables drag and drop for a tree view
+pub fn enable_drag_drop(tree_view: &TreeView, tree_store: &TreeStore) {
+    // Set up drag and drop
+    tree_view.drag_source_set(
+        ModifierType::BUTTON1_MASK,
+        &[DragAction::MOVE],
+    );
+    tree_view.drag_dest_set(
+        gtk::DestDefaults::ALL,
+        &[DragAction::MOVE],
+    );
+    
+    // Handle drag-and-drop signals
+    tree_view.connect_drag_data_received(
+        glib::clone!(@weak tree_store => move |tree_view, _, x, y, selection_data, _, _| {
+            if let Some(target_path) = tree_view.path_at_pos(x as i32, y as i32).map(|(path, _, _, _)| path) {
+                if let Some(source_path_str) = selection_data.text() {
+                    if let Some(source_path) = TreePath::from_str(&source_path_str).ok() {
+                        // Get source and target iterators
+                        if let (Some(source_iter), Some(target_iter)) = (
+                            tree_store.iter(&source_path),
+                            tree_store.iter(&target_path)
+                        ) {
+                            // Don't allow dropping on the same path
+                            if source_path != target_path {
+                                // Get the target's parent
+                                let target_parent = tree_store.iter_parent(&target_iter);
+                                
+                                // Copy the row to the new location
+                                let new_iter = tree_store.insert_after(target_parent.as_ref(), Some(&target_iter));
+                                for i in 0..tree_store.n_columns() {
+                                    if let Some(value) = tree_store.value(&source_iter, i).get::<String>().ok() {
+                                        tree_store.set_value(&new_iter, i as u32, &value.to_value());
+                                    }
+                                }
+                                
+                                // Remove the original row
+                                tree_store.remove(&source_iter);
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    );
+    
+    tree_view.connect_drag_data_get(move |tree_view, _, selection_data, _, _| {
+        if let Some((_, iter)) = tree_view.selection().selected() {
+            if let Some(path) = tree_view.model().unwrap().path(&iter) {
+                selection_data.set_text(&path.to_string());
+            }
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,5 +329,22 @@ mod tests {
             assert_eq!(paths.len(), 1);
             assert_eq!(paths[0], test_path);
         });
+    }
+    
+    #[test]
+    fn test_enable_drag_drop() {
+        gtk::init().expect("Failed to initialize GTK");
+        
+        let tree_store = TreeStore::new(&[
+            glib::Type::STRING, // name
+            glib::Type::STRING, // type
+            glib::Type::STRING, // icon
+            glib::Type::STRING, // id
+        ]);
+        
+        let tree_view = TreeView::with_model(&tree_store);
+        
+        // This should not panic
+        enable_drag_drop(&tree_view, &tree_store);
     }
 } 
