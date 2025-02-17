@@ -20,7 +20,7 @@
 - [ ] Plugin System
   - [x] Plugin traits and registry
   - [x] Plugin discovery and loading infrastructure
-  - [ ] Dynamic library loading implementation
+  - [x] Dynamic library loading implementation
   - [ ] Plugin hot-reloading
   - [ ] Route events to/from plugins
 - [ ] Event Handling  
@@ -41,6 +41,7 @@
 
 ## Plugins
 - [ ] Python plugin loader
+- [x] Example logger plugin
 - [ ] Common plugins (to be defined)
 
 ## Deployment
@@ -54,10 +55,10 @@
 - [x] Contributor guide
 
 ## Next Steps
-1. Complete dynamic library loading for plugins
-2. Implement plugin hot-reloading
-3. Set up event routing system
-4. Create common plugins
+1. Implement plugin hot-reloading
+2. Set up event routing system
+3. Create common plugins
+4. Add import/export functionality
 5. Set up deployment pipeline
 
 
