@@ -1,6 +1,9 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use std::collections::HashMap;
+use std::path::Path;
+use std::fs;
+use std::io;
 
 /// Represents a plugin instance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,11 +131,25 @@ impl Config {
     pub fn find_item_mut(&mut self, id: Uuid) -> Option<&mut ConfigItem> {
         self.items.iter_mut().find(|item| item.id() == id)
     }
+
+    /// Saves the configuration to a file in JSON format.
+    pub fn save_to_file(&self, path: &Path) -> io::Result<()> {
+        let json = serde_json::to_string_pretty(self)?;
+        fs::write(path, json)
+    }
+
+    /// Loads the configuration from a file in JSON format.
+    pub fn load_from_file(path: &Path) -> io::Result<Self> {
+        let json = fs::read_to_string(path)?;
+        let config = serde_json::from_str(&json)?;
+        Ok(config)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
     
     #[test]
     fn test_config_crud() {
@@ -163,5 +180,48 @@ mod tests {
         // Remove the folder
         config.remove_item(folder.id);
         assert_eq!(config.items.len(), 1);
+    }
+
+    #[test]
+    fn test_config_persistence() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("config.json");
+
+        // Create a test configuration
+        let mut config = Config::new();
+        
+        let plugin = Plugin {
+            id: Uuid::new_v4(),
+            name: "Test Plugin".to_string(),
+            config: HashMap::new(),
+        };
+        config.add_item(ConfigItem::Plugin(plugin));
+        
+        let folder = Folder {
+            id: Uuid::new_v4(),
+            name: "Test Folder".to_string(),
+        };
+        config.add_item(ConfigItem::Folder(folder));
+
+        // Save to file
+        config.save_to_file(&file_path).unwrap();
+
+        // Load from file
+        let loaded_config = Config::load_from_file(&file_path).unwrap();
+
+        // Verify loaded configuration
+        assert_eq!(loaded_config.items.len(), 2);
+        
+        // Find the plugin
+        let plugin = loaded_config.items.iter().find(|item| {
+            matches!(item, ConfigItem::Plugin(_))
+        }).unwrap();
+        assert_eq!(plugin.name(), "Test Plugin");
+
+        // Find the folder
+        let folder = loaded_config.items.iter().find(|item| {
+            matches!(item, ConfigItem::Folder(_))
+        }).unwrap();
+        assert_eq!(folder.name(), "Test Folder");
     }
 } 

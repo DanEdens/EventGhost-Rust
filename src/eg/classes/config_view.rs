@@ -5,6 +5,7 @@ use glib;
 use uuid::Uuid;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::path::{Path, PathBuf};
 
 use crate::eg::config::{Config, ConfigItem, Plugin, Folder, Macro, Event, Action};
 use super::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
@@ -25,6 +26,8 @@ pub struct ConfigView {
     tree_store: TreeStore,
     /// The configuration data
     config: Rc<RefCell<Config>>,
+    /// The path to save the configuration to
+    config_path: Option<PathBuf>,
 }
 
 impl ConfigView {
@@ -135,6 +138,7 @@ impl ConfigView {
             tree_view,
             tree_store,
             config,
+            config_path: None,
         };
 
         // Set up context menu
@@ -147,6 +151,37 @@ impl ConfigView {
         config_view.add_root_folders();
 
         config_view
+    }
+
+    /// Sets the path to save the configuration to.
+    pub fn set_config_path<P: AsRef<Path>>(&mut self, path: P) {
+        self.config_path = Some(path.as_ref().to_path_buf());
+    }
+
+    /// Saves the configuration to disk if a path is set.
+    fn save_config(&self) {
+        if let Some(path) = &self.config_path {
+            if let Err(err) = self.config.borrow().save_to_file(path) {
+                eprintln!("Failed to save configuration: {}", err);
+            }
+        }
+    }
+
+    /// Loads the configuration from disk.
+    pub fn load_config<P: AsRef<Path>>(&mut self, path: P) -> std::io::Result<()> {
+        let config = Config::load_from_file(path.as_ref())?;
+        self.config = Rc::new(RefCell::new(config));
+        self.config_path = Some(path.as_ref().to_path_buf());
+        
+        // Clear the tree store
+        self.tree_store.clear();
+        
+        // Add all items to the tree
+        for item in self.config.borrow().items.iter() {
+            self.add_item_to_tree(item.clone(), None);
+        }
+        
+        Ok(())
     }
 
     /// Sets up the context menu for the tree view
@@ -336,6 +371,9 @@ impl ConfigView {
         // Add to configuration
         self.config.borrow_mut().add_item(item);
 
+        // Save changes
+        self.save_config();
+
         iter
     }
 
@@ -367,6 +405,9 @@ impl ConfigView {
             if let Ok(id) = Uuid::parse_str(&id_str) {
                 self.config.borrow_mut().remove_item(id);
                 self.tree_store.remove(iter);
+                
+                // Save changes
+                self.save_config();
             }
         }
     }
@@ -376,6 +417,9 @@ impl ConfigView {
         self.tree_store.set_value(iter, COL_NAME as u32, &item.name().to_value());
         self.tree_store.set_value(iter, COL_TYPE as u32, &self.get_item_type(item).to_value());
         self.tree_store.set_value(iter, COL_ICON as u32, &self.get_item_icon(item).to_value());
+        
+        // Save changes
+        self.save_config();
     }
 }
 
