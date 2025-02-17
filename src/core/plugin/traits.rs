@@ -4,6 +4,7 @@ use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use crate::core::{Error, Event};
 use crate::core::config::Config;
+use crate::core::event::{EventHandler, EventType};
 
 /// Metadata about a plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +47,7 @@ pub enum PluginCapability {
 }
 
 /// Plugin state
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PluginState {
     /// Plugin is created but not initialized
     Created,
@@ -57,9 +58,7 @@ pub enum PluginState {
     /// Plugin is stopped
     Stopped,
     /// Plugin has failed
-    Failed,
-    /// Plugin is in error state
-    Error,
+    Error(String),
 }
 
 /// Base trait for plugin functionality
@@ -133,6 +132,29 @@ pub trait Stateful {
     
     /// Restore plugin state
     async fn restore_state(&mut self, state: &[u8]) -> Result<(), Error>;
+}
+
+#[async_trait]
+impl<T: Plugin + Send + Sync> EventHandler for T {
+    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
+        if self.get_capabilities().contains(&PluginCapability::EventHandler) {
+            self.handle_event(event).await
+        } else {
+            Ok(())
+        }
+    }
+    
+    fn get_id(&self) -> &str {
+        &self.get_info().name
+    }
+    
+    fn get_supported_event_types(&self) -> Vec<EventType> {
+        if self.get_capabilities().contains(&PluginCapability::EventHandler) {
+            vec![EventType::Plugin, EventType::System]
+        } else {
+            vec![]
+        }
+    }
 }
 
 #[cfg(test)]

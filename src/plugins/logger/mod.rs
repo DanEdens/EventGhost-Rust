@@ -4,7 +4,8 @@ use std::any::Any;
 use crate::core::plugin::traits::{Plugin, PluginInfo, PluginState, PluginCapability};
 use crate::core::Error;
 use crate::core::config::Config;
-use crate::core::event::Event;
+use crate::core::event::{Event, EventType, EventPayload};
+use log::{info, warn, error};
 
 #[derive(Debug)]
 pub struct LoggerPlugin {
@@ -27,6 +28,7 @@ impl LoggerPlugin {
                 capabilities: vec![
                     PluginCapability::EventHandler,
                     PluginCapability::HotReload,
+                    PluginCapability::ConfigManagement,
                 ],
             },
             state: PluginState::Created,
@@ -45,33 +47,50 @@ impl Plugin for LoggerPlugin {
         vec![
             PluginCapability::EventHandler,
             PluginCapability::HotReload,
+            PluginCapability::ConfigManagement,
         ]
     }
 
     fn get_state(&self) -> PluginState {
-        self.state
+        self.state.clone()
     }
 
     async fn initialize(&mut self) -> Result<(), Error> {
-        println!("[Logger] Initializing...");
+        info!("[Logger] Initializing...");
         self.state = PluginState::Initialized;
         Ok(())
     }
 
     async fn start(&mut self) -> Result<(), Error> {
-        println!("[Logger] Starting...");
+        info!("[Logger] Starting...");
         self.state = PluginState::Running;
         Ok(())
     }
 
     async fn stop(&mut self) -> Result<(), Error> {
-        println!("[Logger] Stopping...");
+        info!("[Logger] Stopping...");
         self.state = PluginState::Stopped;
         Ok(())
     }
 
     async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
-        println!("[Logger] Received event: {:?}", event);
+        match event.get_type() {
+            EventType::System => {
+                info!("[Logger] System event: {:?} from {:?}", event.get_payload(), event.get_source());
+            }
+            EventType::Plugin => {
+                info!("[Logger] Plugin event: {:?} from {:?}", event.get_payload(), event.get_source());
+            }
+            EventType::User => {
+                info!("[Logger] User event: {:?} from {:?}", event.get_payload(), event.get_source());
+            }
+            EventType::Internal => {
+                info!("[Logger] Internal event: {:?} from {:?}", event.get_payload(), event.get_source());
+            }
+            EventType::KeyPress => {
+                info!("[Logger] KeyPress event: {:?} from {:?}", event.get_payload(), event.get_source());
+            }
+        }
         Ok(())
     }
 
@@ -80,7 +99,7 @@ impl Plugin for LoggerPlugin {
     }
 
     async fn update_config(&mut self, config: Config) -> Result<(), Error> {
-        println!("[Logger] Updating config...");
+        info!("[Logger] Updating config...");
         self.config = Some(config);
         Ok(())
     }
@@ -115,6 +134,7 @@ pub extern "C" fn create_plugin() -> *mut dyn Plugin {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::mocks::MockEvent;
 
     #[tokio::test]
     async fn test_logger_plugin() {
@@ -127,6 +147,14 @@ mod tests {
         // Test starting
         plugin.start().await.unwrap();
         assert_eq!(plugin.get_state(), PluginState::Running);
+        
+        // Test event handling
+        let event = MockEvent::new(
+            "test_event",
+            EventType::System,
+            EventPayload::Text("test message".to_string()),
+        );
+        plugin.handle_event(&event).await.unwrap();
         
         // Test stopping
         plugin.stop().await.unwrap();

@@ -22,10 +22,10 @@
   - [x] Plugin discovery and loading infrastructure
   - [x] Dynamic library loading implementation
   - [x] Plugin hot-reloading
-  - [ ] Route events to/from plugins
+  - [x] Route events to/from plugins
 - [ ] Event Handling  
-  - [ ] Event bus / message passing
-  - [ ] Event dispatch and routing
+  - [x] Event bus / message passing
+  - [x] Event dispatch and routing
 - [ ] Macro Execution
   - [ ] Macro execution engine
   - [ ] Map events to macros
