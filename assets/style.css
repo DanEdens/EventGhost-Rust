@@ -1,12 +1,11 @@
 /* Main window styles */
-window {
+.main-window {
     background-color: #f0f0f0;
 }
 
 /* Tree view styles */
 treeview {
     background-color: white;
-    border: 1px solid #ccc;
 }
 
 treeview:selected {
@@ -14,15 +13,21 @@ treeview:selected {
     color: white;
 }
 
+treeview header button {
+    padding: 4px 8px;
+    background: linear-gradient(to bottom, #ffffff, #f0f0f0);
+    border: 1px solid #ccc;
+}
+
 /* Dialog styles */
-dialog {
+window.dialog {
     background-color: #f5f5f5;
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 12px;
 }
 
-dialog > box {
+window.dialog box {
     margin: 8px;
 }
 
@@ -68,6 +73,10 @@ label {
 
 /* Scrolled window styles */
 scrolledwindow {
+    border: none;
+}
+
+scrolledwindow viewport {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -80,18 +89,59 @@ toolbar {
 }
 
 /* Menu styles */
-menu {
+menubar {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    padding: 2px;
+}
+
+popover {
     background-color: white;
     border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 4px 0;
+    padding: 4px;
 }
 
-menuitem {
-    padding: 6px 12px;
+popover contents {
+    padding: 4px;
 }
 
-menuitem:hover {
+menubutton {
+    padding: 4px 8px;
+}
+
+menubutton:hover {
     background-color: #4a90d9;
     color: white;
+}
+
+/* Notebook styles */
+notebook {
+    background-color: #f5f5f5;
+}
+
+notebook header {
+    background-color: #e0e0e0;
+    border-bottom: 1px solid #ccc;
+}
+
+notebook header tabs tab {
+    padding: 4px 8px;
+    margin: 0 1px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: linear-gradient(to bottom, #f0f0f0, #e5e5e5);
+}
+
+notebook header tabs tab:checked {
+    background: #ffffff;
+    border-bottom: 1px solid #ffffff;
+    margin-bottom: -1px;
+}
+
+/* Paned styles */
+paned separator {
+    background-color: #ccc;
+    min-width: 1px;
+    min-height: 1px;
 } 
