@@ -6,13 +6,15 @@
 - [x] Tool bar
 - [x] Status bar
 - [x] Log window
-- [ ] Configuration view
-  - [ ] UI for adding/editing plugins, folders, macros, events, actions
-  - [ ] Integrate with main window 
-- [ ] Tree view
-  - [ ] Hierarchical view of plugins, folders, macros, events, actions
-  - [ ] Context menu
-  - [ ] Drag and drop support
+- [x] Configuration view
+  - [x] UI for adding/editing plugins, folders, macros, events, actions
+  - [x] Integrate with main window 
+- [x] Tree view
+  - [x] Hierarchical view of plugins, folders, macros, events, actions
+  - [x] Context menu
+  - [x] Drag and drop support
+  - [x] Parent-child validation
+  - [x] Auto-save functionality
 
 ## Core
 - [ ] Plugin System
@@ -30,9 +32,9 @@
   - [ ] Execute action sequences
   - [ ] Builtin actions
   - [ ] Plugin-defined actions
-- [ ] Persistence
-  - [ ] Save/load configuration
-  - [ ] Auto-save
+- [x] Persistence
+  - [x] Save/load configuration
+  - [x] Auto-save
   - [ ] Import/export  
 
 ## Plugins
@@ -45,8 +47,15 @@
 - [ ] Mac bundle
 
 ## Documentation
-- [ ] User guide
+- [x] User guide
 - [ ] API docs for plugins
-- [ ] Contributor guide
+- [x] Contributor guide
+
+## Next Steps
+1. Complete plugin system implementation
+2. Implement event handling and macro execution
+3. Add import/export functionality for configurations
+4. Create common plugins
+5. Set up deployment pipeline
 
 

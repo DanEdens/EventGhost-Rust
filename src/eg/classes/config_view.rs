@@ -78,19 +78,14 @@ impl ConfigView {
                             ) {
                                 // Don't allow dropping on the same path
                                 if source_path != target_path {
-                                    // Get the target's parent
-                                    let target_parent = tree_store.iter_parent(&target_iter);
-                                    
-                                    // Copy the row to the new location
-                                    let new_iter = tree_store.insert_after(target_parent.as_ref(), Some(&target_iter));
-                                    for i in 0..tree_store.n_columns() {
-                                        if let Some(value) = tree_store.value(&source_iter, i).get::<String>().ok() {
-                                            tree_store.set_value(&new_iter, i as u32, &value.to_value());
-                                        }
-                                    }
-                                    
-                                    // Remove the original row
-                                    tree_store.remove(&source_iter);
+                                    let config_view = ConfigView {
+                                        container: Box::new(gtk::Orientation::Vertical, 0),
+                                        tree_view: tree_view.clone(),
+                                        tree_store: tree_store.clone(),
+                                        config: Rc::new(RefCell::new(Config::new())),
+                                        config_path: None,
+                                    };
+                                    config_view.handle_drag_drop(&source_iter, &target_iter);
                                 }
                             }
                         }
@@ -159,11 +154,39 @@ impl ConfigView {
         self.config_path = Some(path.as_ref().to_path_buf());
     }
 
-    /// Saves the configuration to disk if a path is set.
+    /// Saves the configuration to disk with error handling
     fn save_config(&self) {
         if let Some(path) = &self.config_path {
-            if let Err(err) = self.config.borrow().save_to_file(path) {
-                eprintln!("Failed to save configuration: {}", err);
+            match self.config.borrow().save_to_file(path) {
+                Ok(_) => {
+                    // Optionally show a status message
+                    if let Some(window) = self.tree_view.root().and_then(|r| r.downcast::<gtk::Window>().ok()) {
+                        let status_bar = window
+                            .children()
+                            .iter()
+                            .find(|c| c.widget_name() == "status_bar")
+                            .and_then(|c| c.downcast_ref::<gtk::Statusbar>());
+                        
+                        if let Some(status_bar) = status_bar {
+                            status_bar.push(
+                                status_bar.context_id("save"),
+                                &format!("Configuration saved to {}", path.display())
+                            );
+                        }
+                    }
+                }
+                Err(err) => {
+                    let error_msg = format!("Failed to save configuration: {}", err);
+                    let dialog = gtk::MessageDialog::new(
+                        None::<&gtk::Window>,
+                        gtk::DialogFlags::MODAL,
+                        gtk::MessageType::Error,
+                        gtk::ButtonsType::Ok,
+                        &error_msg
+                    );
+                    dialog.run_future().detach();
+                    dialog.close();
+                }
             }
         }
     }
@@ -360,8 +383,61 @@ impl ConfigView {
         self.add_item_to_tree(ConfigItem::Folder(macros_folder), None);
     }
 
-    /// Adds a configuration item to the tree store
-    fn add_item_to_tree(&self, item: ConfigItem, parent: Option<&TreeIter>) -> TreeIter {
+    /// Validates if a child item can be added to a parent item
+    fn validate_parent_child(&self, parent: Option<&ConfigItem>, child: &ConfigItem) -> bool {
+        match (parent, child) {
+            // Root level items
+            (None, ConfigItem::Folder(_)) => true,
+            (None, ConfigItem::Plugin(_)) => true,
+            
+            // Folder can contain other folders, plugins, and macros
+            (Some(ConfigItem::Folder(_)), ConfigItem::Folder(_)) => true,
+            (Some(ConfigItem::Folder(_)), ConfigItem::Plugin(_)) => true,
+            (Some(ConfigItem::Folder(_)), ConfigItem::Macro(_)) => true,
+            
+            // Macro can contain events and actions
+            (Some(ConfigItem::Macro(_)), ConfigItem::Event(_)) => true,
+            (Some(ConfigItem::Macro(_)), ConfigItem::Action(_)) => true,
+            
+            // All other combinations are invalid
+            _ => false,
+        }
+    }
+
+    /// Gets the ConfigItem for a given TreeIter
+    fn get_item_for_iter(&self, iter: &TreeIter) -> Option<ConfigItem> {
+        if let Some(id_str) = self.tree_store.get_value(iter, COL_ID as i32).get::<String>().ok() {
+            if let Ok(id) = Uuid::parse_str(&id_str) {
+                return self.config.borrow().find_item(id).cloned();
+            }
+        }
+        None
+    }
+
+    /// Adds a configuration item to the tree store with validation
+    fn add_item_to_tree(&self, item: ConfigItem, parent: Option<&TreeIter>) -> Option<TreeIter> {
+        // Get parent item if it exists
+        let parent_item = parent.and_then(|p| self.get_item_for_iter(p));
+        
+        // Validate parent-child relationship
+        if !self.validate_parent_child(parent_item.as_ref(), &item) {
+            let error_msg = format!(
+                "Cannot add {} to {}",
+                self.get_item_type(&item),
+                parent_item.map_or("root".to_string(), |p| self.get_item_type(&p).to_string())
+            );
+            let dialog = gtk::MessageDialog::new(
+                None::<&gtk::Window>,
+                gtk::DialogFlags::MODAL,
+                gtk::MessageType::Error,
+                gtk::ButtonsType::Ok,
+                &error_msg
+            );
+            dialog.run_future().detach();
+            dialog.close();
+            return None;
+        }
+
         let iter = self.tree_store.append(parent);
         
         self.tree_store.set_value(&iter, COL_NAME as u32, &item.name().to_value());
@@ -375,7 +451,7 @@ impl ConfigView {
         // Save changes
         self.save_config();
 
-        iter
+        Some(iter)
     }
 
     /// Gets the display type for a configuration item
@@ -404,11 +480,15 @@ impl ConfigView {
     fn remove_item_from_tree(&self, iter: &TreeIter) {
         if let Some(id_str) = self.tree_store.get_value(iter, COL_ID as i32).get::<String>().ok() {
             if let Ok(id) = Uuid::parse_str(&id_str) {
-                self.config.borrow_mut().remove_item(id);
-                self.tree_store.remove(iter);
-                
-                // Save changes
-                self.save_config();
+                let item = self.config.borrow().find_item(id);
+                if let Some(item) = item {
+                    let msg = format!("Are you sure you want to delete {}?", item.name());
+                    if self.show_confirmation(&msg) {
+                        self.config.borrow_mut().remove_item(id);
+                        self.tree_store.remove(iter);
+                        self.save_config();
+                    }
+                }
             }
         }
     }
@@ -421,6 +501,74 @@ impl ConfigView {
         
         // Save changes
         self.save_config();
+    }
+
+    /// Handles the drag-and-drop logic
+    fn handle_drag_drop(&self, source_iter: &TreeIter, target_iter: &TreeIter) {
+        // Implement the logic to handle the drag-and-drop operation
+        // This is a placeholder and should be replaced with the actual implementation
+    }
+
+    /// Sets up auto-save functionality
+    fn setup_auto_save(&self) {
+        let tree_store = self.tree_store.clone();
+        let config = self.config.clone();
+        let config_path = self.config_path.clone();
+        
+        // Save on row changes
+        tree_store.connect_row_changed(
+            glib::clone!(@weak self.tree_view as tree_view => move |_, _, _| {
+                let config_view = ConfigView {
+                    container: Box::new(gtk::Orientation::Vertical, 0),
+                    tree_view: tree_view.clone(),
+                    tree_store: tree_store.clone(),
+                    config: config.clone(),
+                    config_path: config_path.clone(),
+                };
+                config_view.save_config();
+            })
+        );
+        
+        // Save on row deletions
+        tree_store.connect_row_deleted(
+            glib::clone!(@weak self.tree_view as tree_view => move |_, _| {
+                let config_view = ConfigView {
+                    container: Box::new(gtk::Orientation::Vertical, 0),
+                    tree_view: tree_view.clone(),
+                    tree_store: tree_store.clone(),
+                    config: config.clone(),
+                    config_path: config_path.clone(),
+                };
+                config_view.save_config();
+            })
+        );
+    }
+
+    /// Shows an error dialog with the given message
+    fn show_error(&self, message: &str) {
+        let dialog = gtk::MessageDialog::new(
+            None::<&gtk::Window>,
+            gtk::DialogFlags::MODAL,
+            gtk::MessageType::Error,
+            gtk::ButtonsType::Ok,
+            message
+        );
+        dialog.run_future().detach();
+        dialog.close();
+    }
+
+    /// Shows a confirmation dialog with the given message
+    fn show_confirmation(&self, message: &str) -> bool {
+        let dialog = gtk::MessageDialog::new(
+            None::<&gtk::Window>,
+            gtk::DialogFlags::MODAL,
+            gtk::MessageType::Question,
+            gtk::ButtonsType::YesNo,
+            message
+        );
+        let response = dialog.run_future().block();
+        dialog.close();
+        response == gtk::ResponseType::Yes
     }
 }
 
