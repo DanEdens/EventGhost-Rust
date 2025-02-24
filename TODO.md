@@ -94,10 +94,10 @@
   - [ ] Execution log integration
 
 ### Standard Actions
-- [ ] Flow Control Actions
+- [x] Flow Control Actions
   - [ ] Conditional execution (If/Else)
   - [ ] Loops (While/For)
-  - [ ] Delay/Wait
+  - [x] Delay/Wait
   - [ ] Jump to macro
 - [ ] System Actions
   - [ ] Execute program
@@ -114,16 +114,16 @@
   - [ ] String operations
 
 ### Plugin Integration
-- [ ] Action registration API
-  - [ ] Plugin action discovery
+- [x] Action registration API
+  - [x] Plugin action discovery
   - [ ] Dynamic action loading
   - [ ] Version compatibility checking
 - [ ] Action documentation
   - [ ] Help page generation
   - [ ] Example code
   - [ ] Parameter documentation
-- [ ] Action testing framework
-  - [ ] Unit test helpers
+- [x] Action testing framework
+  - [x] Unit test helpers
   - [ ] Integration test support
   - [ ] Mock event generation
 
@@ -148,7 +148,7 @@
   - [ ] Troubleshooting guide
 
 ## Next Steps (Priority Order)
-1. Implement basic flow control actions (If/Else, Delay)
+1. Implement remaining flow control actions (If/Else)
 2. Add action configuration UI
 3. Create system action implementations
 4. Implement action thread management
