@@ -63,7 +63,7 @@ pub enum PluginState {
 
 /// Base trait for plugin functionality
 #[async_trait]
-pub trait Plugin: Send + Sync + Clone {
+pub trait Plugin: Send + Sync {
     /// Get plugin information
     fn get_info(&self) -> PluginInfo;
     
@@ -105,6 +105,9 @@ pub trait Plugin: Send + Sync + Clone {
     
     /// Get plugin version
     fn get_version(&self) -> &str;
+
+    /// Clone the plugin
+    fn clone_box(&self) -> Box<dyn Plugin>;
 }
 
 /// Trait for plugins that can generate events
@@ -145,7 +148,7 @@ impl<T: Plugin + Send + Sync> EventHandler for T {
     }
     
     fn get_id(&self) -> &str {
-        &self.get_info().name
+        self.get_name()
     }
     
     fn get_supported_event_types(&self) -> Vec<EventType> {
@@ -154,6 +157,13 @@ impl<T: Plugin + Send + Sync> EventHandler for T {
         } else {
             vec![]
         }
+    }
+}
+
+// Add a blanket implementation for cloning boxed plugins
+impl Clone for Box<dyn Plugin> {
+    fn clone(&self) -> Self {
+        self.clone_box()
     }
 }
 
@@ -223,6 +233,10 @@ mod tests {
 
         fn get_version(&self) -> &str {
             &self.info.version
+        }
+
+        fn clone_box(&self) -> Box<dyn Plugin> {
+            Box::new(self.clone())
         }
     }
 

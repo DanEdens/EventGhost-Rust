@@ -7,7 +7,7 @@ use crate::core::config::Config;
 use crate::core::event::{Event, EventType, EventPayload};
 use log::{info, warn, error};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoggerPlugin {
     info: PluginInfo,
     state: PluginState,
@@ -122,6 +122,10 @@ impl Plugin for LoggerPlugin {
 
     fn get_version(&self) -> &str {
         &self.info.version
+    }
+
+    fn clone_box(&self) -> Box<dyn Plugin> {
+        Box::new(self.clone())
     }
 }
 

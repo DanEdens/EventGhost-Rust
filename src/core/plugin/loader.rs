@@ -180,7 +180,7 @@ impl PluginLoader {
             return Err(LoaderError::LoadFailed("Plugin creation returned null".into()));
         }
 
-        let plugin = unsafe { Box::from_raw(plugin_ptr) };
+        let mut plugin = unsafe { Box::from_raw(plugin_ptr) };
 
         // Initialize plugin
         plugin.initialize().await
@@ -197,9 +197,11 @@ impl PluginLoader {
 
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
-        if let Some(pos) = plugins.iter().position(|p| p.get_info().await.id == id) {
+        if let Some(pos) = plugins.iter().position(|p| async move {
+            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
+        }.await) {
             let plugin = &mut plugins[pos];
-            if plugin.get_state().await == PluginState::Running {
+            if plugin.get_state().await?.eq(&PluginState::Running) {
                 plugin.stop().await?;
             }
             plugins.remove(pos);
@@ -211,23 +213,29 @@ impl PluginLoader {
 
     pub async fn get_plugin(&self, id: Uuid) -> Option<Arc<RwLock<Box<dyn Plugin + Send + Sync>>>> {
         let plugins = self.plugins.read().await;
-        plugins.iter()
-            .find(|p| p.get_info().await.id == id)
-            .map(|p| p.plugin.clone())
+        for p in plugins.iter() {
+            if let Ok(info) = p.get_info().await {
+                if info.id == id {
+                    return Some(p.plugin.clone());
+                }
+            }
+        }
+        None
     }
 
     pub async fn reload_plugin(&self, id: Uuid) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins.iter().position(|p| p.get_info().await.id == id)
-            .ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
+        let plugin_index = plugins.iter().position(|p| async move {
+            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
+        }.await).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
         let plugin = &plugins[plugin_index];
         let path = plugin.path.clone();
         
         // Stop the plugin if it's running
-        if plugin.get_state().await == PluginState::Running {
+        if plugin.get_state().await?.eq(&PluginState::Running) {
             plugin.stop().await?;
         }
         
@@ -245,15 +253,16 @@ impl PluginLoader {
         let mut plugins_guard = plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins_guard.iter().position(|p| p.get_info().await.id == id)
-            .ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
+        let plugin_index = plugins_guard.iter().position(|p| async move {
+            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
+        }.await).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
         let plugin = &plugins_guard[plugin_index];
         let path = plugin.path.clone();
-        let config = plugin.get_config().await;
+        let config = plugin.get_config().await?;
         
         // Stop the plugin if it's running
-        if plugin.get_state().await == PluginState::Running {
+        if plugin.get_state().await?.eq(&PluginState::Running) {
             plugin.stop().await?;
         }
         
