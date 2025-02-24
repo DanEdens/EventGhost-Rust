@@ -9,6 +9,7 @@ use super::Plugin;
 use super::traits::{PluginState, PluginInfo};
 use crate::core::config::Config;
 use tokio::fs;
+use futures::executor;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LoaderError {
@@ -197,9 +198,10 @@ impl PluginLoader {
 
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
-        if let Some(pos) = plugins.iter().position(|p| async move {
-            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
-        }.await) {
+        if let Some(pos) = plugins.iter().position(|p| {
+            let info = executor::block_on(p.get_info());
+            info.map(|info| info.id == id).unwrap_or(false)
+        }) {
             let plugin = &mut plugins[pos];
             if plugin.get_state().await?.eq(&PluginState::Running) {
                 plugin.stop().await?;
@@ -227,9 +229,10 @@ impl PluginLoader {
         let mut plugins = self.plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins.iter().position(|p| async move {
-            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
-        }.await).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
+        let plugin_index = plugins.iter().position(|p| {
+            let info = executor::block_on(p.get_info());
+            info.map(|info| info.id == id).unwrap_or(false)
+        }).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
         let plugin = &plugins[plugin_index];
         let path = plugin.path.clone();
@@ -253,9 +256,10 @@ impl PluginLoader {
         let mut plugins_guard = plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins_guard.iter().position(|p| async move {
-            p.get_info().await.map(|info| info.id == id).unwrap_or(false)
-        }.await).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
+        let plugin_index = plugins_guard.iter().position(|p| {
+            let info = executor::block_on(p.get_info());
+            info.map(|info| info.id == id).unwrap_or(false)
+        }).ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
         let plugin = &plugins_guard[plugin_index];
         let path = plugin.path.clone();

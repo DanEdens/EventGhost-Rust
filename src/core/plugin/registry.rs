@@ -12,6 +12,7 @@ use super::loader::{PluginLoader, LoaderError};
 // use thiserror::Error;
 use super::PluginCapability;
 use tokio::fs;
+use futures::executor;
 
 
 /// Error type for plugin registry operations
@@ -153,7 +154,7 @@ impl PluginRegistry {
         {
             let plugin_ref = plugin.read().await;
             if let Some(config) = plugin_ref.get_config() {
-                self.configs.write().await.insert(id, config);
+                self.configs.write().await.insert(id, config.clone());
             }
         }
         
@@ -164,21 +165,25 @@ impl PluginRegistry {
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
         let mut plugins = self.plugins.write().await;
         let index = plugins.iter().position(|p| {
-            let plugin = p.read().await;
-            plugin.get_info().id == id
-        }).ok_or_else(|| RegistryError::NotFound(id.to_string()))?;
+            let plugin = futures::executor::block_on(p.read());
+            plugin.get_info().map(|info| info.id == id).unwrap_or(false)
+        });
+        
+        if index.is_none() {
+            return Err(RegistryError::NotFound(id.to_string()));
+        }
         
         // Stop plugin if running
         {
-            let plugin = &plugins[index];
-            let mut plugin = plugin.write().await;
+            let plugin = &plugins[index.unwrap()];
+            let mut plugin = futures::executor::block_on(plugin.write());
             if plugin.get_state() == PluginState::Running {
                 plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
             }
         }
         
         // Remove plugin
-        plugins.remove(index);
+        plugins.remove(index.unwrap());
         self.configs.write().await.remove(&id);
         
         Ok(())
@@ -187,13 +192,16 @@ impl PluginRegistry {
     /// Get a plugin by ID
     pub async fn get_plugin(&self, id: Uuid) -> Result<Arc<RwLock<Box<dyn Plugin>>>, RegistryError> {
         let plugins = self.plugins.read().await;
-        for plugin in plugins.iter() {
-            let plugin_ref = plugin.read().await;
-            if plugin_ref.get_info().id == id {
-                return Ok(plugin.clone());
-            }
+        let index = plugins.iter().position(|p| {
+            let plugin = futures::executor::block_on(p.read());
+            plugin.get_info().map(|info| info.id == id).unwrap_or(false)
+        });
+        
+        if index.is_none() {
+            return Err(RegistryError::NotFound(id.to_string()));
         }
-        Err(RegistryError::NotFound(id.to_string()))
+        
+        Ok(plugins[index.unwrap()].clone())
     }
 
     /// Get all loaded plugins
@@ -201,7 +209,7 @@ impl PluginRegistry {
         let plugins = self.plugins.read().await;
         let mut infos = Vec::new();
         for plugin in plugins.iter() {
-            let plugin = plugin.read().await;
+            let plugin = futures::executor::block_on(plugin.read());
             infos.push(plugin.get_info());
         }
         infos
@@ -226,10 +234,10 @@ impl PluginRegistry {
     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
         let plugins = self.plugins.read().await;
         if let Some(plugin) = plugins.iter().find(|p| {
-            let plugin_ref = p.read().await;
-            plugin_ref.get_info().id == id
+            let plugin_ref = futures::executor::block_on(p.read());
+            plugin_ref.get_info().map(|info| info.id == id).unwrap_or(false)
         }) {
-            let mut plugin = plugin.write().await;
+            let mut plugin = futures::executor::block_on(plugin.write());
             plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
         }
         Ok(())
@@ -243,7 +251,7 @@ impl PluginRegistry {
         plugin.update_config(config.clone()).await
             .map_err(|e| RegistryError::Plugin(e.to_string()))?;
             
-        self.configs.write().await.insert(id, config);
+        self.configs.write().await.insert(id, config.clone());
         
         Ok(())
     }
@@ -256,7 +264,7 @@ impl PluginRegistry {
     /// Reload a plugin by ID
     pub async fn reload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
         let plugin = self.get_plugin(id).await?;
-        let plugin = plugin.read().await;
+        let plugin = futures::executor::block_on(plugin.read());
         
         // Get plugin info and config before reload
         let info = plugin.get_info();
@@ -265,7 +273,7 @@ impl PluginRegistry {
         
         // Stop plugin if running
         if plugin.get_state() == PluginState::Running {
-            plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+            futures::executor::block_on(plugin.write()).stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
         }
         
         // Drop read lock
@@ -275,7 +283,7 @@ impl PluginRegistry {
         self.unload_plugin(id).await?;
         
         // Load new version
-        let new_id = self.load_plugin(&path).await?;
+        let new_id = futures::executor::block_on(self.load_plugin(&path))?;
         
         // Restore configuration if available
         if let Some(config) = config {
@@ -288,7 +296,7 @@ impl PluginRegistry {
     /// Enable hot-reloading for a plugin
     pub async fn enable_hot_reload(&self, id: Uuid) -> Result<(), RegistryError> {
         let plugin = self.get_plugin(id).await?;
-        let plugin = plugin.read().await;
+        let plugin = futures::executor::block_on(plugin.read());
         
         // Check if plugin supports hot-reloading
         if !plugin.get_capabilities().contains(&PluginCapability::HotReload) {
@@ -301,7 +309,7 @@ impl PluginRegistry {
     /// Disable hot-reloading for a plugin
     pub async fn disable_hot_reload(&self, id: Uuid) -> Result<(), RegistryError> {
         let plugin = self.get_plugin(id).await?;
-        let plugin = plugin.read().await;
+        let plugin = futures::executor::block_on(plugin.read());
         
         // Check if plugin supports hot-reloading
         if !plugin.get_capabilities().contains(&PluginCapability::HotReload) {
@@ -376,7 +384,7 @@ mod tests {
         
         // Verify plugin was reloaded
         let plugin = registry.get_plugin(id).await.unwrap();
-        let plugin = plugin.read().await;
+        let plugin = futures::executor::block_on(plugin.read());
         assert_eq!(plugin.get_state(), PluginState::Initialized);
     }
 } 
