@@ -6,7 +6,9 @@ use libloading::{Library, Symbol};
 use notify::{Watcher, RecursiveMode, Event as NotifyEvent, EventKind};
 // use crate::core::Error;
 use super::Plugin;
-use super::traits::PluginState;
+use super::traits::{PluginState, PluginInfo};
+use crate::core::config::Config;
+use tokio::fs;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LoaderError {
@@ -26,13 +28,43 @@ pub enum LoaderError {
     Other(String),
 }
 
+impl From<std::io::Error> for LoaderError {
+    fn from(err: std::io::Error) -> Self {
+        LoaderError::Io(err.to_string())
+    }
+}
+
+impl From<notify::Error> for LoaderError {
+    fn from(err: notify::Error) -> Self {
+        LoaderError::Watch(err.to_string())
+    }
+}
+
 type PluginCreateFn = unsafe fn() -> *mut dyn Plugin;
 
-/// A loaded plugin instance with its library
-struct LoadedPlugin {
-    plugin: Box<dyn Plugin>,
-    library: Arc<Library>,
-    path: PathBuf,
+#[derive(Clone)]
+pub struct LoadedPlugin {
+    pub path: PathBuf,
+    pub plugin: Arc<RwLock<Box<dyn Plugin + Send + Sync>>>,
+}
+
+impl LoadedPlugin {
+    pub async fn get_state(&self) -> Result<PluginState, LoaderError> {
+        Ok(self.plugin.read().await.get_state())
+    }
+
+    pub async fn stop(&mut self) -> Result<(), LoaderError> {
+        self.plugin.write().await.stop().await
+            .map_err(|e| LoaderError::Other(e.to_string()))
+    }
+
+    pub async fn get_info(&self) -> Result<PluginInfo, LoaderError> {
+        Ok(self.plugin.read().await.get_info())
+    }
+
+    pub async fn get_config(&self) -> Result<Option<Config>, LoaderError> {
+        Ok(self.plugin.read().await.get_config().cloned())
+    }
 }
 
 pub struct PluginLoader {
@@ -43,22 +75,22 @@ pub struct PluginLoader {
 
 impl PluginLoader {
     pub fn new(path: PathBuf) -> Result<Self, LoaderError> {
-        let plugins = Arc::new(RwLock::new(Vec::new()));
+        let plugins: Arc<RwLock<Vec<LoadedPlugin>>> = Arc::new(RwLock::new(Vec::new()));
         let plugins_clone = plugins.clone();
 
         // Create file system watcher
         let mut watcher = notify::recommended_watcher(move |res: Result<NotifyEvent, _>| {
             if let Ok(event) = res {
                 if let EventKind::Modify(_) = event.kind {
-                    for path in event.paths {
-                        if let Some(ext) = path.extension() {
+                    for path_buf in event.paths {
+                        if let Some(ext) = path_buf.extension() {
                             if ext == "dll" || ext == "so" {
                                 // Get plugin ID from path
                                 let plugins = plugins_clone.clone();
                                 tokio::spawn(async move {
                                     let plugins = plugins.read().await;
-                                    if let Some(plugin) = plugins.iter().find(|p| p.path == path) {
-                                        let id = plugin.plugin.get_info().id;
+                                    if let Some(plugin) = plugins.iter().find(|p| p.path == path_buf) {
+                                        let id = plugin.get_info().await.id;
                                         if let Err(e) = Self::reload_plugin_by_id(id, plugins_clone.clone()).await {
                                             eprintln!("Failed to reload plugin {}: {}", id, e);
                                         }
@@ -83,15 +115,10 @@ impl PluginLoader {
     }
 
     pub async fn load(&mut self) -> Result<(), LoaderError> {
-        let entries = tokio::fs::read_dir(&self.path)
-            .await
-            .map_err(|e| LoaderError::Io(e.to_string()))?;
-
-        let mut entries = entries.peekable();
-        while let Some(entry) = entries.next().await {
-            let entry = entry.map_err(|e| LoaderError::Io(e.to_string()))?;
+        let mut entries = fs::read_dir(&self.path).await?;
+        
+        while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-
             if let Some(ext) = path.extension() {
                 if ext == "dll" || ext == "so" {
                     match self.load_plugin(&path).await {
@@ -101,18 +128,37 @@ impl PluginLoader {
                 }
             }
         }
-
+        
         Ok(())
     }
 
     pub async fn unload(&mut self) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
         for plugin in plugins.iter_mut() {
-            if plugin.plugin.get_state() == PluginState::Running {
-                plugin.plugin.stop().await.map_err(|e| LoaderError::Other(e.to_string()))?;
+            if plugin.get_state().await == PluginState::Running {
+                plugin.stop().await?;
             }
         }
         plugins.clear();
+        Ok(())
+    }
+
+    pub async fn scan_directory(&self, dir: &Path) -> Result<(), LoaderError> {
+        let mut entries = fs::read_dir(dir).await?;
+        
+        while let Some(entry) = entries.next_entry().await? {
+            if let Ok(file_type) = entry.file_type().await {
+                if file_type.is_file() {
+                    let path = entry.path();
+                    if let Some(ext) = path.extension() {
+                        if ext == "dll" || ext == "so" || ext == "dylib" {
+                            self.load_plugin(&path).await?;
+                        }
+                    }
+                }
+            }
+        }
+        
         Ok(())
     }
 
@@ -142,9 +188,8 @@ impl PluginLoader {
 
         // Store loaded plugin
         self.plugins.write().await.push(LoadedPlugin {
-            plugin: plugin.clone(),
-            library,
-            path: path.to_owned(),
+            path: path.to_path_buf(),
+            plugin: Arc::new(RwLock::new(plugin.clone())),
         });
 
         Ok(plugin)
@@ -152,11 +197,10 @@ impl PluginLoader {
 
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
-        if let Some(pos) = plugins.iter().position(|p| p.plugin.get_info().id == id) {
+        if let Some(pos) = plugins.iter().position(|p| p.get_info().await.id == id) {
             let plugin = &mut plugins[pos];
-            if plugin.plugin.get_state() == PluginState::Running {
-                plugin.plugin.stop().await
-                    .map_err(|e| LoaderError::Other(e.to_string()))?;
+            if plugin.get_state().await == PluginState::Running {
+                plugin.stop().await?;
             }
             plugins.remove(pos);
             Ok(())
@@ -165,10 +209,10 @@ impl PluginLoader {
         }
     }
 
-    pub async fn get_plugin(&self, id: Uuid) -> Option<Box<dyn Plugin>> {
+    pub async fn get_plugin(&self, id: Uuid) -> Option<Arc<RwLock<Box<dyn Plugin + Send + Sync>>>> {
         let plugins = self.plugins.read().await;
         plugins.iter()
-            .find(|p| p.plugin.get_info().id == id)
+            .find(|p| p.get_info().await.id == id)
             .map(|p| p.plugin.clone())
     }
 
@@ -176,16 +220,15 @@ impl PluginLoader {
         let mut plugins = self.plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins.iter().position(|p| p.plugin.get_info().id == id)
+        let plugin_index = plugins.iter().position(|p| p.get_info().await.id == id)
             .ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
         let plugin = &plugins[plugin_index];
         let path = plugin.path.clone();
         
         // Stop the plugin if it's running
-        if plugin.plugin.get_state() == PluginState::Running {
-            plugin.plugin.stop().await
-                .map_err(|e| LoaderError::Other(e.to_string()))?;
+        if plugin.get_state().await == PluginState::Running {
+            plugin.stop().await?;
         }
         
         // Remove old plugin
@@ -199,28 +242,28 @@ impl PluginLoader {
     }
 
     async fn reload_plugin_by_id(id: Uuid, plugins: Arc<RwLock<Vec<LoadedPlugin>>>) -> Result<(), LoaderError> {
-        let mut plugins = plugins.write().await;
+        let mut plugins_guard = plugins.write().await;
         
         // Find the plugin to reload
-        let plugin_index = plugins.iter().position(|p| p.plugin.get_info().id == id)
+        let plugin_index = plugins_guard.iter().position(|p| p.get_info().await.id == id)
             .ok_or_else(|| LoaderError::NotFound(id.to_string()))?;
         
-        let plugin = &plugins[plugin_index];
+        let plugin = &plugins_guard[plugin_index];
         let path = plugin.path.clone();
-        let config = plugin.plugin.get_config().cloned();
+        let config = plugin.get_config().await;
         
         // Stop the plugin if it's running
-        if plugin.plugin.get_state() == PluginState::Running {
-            plugin.plugin.stop().await
-                .map_err(|e| LoaderError::Other(e.to_string()))?;
+        if plugin.get_state().await == PluginState::Running {
+            plugin.stop().await?;
         }
         
         // Remove old plugin
-        plugins.remove(plugin_index);
+        plugins_guard.remove(plugin_index);
         
         // Load new version
-        drop(plugins); // Release lock before loading
-        let mut new_plugin = Self::load_plugin(&path).await?;
+        drop(plugins_guard); // Release lock before loading
+        let loader = PluginLoader::new(path.parent().unwrap_or_else(|| Path::new("")).to_path_buf())?;
+        let mut new_plugin = loader.load_plugin(&path).await?;
         
         // Restore configuration if available
         if let Some(config) = config {
@@ -229,10 +272,10 @@ impl PluginLoader {
         }
         
         // Add new plugin back to registry
-        plugins.write().await.push(LoadedPlugin {
-            plugin: new_plugin,
-            library: Arc::new(unsafe { Library::new(&path).map_err(LoaderError::Library)? }),
+        let mut plugins_guard = plugins.write().await;
+        plugins_guard.push(LoadedPlugin {
             path,
+            plugin: Arc::new(RwLock::new(new_plugin)),
         });
         
         Ok(())

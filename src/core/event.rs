@@ -6,6 +6,7 @@ use crate::core::Error;
 use std::fmt::Debug;
 use std::any::Any;
 use async_trait::async_trait;
+use futures;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventType {
@@ -98,7 +99,7 @@ impl EventBus {
         let mut subscribers = self.subscribers.write().await;
         if let Some(handlers) = subscribers.get_mut(&event_type) {
             handlers.retain(|h| {
-                let handler = h.read().await;
+                let handler = h.blocking_read();
                 handler.get_id() != handler_id
             });
         }
@@ -107,11 +108,23 @@ impl EventBus {
     pub async fn publish(&self, event: Box<dyn Event + Send + Sync>) -> Result<(), Error> {
         let subscribers = self.subscribers.read().await;
         if let Some(handlers) = subscribers.get(&event.get_type()) {
+            let mut futures = Vec::new();
             for handler in handlers {
-                let mut handler = handler.write().await;
-                handler.handle_event(event.as_ref()).await?;
+                let handler = handler.clone();
+                let event = event.clone();
+                futures.push(async move {
+                    let mut handler = handler.write().await;
+                    handler.handle_event(event.as_ref()).await
+                });
             }
+            
+            // Execute all handlers concurrently
+            futures::future::join_all(futures).await
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?;
         }
+        
+        // Publish event to broadcast channel
         self.sender.send(event).map_err(|e| Error::EventBus(e.to_string()))?;
         Ok(())
     }
@@ -151,19 +164,26 @@ impl EventManager {
     }
 
     pub async fn process_event(&self, event: Box<dyn Event + Send + Sync>) -> Result<(), Error> {
-        // Apply filters
-        for filter in &self.filters {
-            if !filter(event.as_ref()) {
-                return Ok(());
+        let subscribers = self.event_bus.subscribers.read().await;
+        if let Some(handlers) = subscribers.get(&event.get_type()) {
+            let mut futures = Vec::new();
+            for handler in handlers {
+                let handler = handler.clone();
+                let event = event.clone();
+                futures.push(async move {
+                    let mut handler = handler.write().await;
+                    handler.handle_event(event.as_ref()).await
+                });
             }
+            
+            // Execute all handlers concurrently
+            futures::future::join_all(futures).await
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?;
         }
-
-        // Add to queue
-        self.event_queue.write().await.push_back(event.clone());
-
-        // Publish to event bus
+        
+        // Publish event to broadcast channel
         self.event_bus.publish(event).await?;
-
         Ok(())
     }
 

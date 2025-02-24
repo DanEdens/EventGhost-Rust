@@ -20,6 +20,18 @@ pub enum Error {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     
+    #[error("Plugin error: {0}")]
+    Plugin(String),
+    
+    #[error("Event error: {0}")]
+    Event(String),
+    
+    #[error("Config error: {0}")]
+    Config(String),
+    
+    #[error("Event bus error: {0}")]
+    EventBus(String),
+    
     #[error("Other error: {0}")]
     Other(String),
 }

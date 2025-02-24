@@ -47,7 +47,7 @@ pub enum PluginCapability {
 }
 
 /// Plugin state
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PluginState {
     /// Plugin is created but not initialized
     Created,
@@ -63,7 +63,7 @@ pub enum PluginState {
 
 /// Base trait for plugin functionality
 #[async_trait]
-pub trait Plugin: Send + Sync {
+pub trait Plugin: Send + Sync + Clone {
     /// Get plugin information
     fn get_info(&self) -> PluginInfo;
     
@@ -161,6 +161,7 @@ impl<T: Plugin + Send + Sync> EventHandler for T {
 mod tests {
     use super::*;
 
+    #[derive(Clone)]
     struct TestPlugin {
         info: PluginInfo,
         state: PluginState,
@@ -181,27 +182,27 @@ mod tests {
         }
 
         async fn initialize(&mut self) -> Result<(), Error> {
-            unimplemented!();
+            Ok(())
         }
 
         async fn start(&mut self) -> Result<(), Error> {
-            unimplemented!();
+            Ok(())
         }
 
         async fn stop(&mut self) -> Result<(), Error> {
-            unimplemented!();
+            Ok(())
         }
 
         async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), Error> {
-            unimplemented!();
+            Ok(())
         }
 
         fn get_config(&self) -> Option<&Config> {
-            unimplemented!();
+            None
         }
 
         async fn update_config(&mut self, _config: Config) -> Result<(), Error> {
-            unimplemented!();
+            Ok(())
         }
 
         fn as_any(&self) -> &dyn Any {

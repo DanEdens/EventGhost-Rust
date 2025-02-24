@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -10,6 +10,8 @@ use super::traits::{Plugin, PluginInfo, PluginState};
 use super::loader::{PluginLoader, LoaderError};
 // use crate::core::error::{RegistryError};
 // use thiserror::Error;
+use super::PluginCapability;
+use tokio::fs;
 
 
 /// Error type for plugin registry operations
@@ -29,16 +31,20 @@ pub enum RegistryError {
     Loader(String),
     #[error("Other error: {0}")]
     Other(String),
+    #[error("Plugin not supported: {0}")]
+    NotSupported(String),
 }
 
 impl From<LoaderError> for RegistryError {
     fn from(err: LoaderError) -> Self {
         match err {
-            LoaderError::LoadFailed(msg) => RegistryError::Loader(msg),
-            LoaderError::NotFound(msg) => RegistryError::NotFound(msg),
-            LoaderError::Invalid(msg) => RegistryError::Plugin(msg),
-            LoaderError::Io(msg) => RegistryError::Io(msg),
-            LoaderError::Other(msg) => RegistryError::Other(msg),
+            LoaderError::LoadFailed(e) => RegistryError::Loader(e),
+            LoaderError::NotFound(e) => RegistryError::NotFound(e),
+            LoaderError::Invalid(e) => RegistryError::Other(e),
+            LoaderError::Io(e) => RegistryError::Io(e),
+            LoaderError::Library(e) => RegistryError::Loader(e.to_string()),
+            LoaderError::Watch(e) => RegistryError::Other(e),
+            LoaderError::Other(e) => RegistryError::Other(e),
         }
     }
 }
@@ -76,18 +82,15 @@ impl PluginRegistry {
         configs.clear();
         
         // Load plugins from directory
-        let entries = tokio::fs::read_dir(&self.plugin_dir)
+        let mut entries = fs::read_dir(&self.plugin_dir)
             .await
             .map_err(|e| RegistryError::Io(e.to_string()))?;
             
-        let mut entries = entries.peekable();
-        while let Some(entry) = entries.next().await {
-            let entry = entry.map_err(|e| RegistryError::Io(e.to_string()))?;
+        while let Some(entry) = entries.next_entry().await.map_err(|e| RegistryError::Io(e.to_string()))? {
             let path = entry.path();
-            
             if let Some(ext) = path.extension() {
                 if ext == "dll" || ext == "so" {
-                    match self.load_plugin(path).await {
+                    match self.load_plugin(&path).await {
                         Ok(id) => {
                             println!("Loaded plugin: {}", id);
                         }
@@ -117,15 +120,16 @@ impl PluginRegistry {
     }
 
     /// Load a plugin from a file
-    pub async fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+    pub async fn load_plugin(&self, path: &Path) -> Result<Uuid, RegistryError> {
         // Load plugin using loader
-        let mut plugin = self.loader.load_plugin(&path).await?;
-        
-        // Initialize plugin
-        plugin.initialize().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        let plugin = self.loader.load_plugin(path).await?;
+        let plugin = Arc::new(RwLock::new(plugin));
         
         // Get plugin info
-        let info = plugin.get_info();
+        let info = {
+            let plugin_ref = plugin.read().await;
+            plugin_ref.get_info()
+        };
         let id = info.id;
         
         // Check if plugin already exists
@@ -142,12 +146,15 @@ impl PluginRegistry {
         // Add plugin to registry
         {
             let mut plugins = self.plugins.write().await;
-            plugins.push(Arc::new(RwLock::new(plugin)));
+            plugins.push(plugin.clone());
         }
         
         // Add default config if plugin is configurable
-        if let Some(config) = plugin.get_config() {
-            self.configs.write().await.insert(id, config.clone());
+        {
+            let plugin_ref = plugin.read().await;
+            if let Some(config) = plugin_ref.get_config() {
+                self.configs.write().await.insert(id, config);
+            }
         }
         
         Ok(id)
@@ -156,10 +163,8 @@ impl PluginRegistry {
     /// Unload a plugin
     pub async fn unload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
         let mut plugins = self.plugins.write().await;
-        
-        // Find plugin index
         let index = plugins.iter().position(|p| {
-            let plugin = p.blocking_read();
+            let plugin = p.read().await;
             plugin.get_info().id == id
         }).ok_or_else(|| RegistryError::NotFound(id.to_string()))?;
         
@@ -219,17 +224,15 @@ impl PluginRegistry {
 
     /// Stop a plugin
     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        let plugin = self.get_plugin(id).await?;
-        let mut plugin = plugin.write().await;
-        
-        if plugin.get_state() != PluginState::Running {
-            return Err(RegistryError::InvalidState(
-                format!("Plugin must be running before stopping, current state: {:?}", 
-                    plugin.get_state())
-            ));
+        let plugins = self.plugins.read().await;
+        if let Some(plugin) = plugins.iter().find(|p| {
+            let plugin_ref = p.read().await;
+            plugin_ref.get_info().id == id
+        }) {
+            let mut plugin = plugin.write().await;
+            plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
         }
-        
-        plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))
+        Ok(())
     }
 
     /// Update plugin configuration
@@ -272,7 +275,7 @@ impl PluginRegistry {
         self.unload_plugin(id).await?;
         
         // Load new version
-        let new_id = self.load_plugin(path).await?;
+        let new_id = self.load_plugin(&path).await?;
         
         // Restore configuration if available
         if let Some(config) = config {
@@ -303,6 +306,25 @@ impl PluginRegistry {
         // Check if plugin supports hot-reloading
         if !plugin.get_capabilities().contains(&PluginCapability::HotReload) {
             return Err(RegistryError::NotSupported(format!("Plugin {} does not support hot-reloading", id)));
+        }
+        
+        Ok(())
+    }
+
+    pub async fn scan_directory(&self, dir: &Path) -> Result<(), RegistryError> {
+        let mut entries = fs::read_dir(dir).await.map_err(|e| RegistryError::Io(e.to_string()))?;
+        
+        while let Some(entry) = entries.next_entry().await.map_err(|e| RegistryError::Io(e.to_string()))? {
+            if let Ok(file_type) = entry.file_type().await {
+                if file_type.is_file() {
+                    let path = entry.path();
+                    if let Some(ext) = path.extension() {
+                        if ext == "dll" || ext == "so" || ext == "dylib" {
+                            self.load_plugin(&path).await?;
+                        }
+                    }
+                }
+            }
         }
         
         Ok(())

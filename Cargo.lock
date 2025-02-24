@@ -896,6 +896,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "logger-plugin"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "eventghost",
+ "log",
+ "serde",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

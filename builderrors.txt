@@ -1,0 +1,535 @@
+
+C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust>cargo build --bin eventghost |cat >> builderrors.txt
+   Compiling eventghost v0.1.0 (C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust)
+error[E0252]: the name `Plugin` is defined multiple times
+  --> src\core\plugin\registry.rs:13:27
+   |
+8  | use super::traits::{Plugin, PluginInfo, PluginState};
+   |                     ------ previous import of the trait `Plugin` here
+...
+13 | use crate::core::plugin::{Plugin, PluginCapability};
+   |                           ^^^^^^--
+   |                           |
+   |                           `Plugin` reimported here
+   |                           help: remove unnecessary import
+   |
+   = note: `Plugin` must be defined only once in the type namespace of this module
+
+error[E0728]: `await` is only allowed inside `async` functions and blocks
+   --> src\core\event.rs:101:40
+    |
+100 |             handlers.retain(|h| {
+    |                             --- this is not `async`
+101 |                 let handler = h.read().await;
+    |                                        ^^^^^ only allowed inside `async` functions and blocks
+
+error[E0728]: `await` is only allowed inside `async` functions and blocks
+   --> src\core\event.rs:158:11
+    |
+155 |         handlers.retain(|h| async move {
+    |                         --- this is not `async`
+...
+158 |         }.await);
+    |           ^^^^^ only allowed inside `async` functions and blocks
+
+error[E0728]: `await` is only allowed inside `async` functions and blocks
+   --> src\core\plugin\registry.rs:226:64
+    |
+226 |         if let Some(plugin) = plugins.iter().find(|p| p.read().await.get_info().id == id) {
+    |                                                   ---          ^^^^^ only allowed inside `async` functions and blocks
+    |                                                   |
+    |                                                   this is not `async`
+
+error[E0599]: no variant or associated item named `EventBus` found for enum `core::error::Error` in the current scope
+   --> src\core\event.rs:115:52
+    |
+115 |         self.sender.send(event).map_err(|e| Error::EventBus(e.to_string()))?;
+    |                                                    ^^^^^^^^ variant or associated item not found in `Error`
+    |
+   ::: src\core\error.rs:4:1
+    |
+4   | pub enum Error {
+    | -------------- variant or associated item `EventBus` not found for this enum
+
+error[E0593]: closure is expected to take 2 arguments, but it takes 1 argument
+   --> src\core\event.rs:155:18
+    |
+155 |         handlers.retain(|h| async move {
+    |                  ^^^^^^ --- takes 1 argument
+    |                  |
+    |                  expected closure that takes 2 arguments
+
+error[E0599]: `tokio::fs::ReadDir` is not an iterator
+  --> src\core\plugin\loader.rs:90:35
+   |
+90 |         let mut entries = entries.peekable();
+   |                                   ^^^^^^^^ `tokio::fs::ReadDir` is not an iterator
+   |
+  ::: C:\Users\Dan\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tokio-1.43.0\src\fs\read_dir.rs:64:1
+   |
+64 | pub struct ReadDir(State);
+   | ------------------ doesn't satisfy `tokio::fs::ReadDir: Iterator`
+   |
+   = note: the following trait bounds were not satisfied:
+           `tokio::fs::ReadDir: Iterator`
+           which is required by `&mut tokio::fs::ReadDir: Iterator`
+
+error[E0599]: no method named `get_state` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:111:30
+    |
+111 |             if plugin.plugin.get_state() == PluginState::Running {
+    |                              ^^^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_state`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is a method `get_mut` with a similar name
+    |
+111 |             if plugin.plugin.get_mut() == PluginState::Running {
+    |                              ~~~~~~~
+
+error[E0599]: no method named `stop` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:112:31
+    |
+112 |                 plugin.plugin.stop().await.map_err(|e| LoaderError::Other(e.to_string()))?;
+    |                               ^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `stop`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: `?` couldn't convert the error to `loader::LoaderError`
+   --> src\core\plugin\loader.rs:120:50
+    |
+120 |         let mut entries = fs::read_dir(dir).await?;
+    |                                                  ^ the trait `std::convert::From<std::io::Error>` is not implemented for `loader::LoaderError`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the trait `From<std::io::Error>` is not implemented for `loader::LoaderError`
+            but trait `From<libloading::Error>` is implemented for it
+    = help: for that trait implementation, expected `libloading::Error`, found `std::io::Error`
+    = note: required for `std::result::Result<(), loader::LoaderError>` to implement `FromResidual<std::result::Result<Infallible, std::io::Error>>`
+
+error[E0277]: `?` couldn't convert the error to `loader::LoaderError`
+   --> src\core\plugin\loader.rs:122:59
+    |
+122 |         while let Some(entry) = entries.next_entry().await? {
+    |                                                           ^ the trait `std::convert::From<std::io::Error>` is not implemented for `loader::LoaderError`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the trait `From<std::io::Error>` is not implemented for `loader::LoaderError`
+            but trait `From<libloading::Error>` is implemented for it
+    = help: for that trait implementation, expected `libloading::Error`, found `std::io::Error`
+    = note: required for `std::result::Result<(), loader::LoaderError>` to implement `FromResidual<std::result::Result<Infallible, std::io::Error>>`
+
+error[E0599]: the method `clone` exists for struct `Box<dyn Plugin>`, but its trait bounds were not satisfied
+   --> src\core\plugin\loader.rs:165:49
+    |
+165 |               plugin: Arc::new(RwLock::new(plugin.clone())),
+    |                                                   ^^^^^ method cannot be called on `Box<dyn Plugin>` due to unsatisfied trait bounds
+    |
+   ::: src\core\plugin\traits.rs:66:1
+    |
+66  |   pub trait Plugin: Send + Sync {
+    |   ----------------------------- doesn't satisfy `dyn plugin::traits::Plugin: Clone` or `dyn plugin::traits::Plugin: Sized`
+    |
+   ::: C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\alloc\src\boxed.rs:233:1
+    |
+233 | / pub struct Box<
+234 | |     T: ?Sized,
+235 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
+236 | | >(Unique<T>, A);
+    | |_- doesn't satisfy `std::boxed::Box<dyn plugin::traits::Plugin>: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `dyn plugin::traits::Plugin: Sized`
+            which is required by `std::boxed::Box<dyn plugin::traits::Plugin>: Clone`
+            `dyn plugin::traits::Plugin: Clone`
+            which is required by `std::boxed::Box<dyn plugin::traits::Plugin>: Clone`
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `clone`, perhaps you need to implement it:
+            candidate #1: `Clone`
+
+error[E0599]: no method named `get_info` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:173:65
+    |
+173 |         if let Some(pos) = plugins.iter().position(|p| p.plugin.get_info().id == id) {
+    |                                                                 ^^^^^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_info`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_state` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:175:30
+    |
+175 |             if plugin.plugin.get_state() == PluginState::Running {
+    |                              ^^^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_state`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is a method `get_mut` with a similar name
+    |
+175 |             if plugin.plugin.get_mut() == PluginState::Running {
+    |                              ~~~~~~~
+
+error[E0599]: no method named `stop` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:176:31
+    |
+176 |                 plugin.plugin.stop().await
+    |                               ^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `stop`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_info` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:189:32
+    |
+189 |             .find(|p| p.plugin.get_info().id == id)
+    |                                ^^^^^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_info`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\core\plugin\loader.rs:188:9
+    |
+186 |       pub async fn get_plugin(&self, id: Uuid) -> Option<Box<dyn Plugin>> {
+    |                                                   ----------------------- expected `std::option::Option<std::boxed::Box<(dyn plugin::traits::Plugin + 'static)>>` because of return type
+187 |           let plugins = self.plugins.read().await;
+188 | /         plugins.iter()
+189 | |             .find(|p| p.plugin.get_info().id == id)
+190 | |             .map(|p| p.plugin.clone())
+    | |______________________________________^ expected `Option<Box<dyn Plugin>>`, found `Option<Arc<RwLock<Box<dyn Plugin + Send + Sync>>>>`
+    |
+    = note: expected enum `std::option::Option<std::boxed::Box<(dyn plugin::traits::Plugin + 'static)>>`
+               found enum `std::option::Option<Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>>`
+
+error[E0599]: no method named `get_info` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:197:65
+    |
+197 |         let plugin_index = plugins.iter().position(|p| p.plugin.get_info().id == id)
+    |                                                                 ^^^^^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_info`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_state` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:204:26
+    |
+204 |         if plugin.plugin.get_state() == PluginState::Running {
+    |                          ^^^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_state`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is a method `get_mut` with a similar name
+    |
+204 |         if plugin.plugin.get_mut() == PluginState::Running {
+    |                          ~~~~~~~
+
+error[E0599]: no method named `stop` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:205:27
+    |
+205 |             plugin.plugin.stop().await
+    |                           ^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `stop`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\core\plugin\loader.rs:214:26
+    |
+214 |         self.load_plugin(&path).await?;
+    |              ----------- ^^^^^ expected `&Path`, found `&String`
+    |              |
+    |              arguments to this method are incorrect
+    |
+    = note: expected reference `&std::path::Path`
+               found reference `&std::string::String`
+note: method defined here
+   --> src\core\plugin\loader.rs:138:18
+    |
+138 |     pub async fn load_plugin(&self, path: &Path) -> Result<Box<dyn Plugin>, LoaderError> {
+    |                  ^^^^^^^^^^^        -----------
+
+error[E0599]: no method named `get_info` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:223:65
+    |
+223 |         let plugin_index = plugins.iter().position(|p| p.plugin.get_info().id == id)
+    |                                                                 ^^^^^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_info`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_config` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:228:36
+    |
+228 |         let config = plugin.plugin.get_config().cloned();
+    |                                    ^^^^^^^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_config`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_state` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:231:26
+    |
+231 |         if plugin.plugin.get_state() == PluginState::Running {
+    |                          ^^^^^^^^^
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `get_state`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is a method `get_mut` with a similar name
+    |
+231 |         if plugin.plugin.get_mut() == PluginState::Running {
+    |                          ~~~~~~~
+
+error[E0599]: no method named `stop` found for struct `Arc<tokio::sync::RwLock<std::boxed::Box<(dyn plugin::traits::Plugin + Send + Sync + 'static)>>>` in the current scope
+   --> src\core\plugin\loader.rs:232:27
+    |
+232 |             plugin.plugin.stop().await
+    |                           ^^^^ method not found in `Arc<RwLock<Box<dyn Plugin + Send + Sync>>>`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `plugin::traits::Plugin` defines an item `stop`, perhaps you need to implement it
+   --> src\core\plugin\traits.rs:66:1
+    |
+66  | pub trait Plugin: Send + Sync {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> src\core\plugin\loader.rs:241:30
+    |
+241 |         let mut new_plugin = Self::load_plugin(&path).await?;
+    |                              ^^^^^^^^^^^^^^^^^-------
+    |                                               ||
+    |                                               |expected `&PluginLoader`, found `&String`
+    |                                               argument #2 of type `&std::path::Path` is missing
+    |
+    = note: expected reference `&PluginLoader`
+               found reference `&std::string::String`
+note: method defined here
+   --> src\core\plugin\loader.rs:138:18
+    |
+138 |     pub async fn load_plugin(&self, path: &Path) -> Result<Box<dyn Plugin>, LoaderError> {
+    |                  ^^^^^^^^^^^ -----  -----------
+help: provide the argument
+    |
+241 |         let mut new_plugin = Self::load_plugin(/* &PluginLoader */, /* &std::path::Path */).await?;
+    |                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0599]: no method named `write` found for struct `tokio::sync::RwLockWriteGuard<'_, Vec<LoadedPlugin>>` in the current scope
+   --> src\core\plugin\loader.rs:250:17
+    |
+250 |         plugins.write().await.push(LoadedPlugin {
+    |                 ^^^^^ method not found in `RwLockWriteGuard<'_, Vec<LoadedPlugin>>`
+    |
+note: there's an earlier shadowed binding `plugins` of type `Arc<tokio::sync::RwLock<Vec<LoadedPlugin>>>` that has method `write` available
+   --> src\core\plugin\loader.rs:219:44
+    |
+219 |     async fn reload_plugin_by_id(id: Uuid, plugins: Arc<RwLock<Vec<LoadedPlugin>>>) -> Result<(), LoaderError> {
+    |                                            ^^^^^^^ `plugins` of type `Arc<tokio::sync::RwLock<Vec<LoadedPlugin>>>` that has method `write` defined earlier here
+220 |         let mut plugins = plugins.write().await;
+    |             ----------- earlier `plugins` shadowed here with type `tokio::sync::RwLockWriteGuard<'_, Vec<LoadedPlugin>>`
+
+error[E0599]: `tokio::fs::ReadDir` is not an iterator
+  --> src\core\plugin\registry.rs:86:35
+   |
+86 |         let mut entries = entries.peekable();
+   |                                   ^^^^^^^^ `tokio::fs::ReadDir` is not an iterator
+   |
+  ::: C:\Users\Dan\.cargo\registry\src\index.crates.io-6f17d22bba15001f\tokio-1.43.0\src\fs\read_dir.rs:64:1
+   |
+64 | pub struct ReadDir(State);
+   | ------------------ doesn't satisfy `tokio::fs::ReadDir: Iterator`
+   |
+   = note: the following trait bounds were not satisfied:
+           `tokio::fs::ReadDir: Iterator`
+           which is required by `&mut tokio::fs::ReadDir: Iterator`
+
+error[E0382]: borrow of moved value: `plugin`
+   --> src\core\plugin\registry.rs:152:31
+    |
+125 |         let mut plugin = self.loader.load_plugin(&path).await?;
+    |             ---------- move occurs because `plugin` has type `std::boxed::Box<dyn plugin::traits::Plugin>`, which does not implement the `Copy` trait
+...
+148 |             plugins.push(Arc::new(RwLock::new(plugin)));
+    |                                               ------ value moved here
+...
+152 |         if let Some(config) = plugin.get_config() {
+    |                               ^^^^^^ value borrowed here after move
+
+error[E0596]: cannot borrow data in dereference of `tokio::sync::RwLockReadGuard<'_, std::boxed::Box<dyn plugin::traits::Plugin>>` as mutable
+   --> src\core\plugin\registry.rs:263:13
+    |
+263 |             plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+    |             ^^^^^^ cannot borrow as mutable
+    |
+    = help: trait `DerefMut` is required to modify through a dereference, but it is not implemented for `tokio::sync::RwLockReadGuard<'_, std::boxed::Box<dyn plugin::traits::Plugin>>`
+
+error[E0277]: `?` couldn't convert the error to `registry::RegistryError`
+   --> src\core\plugin\registry.rs:310:50
+    |
+310 |         let mut entries = fs::read_dir(dir).await?;
+    |                                                  ^ the trait `std::convert::From<std::io::Error>` is not implemented for `registry::RegistryError`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the trait `From<std::io::Error>` is not implemented for `registry::RegistryError`
+            but trait `From<loader::LoaderError>` is implemented for it
+    = help: for that trait implementation, expected `loader::LoaderError`, found `std::io::Error`
+    = note: required for `std::result::Result<(), registry::RegistryError>` to implement `FromResidual<std::result::Result<Infallible, std::io::Error>>`
+
+error[E0277]: `?` couldn't convert the error to `registry::RegistryError`
+   --> src\core\plugin\registry.rs:312:59
+    |
+312 |         while let Some(entry) = entries.next_entry().await? {
+    |                                                           ^ the trait `std::convert::From<std::io::Error>` is not implemented for `registry::RegistryError`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the trait `From<std::io::Error>` is not implemented for `registry::RegistryError`
+            but trait `From<loader::LoaderError>` is implemented for it
+    = help: for that trait implementation, expected `loader::LoaderError`, found `std::io::Error`
+    = note: required for `std::result::Result<(), registry::RegistryError>` to implement `FromResidual<std::result::Result<Infallible, std::io::Error>>`
+
+error[E0308]: mismatched types
+    --> src\core\plugin\registry.rs:339:69
+     |
+339  |             self.configs.write().await.insert(plugin.get_info().id, config);
+     |                                        ------                       ^^^^^^ expected `Config`, found `&Config`
+     |                                        |
+     |                                        arguments to this method are incorrect
+     |
+help: the return type of this call is `&core::config::Config` due to the type of the argument passed
+    --> src\core\plugin\registry.rs:339:13
+     |
+339  |             self.configs.write().await.insert(plugin.get_info().id, config);
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------^
+     |                                                                     |
+     |                                                                     this argument influences the return type of `insert`
+note: method defined here
+    --> C:\ProgramData\chocolatey\lib\rust\tools\lib/rustlib/src/rust\library\std\src\collections\hash\map.rs:1168:12
+     |
+1168 |     pub fn insert(&mut self, k: K, v: V) -> Option<V> {
+     |            ^^^^^^
+help: consider using clone here
+     |
+339  |             self.configs.write().await.insert(plugin.get_info().id, config.clone());
+     |                                                                           ++++++++
+
+error[E0592]: duplicate definitions with name `load_plugin`
+   --> src\core\plugin\registry.rs:328:5
+    |
+123 |     pub async fn load_plugin(&self, path: PathBuf) -> Result<Uuid, RegistryError> {
+    |     ----------------------------------------------------------------------------- other definition for `load_plugin`
+...
+328 |     pub async fn load_plugin(&self, path: &Path) -> Result<(), RegistryError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `load_plugin`
+
+error[E0282]: type annotations needed
+  --> src\core\plugin\loader.rs:46:44
+   |
+46 |         let plugins = Arc::new(RwLock::new(Vec::new()));
+   |                                            ^^^^^^^^ cannot infer type of the type parameter `T` declared on the struct `Vec`
+...
+60 |                                     if let Some(plugin) = plugins.iter().find(|p| p.path == path) {
+   |                                                                                   ------ type must be known at this point
+   |
+help: consider specifying the generic argument
+   |
+46 |         let plugins = Arc::new(RwLock::new(Vec::<T>::new()));
+   |                                               +++++
+
+error[E0609]: no field `path` on type `&&_`
+  --> src\core\plugin\loader.rs:60:85
+   |
+60 | ...                   if let Some(plugin) = plugins.iter().find(|p| p.path == path) {
+   |                                                                       ^^^^ unknown field
+
+error[E0004]: non-exhaustive patterns: `loader::LoaderError::LoadFailed(_)`, `loader::LoaderError::NotFound(_)`, `loader::LoaderError::Invalid(_)` and 1 more not covered
+  --> src\core\plugin\registry.rs:41:15
+   |
+41 |         match err {
+   |               ^^^ patterns `loader::LoaderError::LoadFailed(_)`, `loader::LoaderError::NotFound(_)`, `loader::LoaderError::Invalid(_)` and 1 more not covered
+   |
+note: `loader::LoaderError` defined here
+  --> src\core\plugin\loader.rs:13:10
+   |
+13 | pub enum LoaderError {
+   |          ^^^^^^^^^^^
+14 |     #[error("Failed to load plugin: {0}")]
+15 |     LoadFailed(String),
+   |     ---------- not covered
+16 |     #[error("Plugin not found: {0}")]
+17 |     NotFound(String),
+   |     -------- not covered
+18 |     #[error("Invalid plugin: {0}")]
+19 |     Invalid(String),
+   |     ------- not covered
+20 |     #[error("IO error: {0}")]
+21 |     Io(String),
+   |     -- not covered
+   = note: the matched value is of type `loader::LoaderError`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern as shown, or multiple match arms
+   |
+44 ~             LoaderError::Other(msg) => RegistryError::Other(msg),
+45 ~             _ => todo!(),
+   |
+
+error[E0515]: cannot return reference to temporary value
+   --> src\core\plugin\traits.rs:148:9
+    |
+148 |         &self.get_info().name
+    |         ^---------------^^^^^
+    |         ||
+    |         |temporary value created here
+    |         returns a reference to data owned by the current function
+
+Some errors have detailed explanations: E0004, E0061, E0252, E0277, E0282, E0308, E0382, E0515, E0592...
+For more information about an error, try `rustc --explain E0004`.
+error: could not compile `eventghost` (lib) due to 38 previous errors
+
+C:\Users\Dan\lab\madness_interactive\projects\rust\EventGhost-Rust>

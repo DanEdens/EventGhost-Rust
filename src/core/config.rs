@@ -2,19 +2,20 @@ use std::path::PathBuf;
 // , 
 use serde::{Serialize, Deserialize};
 // use crate::core::Error;
-// use thiserror::Error;
+use thiserror::Error;
 use std::fmt::Debug;
+use std::collections::HashMap;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 
 /// Error type for configuration operations
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
-    #[error("IO error: {0}")]
-    IO(#[from] std::io::Error),
-    #[error("Invalid config: {0}")]
+    #[error("Invalid configuration: {0}")]
     Invalid(String),
-    #[error("Missing field: {0}")]
-    MissingField(String),
-    #[error("{0}")]
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Other error: {0}")]
     Other(String),
 }
 
@@ -45,10 +46,34 @@ pub struct Config {
     pub global: GlobalConfig,
     /// Plugin-specific settings
     pub plugins: Vec<PluginConfig>,
+    /// Generic settings map
+    pub settings: HashMap<String, Value>,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Self {
+            global: GlobalConfig::default(),
+            plugins: Vec::new(),
+            settings: HashMap::new(),
+        }
+    }
+
+    pub fn get<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
+        self.settings.get(key)
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+    }
+
+    pub fn set<T: Serialize>(&mut self, key: &str, value: T) -> Result<(), ConfigError> {
+        let value = serde_json::to_value(value)
+            .map_err(|e| ConfigError::Invalid(format!("Failed to serialize value: {}", e)))?;
+        self.settings.insert(key.to_string(), value);
+        Ok(())
+    }
 }
 
 /// Global configuration settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GlobalConfig {
     /// Plugin directory path
     pub plugin_dir: PathBuf,
@@ -64,7 +89,7 @@ pub struct PluginConfig {
     /// Plugin ID
     pub id: String,
     /// Plugin settings
-    pub settings: serde_json::Value,
+    pub settings: HashMap<String, Value>,
     /// Plugin enabled state
     pub enabled: bool,
 }
