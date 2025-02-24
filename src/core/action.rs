@@ -120,6 +120,9 @@ pub trait Action: Send + Sync + Debug {
 
     /// Validate that the action can be executed with the current configuration
     fn validate(&self) -> Result<(), Error>;
+
+    /// Get the action as Any for downcasting
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// Represents a group of related actions
@@ -396,6 +399,10 @@ mod tests {
         
         fn validate(&self) -> Result<(), Error> {
             Ok(())
+        }
+        
+        fn as_any(&self) -> &dyn Any {
+            self
         }
     }
     

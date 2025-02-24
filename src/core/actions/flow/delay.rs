@@ -92,6 +92,10 @@ impl Action for DelayAction {
             Ok(())
         }
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[cfg(test)]
