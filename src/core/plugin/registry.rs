@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 // use crate::core::Error;
 use crate::core::config::Config;
-use super::traits::{Plugin, PluginInfo, PluginState};
+use super::traits::{Plugin, PluginInfo, PluginState, PluginError};
 // PluginState
 use super::loader::{PluginLoader, LoaderError};
 // use crate::core::error::{RegistryError};
@@ -46,6 +46,18 @@ impl From<LoaderError> for RegistryError {
             LoaderError::Library(e) => RegistryError::Loader(e.to_string()),
             LoaderError::Watch(e) => RegistryError::Other(e),
             LoaderError::Other(e) => RegistryError::Other(e),
+        }
+    }
+}
+
+impl From<PluginError> for RegistryError {
+    fn from(err: PluginError) -> Self {
+        match err {
+            PluginError::Operation(e) => RegistryError::Plugin(e),
+            PluginError::State(e) => RegistryError::InvalidState(e),
+            PluginError::Config(e) => RegistryError::Other(e),
+            PluginError::Event(e) => RegistryError::Other(e),
+            PluginError::Other(e) => RegistryError::Other(e),
         }
     }
 }
@@ -166,25 +178,22 @@ impl PluginRegistry {
         let mut plugins = self.plugins.write().await;
         let index = plugins.iter().position(|p| {
             let plugin = futures::executor::block_on(p.read());
-            plugin.get_info().map(|info| info.id == id).unwrap_or(false)
+            plugin.get_info().id == id
         });
         
-        if index.is_none() {
+        if let Some(idx) = index {
+            let plugin = plugins[idx].clone();
+            {
+                let mut plugin_guard = plugin.write().await;
+                if plugin_guard.get_state() == PluginState::Running {
+                    plugin_guard.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+                }
+            }
+            plugins.remove(idx);
+            self.configs.write().await.remove(&id);
+        } else {
             return Err(RegistryError::NotFound(id.to_string()));
         }
-        
-        // Stop plugin if running
-        {
-            let plugin = &plugins[index.unwrap()];
-            let mut plugin = futures::executor::block_on(plugin.write());
-            if plugin.get_state() == PluginState::Running {
-                plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
-            }
-        }
-        
-        // Remove plugin
-        plugins.remove(index.unwrap());
-        self.configs.write().await.remove(&id);
         
         Ok(())
     }
@@ -194,7 +203,7 @@ impl PluginRegistry {
         let plugins = self.plugins.read().await;
         let index = plugins.iter().position(|p| {
             let plugin = futures::executor::block_on(p.read());
-            plugin.get_info().map(|info| info.id == id).unwrap_or(false)
+            plugin.get_info().id == id
         });
         
         if index.is_none() {
@@ -232,13 +241,15 @@ impl PluginRegistry {
 
     /// Stop a plugin
     pub async fn stop_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
-        let plugins = self.plugins.read().await;
-        if let Some(plugin) = plugins.iter().find(|p| {
-            let plugin_ref = futures::executor::block_on(p.read());
-            plugin_ref.get_info().map(|info| info.id == id).unwrap_or(false)
-        }) {
-            let mut plugin = futures::executor::block_on(plugin.write());
-            plugin.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        let plugin = self.get_plugin(id).await?;
+        let plugin_clone = plugin.clone();
+        let state = {
+            let plugin_guard = plugin_clone.read().await;
+            plugin_guard.get_state()
+        };
+        if state == PluginState::Running {
+            let mut plugin_guard = plugin_clone.write().await;
+            plugin_guard.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
         }
         Ok(())
     }
@@ -264,26 +275,28 @@ impl PluginRegistry {
     /// Reload a plugin by ID
     pub async fn reload_plugin(&self, id: Uuid) -> Result<(), RegistryError> {
         let plugin = self.get_plugin(id).await?;
-        let plugin = futures::executor::block_on(plugin.read());
+        let plugin_clone = plugin.clone();
+        let plugin_guard = plugin_clone.read().await;
         
         // Get plugin info and config before reload
-        let info = plugin.get_info();
-        let config = plugin.get_config().cloned();
+        let info = plugin_guard.get_info();
+        let config = plugin_guard.get_config().cloned();
         let path = self.plugin_dir.join(format!("{}.{}", info.name.to_lowercase(), if cfg!(windows) { "dll" } else { "so" }));
         
         // Stop plugin if running
-        if plugin.get_state() == PluginState::Running {
-            futures::executor::block_on(plugin.write()).stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        if plugin_guard.get_state() == PluginState::Running {
+            drop(plugin_guard);
+            let mut plugin_guard = plugin_clone.write().await;
+            plugin_guard.stop().await.map_err(|e| RegistryError::Plugin(e.to_string()))?;
+        } else {
+            drop(plugin_guard);
         }
-        
-        // Drop read lock
-        drop(plugin);
         
         // Remove old plugin
         self.unload_plugin(id).await?;
         
         // Load new version
-        let new_id = futures::executor::block_on(self.load_plugin(&path))?;
+        let new_id = self.load_plugin(&path).await?;
         
         // Restore configuration if available
         if let Some(config) = config {

@@ -5,6 +5,27 @@ use serde::{Serialize, Deserialize};
 use crate::core::{Error, Event};
 use crate::core::config::Config;
 use crate::core::event::{EventHandler, EventType};
+use thiserror::Error as ThisError;
+
+#[derive(Debug, thiserror::Error)]
+pub enum PluginError {
+    #[error("Plugin operation failed: {0}")]
+    Operation(String),
+    #[error("Plugin state error: {0}")]
+    State(String),
+    #[error("Plugin configuration error: {0}")]
+    Config(String),
+    #[error("Plugin event error: {0}")]
+    Event(String),
+    #[error("Other error: {0}")]
+    Other(String),
+}
+
+impl From<PluginError> for Error {
+    fn from(err: PluginError) -> Self {
+        Error::Plugin(err.to_string())
+    }
+}
 
 /// Metadata about a plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,22 +95,22 @@ pub trait Plugin: Send + Sync {
     fn get_state(&self) -> PluginState;
     
     /// Initialize the plugin
-    async fn initialize(&mut self) -> Result<(), Error>;
+    async fn initialize(&mut self) -> Result<(), PluginError>;
     
     /// Start the plugin
-    async fn start(&mut self) -> Result<(), Error>;
+    async fn start(&mut self) -> Result<(), PluginError>;
     
     /// Stop the plugin
-    async fn stop(&mut self) -> Result<(), Error>;
+    async fn stop(&mut self) -> Result<(), PluginError>;
     
     /// Handle an event
-    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error>;
+    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), PluginError>;
     
     /// Get plugin configuration
     fn get_config(&self) -> Option<&Config>;
     
     /// Update plugin configuration
-    async fn update_config(&mut self, config: Config) -> Result<(), Error>;
+    async fn update_config(&mut self, config: Config) -> Result<(), PluginError>;
     
     /// Get plugin state as Any for downcasting
     fn as_any(&self) -> &dyn Any;
@@ -141,7 +162,7 @@ pub trait Stateful {
 impl<T: Plugin + Send + Sync> EventHandler for T {
     async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
         if self.get_capabilities().contains(&PluginCapability::EventHandler) {
-            self.handle_event(event).await
+            self.handle_event(event).await.map_err(|e| Error::Plugin(e.to_string()))
         } else {
             Ok(())
         }

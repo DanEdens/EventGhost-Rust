@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use async_trait::async_trait;
 use std::any::Any;
-use crate::core::plugin::traits::{Plugin, PluginInfo, PluginState, PluginCapability};
+use crate::core::plugin::traits::{Plugin, PluginInfo, PluginState, PluginCapability, PluginError};
 use crate::core::Error;
 use crate::core::config::Config;
 use crate::core::event::{Event, EventType, EventPayload};
@@ -28,7 +28,7 @@ impl LoggerPlugin {
                 capabilities: vec![
                     PluginCapability::EventHandler,
                     PluginCapability::HotReload,
-                    PluginCapability::ConfigManagement,
+                    PluginCapability::Configurable,
                 ],
             },
             state: PluginState::Created,
@@ -47,7 +47,7 @@ impl Plugin for LoggerPlugin {
         vec![
             PluginCapability::EventHandler,
             PluginCapability::HotReload,
-            PluginCapability::ConfigManagement,
+            PluginCapability::Configurable,
         ]
     }
 
@@ -55,25 +55,25 @@ impl Plugin for LoggerPlugin {
         self.state.clone()
     }
 
-    async fn initialize(&mut self) -> Result<(), Error> {
+    async fn initialize(&mut self) -> Result<(), PluginError> {
         info!("[Logger] Initializing...");
         self.state = PluginState::Initialized;
         Ok(())
     }
 
-    async fn start(&mut self) -> Result<(), Error> {
+    async fn start(&mut self) -> Result<(), PluginError> {
         info!("[Logger] Starting...");
         self.state = PluginState::Running;
         Ok(())
     }
 
-    async fn stop(&mut self) -> Result<(), Error> {
+    async fn stop(&mut self) -> Result<(), PluginError> {
         info!("[Logger] Stopping...");
         self.state = PluginState::Stopped;
         Ok(())
     }
 
-    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), Error> {
+    async fn handle_event(&mut self, event: &dyn Event) -> Result<(), PluginError> {
         match event.get_type() {
             EventType::System => {
                 info!("[Logger] System event: {:?} from {:?}", event.get_payload(), event.get_source());
@@ -98,8 +98,8 @@ impl Plugin for LoggerPlugin {
         self.config.as_ref()
     }
 
-    async fn update_config(&mut self, config: Config) -> Result<(), Error> {
-        info!("[Logger] Updating config...");
+    async fn update_config(&mut self, config: Config) -> Result<(), PluginError> {
+        info!("[Logger] Updating configuration...");
         self.config = Some(config);
         Ok(())
     }

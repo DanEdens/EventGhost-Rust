@@ -11,7 +11,7 @@ use gtk::{self, Window};
 use std::any::Any;
 use chrono::{DateTime, Local};
 use crate::core::event::{EventType, EventPayload};
-use crate::core::plugin::traits::{PluginState, PluginCapability};
+use crate::core::plugin::traits::{PluginState, PluginCapability, PluginError};
 use async_trait::async_trait;
 
 /// Mock plugin for testing
@@ -52,21 +52,21 @@ impl Plugin for MockPlugin {
         self.state
     }
     
-    async fn initialize(&mut self) -> Result<(), Error> {
+    async fn initialize(&mut self) -> Result<(), PluginError> {
         Ok(())
     }
     
-    async fn start(&mut self) -> Result<(), Error> {
+    async fn start(&mut self) -> Result<(), PluginError> {
         self.state = PluginState::Running;
         Ok(())
     }
     
-    async fn stop(&mut self) -> Result<(), Error> {
+    async fn stop(&mut self) -> Result<(), PluginError> {
         self.state = PluginState::Stopped;
         Ok(())
     }
     
-    async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), Error> {
+    async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), PluginError> {
         Ok(())
     }
     
@@ -74,7 +74,7 @@ impl Plugin for MockPlugin {
         None
     }
     
-    async fn update_config(&mut self, _config: Config) -> Result<(), Error> {
+    async fn update_config(&mut self, _config: Config) -> Result<(), PluginError> {
         Ok(())
     }
     
@@ -96,6 +96,10 @@ impl Plugin for MockPlugin {
     
     fn get_version(&self) -> &str {
         &self.info.version
+    }
+
+    fn clone_box(&self) -> Box<dyn Plugin> {
+        Box::new(self.clone())
     }
 }
 

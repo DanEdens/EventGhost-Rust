@@ -900,9 +900,11 @@ name = "logger-plugin"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "eventghost",
  "log",
  "serde",
+ "thiserror",
  "tokio",
  "uuid",
 ]

@@ -9,7 +9,7 @@ path = "src/bin/test-gui.rs"
 
 [lib]
 name = "eventghost"
-crate-type = ["rlib", "cdylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }

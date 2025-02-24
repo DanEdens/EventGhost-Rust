@@ -41,6 +41,24 @@ impl From<notify::Error> for LoaderError {
     }
 }
 
+impl From<Box<dyn std::error::Error>> for LoaderError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        LoaderError::Other(err.to_string())
+    }
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync>> for LoaderError {
+    fn from(err: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        LoaderError::Other(err.to_string())
+    }
+}
+
+impl From<&dyn std::error::Error> for LoaderError {
+    fn from(err: &dyn std::error::Error) -> Self {
+        LoaderError::Other(err.to_string())
+    }
+}
+
 type PluginCreateFn = unsafe fn() -> *mut dyn Plugin;
 
 #[derive(Clone)]
@@ -55,8 +73,10 @@ impl LoadedPlugin {
     }
 
     pub async fn stop(&mut self) -> Result<(), LoaderError> {
-        self.plugin.write().await.stop().await
-            .map_err(|e| LoaderError::Other(e.to_string()))
+        match self.plugin.write().await.stop().await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(LoaderError::Other(e.to_string()))
+        }
     }
 
     pub async fn get_info(&self) -> Result<PluginInfo, LoaderError> {
@@ -75,28 +95,40 @@ pub struct PluginLoader {
 }
 
 impl PluginLoader {
+    async fn handle_plugin_change(plugins: Arc<RwLock<Vec<LoadedPlugin>>>, path: PathBuf) {
+        let plugins_guard = plugins.read().await;
+        if let Some(plugin) = plugins_guard.iter().find(|p| p.path == path) {
+            match plugin.get_info().await {
+                Ok(info) => {
+                    let id = info.id;
+                    if let Err(e) = Self::reload_plugin_by_id(id, plugins.clone()).await {
+                        eprintln!("Failed to reload plugin {}: {}", id, e);
+                    }
+                }
+                Err(e) => eprintln!("Failed to get plugin info: {}", e),
+            }
+        }
+    }
+
     pub fn new(path: PathBuf) -> Result<Self, LoaderError> {
         let plugins: Arc<RwLock<Vec<LoadedPlugin>>> = Arc::new(RwLock::new(Vec::new()));
         let plugins_clone = plugins.clone();
 
         // Create file system watcher
-        let mut watcher = notify::recommended_watcher(move |res: Result<NotifyEvent, _>| {
-            if let Ok(event) = res {
-                if let EventKind::Modify(_) = event.kind {
-                    for path_buf in event.paths {
-                        if let Some(ext) = path_buf.extension() {
-                            if ext == "dll" || ext == "so" {
-                                // Get plugin ID from path
-                                let plugins = plugins_clone.clone();
-                                tokio::spawn(async move {
-                                    let plugins = plugins.read().await;
-                                    if let Some(plugin) = plugins.iter().find(|p| p.path == path_buf) {
-                                        let id = plugin.get_info().await.id;
-                                        if let Err(e) = Self::reload_plugin_by_id(id, plugins_clone.clone()).await {
-                                            eprintln!("Failed to reload plugin {}: {}", id, e);
-                                        }
-                                    }
-                                });
+        let mut watcher = notify::recommended_watcher({
+            let plugins = plugins_clone.clone();
+            move |res: Result<NotifyEvent, _>| {
+                if let Ok(event) = res {
+                    if let EventKind::Modify(_) = event.kind {
+                        for path_buf in event.paths {
+                            if let Some(ext) = path_buf.extension() {
+                                if ext == "dll" || ext == "so" {
+                                    let plugins = plugins.clone();
+                                    let path = path_buf.clone();
+                                    tokio::spawn(async move {
+                                        Self::handle_plugin_change(plugins, path).await;
+                                    });
+                                }
                             }
                         }
                     }
@@ -136,8 +168,11 @@ impl PluginLoader {
     pub async fn unload(&mut self) -> Result<(), LoaderError> {
         let mut plugins = self.plugins.write().await;
         for plugin in plugins.iter_mut() {
-            if plugin.get_state().await == PluginState::Running {
-                plugin.stop().await?;
+            let state = plugin.get_state().await?;
+            if state == PluginState::Running {
+                if let Err(e) = plugin.stop().await {
+                    return Err(LoaderError::Other(e.to_string()));
+                }
             }
         }
         plugins.clear();
@@ -203,8 +238,12 @@ impl PluginLoader {
             info.map(|info| info.id == id).unwrap_or(false)
         }) {
             let plugin = &mut plugins[pos];
-            if plugin.get_state().await?.eq(&PluginState::Running) {
-                plugin.stop().await?;
+            let state = plugin.get_state().await?;
+            if state == PluginState::Running {
+                let mut plugin_guard = plugin.plugin.write().await;
+                if let Err(e) = plugin_guard.stop().await {
+                    return Err(LoaderError::Other(e.to_string()));
+                }
             }
             plugins.remove(pos);
             Ok(())
@@ -238,8 +277,12 @@ impl PluginLoader {
         let path = plugin.path.clone();
         
         // Stop the plugin if it's running
-        if plugin.get_state().await?.eq(&PluginState::Running) {
-            plugin.stop().await?;
+        let state = plugin.get_state().await?;
+        if state == PluginState::Running {
+            let mut plugin_guard = plugin.plugin.write().await;
+            if let Err(e) = plugin_guard.stop().await {
+                return Err(LoaderError::Other(e.to_string()));
+            }
         }
         
         // Remove old plugin
@@ -266,8 +309,12 @@ impl PluginLoader {
         let config = plugin.get_config().await?;
         
         // Stop the plugin if it's running
-        if plugin.get_state().await?.eq(&PluginState::Running) {
-            plugin.stop().await?;
+        let state = plugin.get_state().await?;
+        if state == PluginState::Running {
+            let mut plugin_guard = plugin.plugin.write().await;
+            if let Err(e) = plugin_guard.stop().await {
+                return Err(LoaderError::Other(e.to_string()));
+            }
         }
         
         // Remove old plugin
@@ -280,8 +327,9 @@ impl PluginLoader {
         
         // Restore configuration if available
         if let Some(config) = config {
-            new_plugin.update_config(config).await
-                .map_err(|e| LoaderError::Other(e.to_string()))?;
+            if let Err(e) = new_plugin.update_config(config).await {
+                return Err(LoaderError::Other(e.to_string()));
+            }
         }
         
         // Add new plugin back to registry
