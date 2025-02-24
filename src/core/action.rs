@@ -338,4 +338,141 @@ impl Plugin for DummyPlugin {
     fn clone_box(&self) -> Box<dyn Plugin> {
         Box::new(self.clone())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::event::{EventType, EventPayload};
+    use std::sync::Arc;
+    
+    #[derive(Debug)]
+    struct TestAction {
+        id: Uuid,
+        plugin: Arc<dyn Plugin>,
+        name: String,
+        description: String,
+        executed: bool,
+    }
+    
+    impl TestAction {
+        fn new(plugin: Arc<dyn Plugin>) -> Self {
+            Self {
+                id: Uuid::new_v4(),
+                plugin,
+                name: "Test Action".to_string(),
+                description: "A test action".to_string(),
+                executed: false,
+            }
+        }
+    }
+    
+    #[async_trait]
+    impl Action for TestAction {
+        fn get_id(&self) -> Uuid {
+            self.id
+        }
+        
+        fn get_name(&self) -> &str {
+            &self.name
+        }
+        
+        fn get_description(&self) -> &str {
+            &self.description
+        }
+        
+        fn get_supported_event_types(&self) -> Vec<EventType> {
+            vec![EventType::System]
+        }
+        
+        fn get_plugin(&self) -> Arc<dyn Plugin> {
+            self.plugin.clone()
+        }
+        
+        async fn execute(&mut self, _event: &dyn Event) -> Result<ActionResult, Error> {
+            self.executed = true;
+            Ok(ActionResult::success().with_data("executed".to_string()))
+        }
+        
+        fn validate(&self) -> Result<(), Error> {
+            Ok(())
+        }
+    }
+    
+    #[tokio::test]
+    async fn test_action_manager() {
+        let plugin = Arc::new(DummyPlugin);
+        let mut manager = ActionManager::new();
+        
+        // Create a group with a test action
+        let mut group = ActionGroup::new(
+            "Test Group", 
+            plugin.clone(), 
+            Some("A test group".to_string()),
+            None
+        );
+        
+        let action = Box::new(TestAction::new(plugin.clone()));
+        let action_id = action.get_id();
+        group.add_action(action).unwrap();
+        
+        // Add the group to the manager
+        manager.register_group(group);
+        
+        // Create a test event
+        struct TestEvent;
+        
+        impl std::fmt::Debug for TestEvent {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_struct("TestEvent").finish()
+            }
+        }
+        
+        impl Event for TestEvent {
+            fn get_id(&self) -> &str {
+                "test-event"
+            }
+            
+            fn get_type(&self) -> EventType {
+                EventType::System
+            }
+            
+            fn get_payload(&self) -> &EventPayload {
+                static NONE_PAYLOAD: EventPayload = EventPayload::None;
+                &NONE_PAYLOAD
+            }
+            
+            fn get_timestamp(&self) -> chrono::DateTime<chrono::Local> {
+                chrono::Local::now()
+            }
+            
+            fn get_source(&self) -> Option<&str> {
+                None
+            }
+            
+            fn as_any(&self) -> &dyn Any {
+                self
+            }
+            
+            fn as_any_mut(&mut self) -> &mut dyn Any {
+                self
+            }
+            
+            fn clone_event(&self) -> Box<dyn Event + Send + Sync> {
+                Box::new(TestEvent)
+            }
+        }
+        
+        // Execute the action
+        let event = TestEvent;
+        let result = manager.execute_action(action_id, &event).await.unwrap();
+        
+        // Check that the action was executed successfully
+        assert!(result.success);
+        
+        // Check that we can find actions by event type
+        let actions = manager.get_actions_for_event_type(EventType::System);
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0].get_id(), action_id);
+    }
 } 
