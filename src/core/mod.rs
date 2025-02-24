@@ -15,6 +15,8 @@ pub mod plugin;
 pub mod error;
 pub mod logging;
 pub mod named_pipe;
+pub mod action;
+pub mod actions;
 
 pub use error::Error;
 pub use config::Config;
@@ -29,6 +31,14 @@ pub use plugin::PluginInfo;
 pub use event::Event;
 pub use event::EventManager;
 pub use event::EventHandler;
+
+// Action types
+pub use action::Action;
+pub use action::ActionManager;
+pub use action::ActionResult;
+
+// Action implementations
+pub use actions::DelayAction;
 
 // Re-export config types
 pub use config::ConfigStore;
