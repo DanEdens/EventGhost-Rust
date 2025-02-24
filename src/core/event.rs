@@ -206,16 +206,18 @@ impl EventManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::mocks::MockEvent;
+    mod mocks {
+        pub use crate::testing::mocks::MockEvent;
+    }
+    use mocks::MockEvent;
     use std::time::Duration;
 
     #[tokio::test]
     async fn test_event_routing() {
         let manager = EventManager::new();
         
-        // Create a mock event
+        // Create a mock event with the correct constructor parameters
         let event = Box::new(MockEvent::new(
-            "test_event",
             EventType::System,
             EventPayload::Text("test".to_string()),
         ));

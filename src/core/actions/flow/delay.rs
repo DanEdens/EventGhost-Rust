@@ -1,11 +1,14 @@
+use std::any::Any;
 use std::sync::Arc;
 use std::time::Duration;
 use async_trait::async_trait;
 use uuid::Uuid;
 use crate::core::Error;
 use crate::core::action::{Action, ActionResult, ActionConfig};
-use crate::core::event::{Event, EventType};
-use crate::core::plugin::Plugin;
+use crate::core::event::{Event, EventType, EventPayload};
+use crate::core::plugin::{Plugin, PluginInfo, PluginCapability, PluginState, PluginError};
+use crate::core::config::Config;
+use chrono::{DateTime, Local};
 
 /// Action that introduces a delay in the execution flow
 #[derive(Debug)]
@@ -97,7 +100,7 @@ mod tests {
     use std::time::Instant;
     use tokio::test;
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct TestPlugin;
 
     #[async_trait]
@@ -106,27 +109,100 @@ mod tests {
         fn get_description(&self) -> &str { "Test Plugin" }
         fn get_version(&self) -> &str { "1.0.0" }
         fn get_author(&self) -> &str { "Test Author" }
-        async fn initialize(&mut self) -> Result<(), Error> { Ok(()) }
-        async fn terminate(&mut self) -> Result<(), Error> { Ok(()) }
+
+        fn get_info(&self) -> PluginInfo {
+            PluginInfo {
+                id: Uuid::new_v4(),
+                name: self.get_name().to_string(),
+                description: self.get_description().to_string(),
+                version: self.get_version().to_string(),
+                author: self.get_author().to_string(),
+                homepage: None,
+                platforms: vec!["all".to_string()],
+                capabilities: vec![PluginCapability::ActionProvider],
+            }
+        }
+
+        fn get_capabilities(&self) -> Vec<PluginCapability> {
+            vec![PluginCapability::ActionProvider]
+        }
+
+        fn get_state(&self) -> PluginState {
+            PluginState::Stopped
+        }
+
+        async fn initialize(&mut self) -> Result<(), PluginError> {
+            Ok(())
+        }
+
+        async fn start(&mut self) -> Result<(), PluginError> {
+            Ok(())
+        }
+
+        async fn stop(&mut self) -> Result<(), PluginError> {
+            Ok(())
+        }
+
+        async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), PluginError> {
+            Ok(())
+        }
+
+        fn get_config(&self) -> Option<&Config> {
+            None
+        }
+
+        async fn update_config(&mut self, _config: Config) -> Result<(), PluginError> {
+            Ok(())
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn clone_box(&self) -> Box<dyn Plugin> {
+            Box::new(self.clone())
+        }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct TestEvent {
         event_type: EventType,
     }
 
     impl Event for TestEvent {
-        fn get_id(&self) -> &str { "test" }
-        fn get_type(&self) -> EventType { self.event_type }
-        fn get_payload(&self) -> &crate::core::event::EventPayload {
-            &crate::core::event::EventPayload::None
+        fn get_id(&self) -> &str {
+            "test-event"
         }
-        fn get_timestamp(&self) -> chrono::DateTime<chrono::Local> {
+        
+        fn get_type(&self) -> EventType { 
+            self.event_type.clone() 
+        }
+        
+        fn get_payload(&self) -> &EventPayload {
+            // Using static payload for testing
+            static NONE_PAYLOAD: EventPayload = EventPayload::None;
+            &NONE_PAYLOAD
+        }
+
+        fn get_timestamp(&self) -> DateTime<Local> {
             chrono::Local::now()
         }
-        fn get_source(&self) -> Option<&str> { None }
-        fn as_any(&self) -> &dyn std::any::Any { self }
-        fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
+
+        fn get_source(&self) -> Option<&str> {
+            None
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn as_any_mut(&mut self) -> &mut dyn Any {
+            self
+        }
+
+        fn clone_event(&self) -> Box<dyn Event + Send + Sync> {
+            Box::new(self.clone())
+        }
     }
 
     #[test]

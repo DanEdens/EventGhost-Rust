@@ -5,14 +5,25 @@ use async_trait::async_trait;
 use uuid::Uuid;
 use crate::core::Error;
 use crate::core::event::{Event, EventType};
-use crate::core::plugin::Plugin;
+use crate::core::plugin::{Plugin, PluginInfo, PluginState, PluginCapability, PluginError};
+use crate::core::config::Config;
 
 /// Represents the result of an action execution
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ActionResult {
     pub success: bool,
     pub message: Option<String>,
     pub data: Option<Box<dyn Any + Send + Sync>>,
+}
+
+impl Clone for ActionResult {
+    fn clone(&self) -> Self {
+        Self {
+            success: self.success,
+            message: self.message.clone(),
+            data: None, // We can't clone the Any data
+        }
+    }
 }
 
 impl ActionResult {
@@ -185,18 +196,18 @@ impl ActionGroup {
 }
 
 /// Action manager that handles registration and execution of actions
-#[derive(Default)]
 pub struct ActionManager {
     root_group: ActionGroup,
 }
 
 impl ActionManager {
     pub fn new() -> Self {
+        let plugin = Arc::new(DummyPlugin);
         Self {
             root_group: ActionGroup::new(
                 "Root",
-                Arc::new(DummyPlugin {}),
-                None,
+                plugin,
+                Some("Root action group".to_string()),
                 None,
             ),
         }
@@ -254,7 +265,7 @@ impl ActionManager {
 }
 
 // Dummy plugin implementation for the root group
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DummyPlugin;
 
 #[async_trait]
@@ -275,11 +286,56 @@ impl Plugin for DummyPlugin {
         "System"
     }
 
-    async fn initialize(&mut self) -> Result<(), Error> {
+    fn get_info(&self) -> PluginInfo {
+        PluginInfo {
+            id: Uuid::new_v4(),
+            name: self.get_name().to_string(),
+            description: self.get_description().to_string(),
+            version: self.get_version().to_string(),
+            author: self.get_author().to_string(),
+            homepage: None,
+            platforms: vec!["all".to_string()],
+            capabilities: vec![PluginCapability::ActionProvider],
+        }
+    }
+
+    fn get_capabilities(&self) -> Vec<PluginCapability> {
+        vec![PluginCapability::ActionProvider]
+    }
+
+    fn get_state(&self) -> PluginState {
+        PluginState::Stopped
+    }
+
+    async fn initialize(&mut self) -> Result<(), PluginError> {
         Ok(())
     }
 
-    async fn terminate(&mut self) -> Result<(), Error> {
+    async fn start(&mut self) -> Result<(), PluginError> {
         Ok(())
+    }
+
+    async fn stop(&mut self) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    fn get_config(&self) -> Option<&Config> {
+        None
+    }
+
+    async fn update_config(&mut self, _config: Config) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn Plugin> {
+        Box::new(self.clone())
     }
 } 

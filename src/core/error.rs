@@ -31,6 +31,21 @@ pub enum Error {
     
     #[error("Event bus error: {0}")]
     EventBus(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
+
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+
+    #[error("Invalid configuration: {0}")]
+    InvalidConfiguration(String),
+
+    #[error("Duplicate ID: {0}")]
+    DuplicateId(String),
     
     #[error("Other error: {0}")]
     Other(String),

@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::fmt::Debug;
 use async_trait::async_trait;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
@@ -84,7 +85,7 @@ pub enum PluginState {
 
 /// Base trait for plugin functionality
 #[async_trait]
-pub trait Plugin: Send + Sync {
+pub trait Plugin: Send + Sync + Debug {
     /// Get plugin information
     fn get_info(&self) -> PluginInfo;
     
@@ -188,95 +189,102 @@ impl Clone for Box<dyn Plugin> {
     }
 }
 
+#[derive(Debug)]
+struct TestPlugin {
+    state: PluginState,
+}
+
+impl TestPlugin {
+    fn new() -> Self {
+        Self {
+            state: PluginState::Created,
+        }
+    }
+}
+
+#[async_trait]
+impl Plugin for TestPlugin {
+    fn get_state(&self) -> PluginState {
+        self.state.clone()
+    }
+
+    async fn initialize(&mut self) -> Result<(), PluginError> {
+        self.state = PluginState::Initialized;
+        Ok(())
+    }
+
+    async fn start(&mut self) -> Result<(), PluginError> {
+        self.state = PluginState::Running;
+        Ok(())
+    }
+
+    async fn stop(&mut self) -> Result<(), PluginError> {
+        self.state = PluginState::Stopped;
+        Ok(())
+    }
+
+    async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    async fn update_config(&mut self, _config: Config) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    fn get_name(&self) -> &str {
+        "Test Plugin"
+    }
+
+    fn get_description(&self) -> &str {
+        "A plugin for testing"
+    }
+
+    fn get_author(&self) -> &str {
+        "Test Author"
+    }
+
+    fn get_version(&self) -> &str {
+        "1.0.0"
+    }
+
+    fn get_capabilities(&self) -> Vec<PluginCapability> {
+        vec![PluginCapability::EventHandler]
+    }
+
+    fn get_info(&self) -> PluginInfo {
+        PluginInfo {
+            id: uuid::Uuid::new_v4(),
+            name: self.get_name().to_string(),
+            description: self.get_description().to_string(),
+            version: self.get_version().to_string(),
+            author: self.get_author().to_string(),
+            homepage: None,
+            platforms: vec!["all".to_string()],
+            capabilities: self.get_capabilities(),
+        }
+    }
+
+    fn get_config(&self) -> Option<&Config> {
+        None
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn Plugin> {
+        Box::new(Self { state: self.state.clone() })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[derive(Clone)]
-    struct TestPlugin {
-        info: PluginInfo,
-        state: PluginState,
-    }
-
-    #[async_trait]
-    impl Plugin for TestPlugin {
-        fn get_info(&self) -> PluginInfo {
-            self.info.clone()
-        }
-
-        fn get_capabilities(&self) -> Vec<PluginCapability> {
-            vec![]
-        }
-
-        fn get_state(&self) -> PluginState {
-            self.state
-        }
-
-        async fn initialize(&mut self) -> Result<(), Error> {
-            Ok(())
-        }
-
-        async fn start(&mut self) -> Result<(), Error> {
-            Ok(())
-        }
-
-        async fn stop(&mut self) -> Result<(), Error> {
-            Ok(())
-        }
-
-        async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), Error> {
-            Ok(())
-        }
-
-        fn get_config(&self) -> Option<&Config> {
-            None
-        }
-
-        async fn update_config(&mut self, _config: Config) -> Result<(), Error> {
-            Ok(())
-        }
-
-        fn as_any(&self) -> &dyn Any {
-            self
-        }
-
-        fn get_name(&self) -> &str {
-            &self.info.name
-        }
-
-        fn get_description(&self) -> &str {
-            &self.info.description
-        }
-
-        fn get_author(&self) -> &str {
-            &self.info.author
-        }
-
-        fn get_version(&self) -> &str {
-            &self.info.version
-        }
-
-        fn clone_box(&self) -> Box<dyn Plugin> {
-            Box::new(self.clone())
-        }
-    }
-
     // Basic tests that don't require cloning
     #[test]
     fn test_plugin_basics() {
-        let plugin = TestPlugin {
-            info: PluginInfo {
-                id: Uuid::new_v4(),
-                name: "Test Plugin".to_string(),
-                description: "A test plugin".to_string(),
-                version: "0.1.0".to_string(),
-                author: "Test Author".to_string(),
-                homepage: None,
-                platforms: vec![],
-                capabilities: vec![],
-            },
-            state: PluginState::Created,
-        };
+        let plugin = TestPlugin::new();
 
         assert_eq!(plugin.get_name(), "Test Plugin");
         assert_eq!(plugin.get_state(), PluginState::Created);
