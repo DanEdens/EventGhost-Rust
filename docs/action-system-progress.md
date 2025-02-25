@@ -33,16 +33,32 @@ This document tracks the progress and implementation details of the EventGhost R
      - Greater Than/Less Than/Greater Than or Equal/Less Than or Equal
    - Executes different action sequences based on the condition result
 
+3. **WhileLoopAction**
+   - Repeatedly executes actions while a condition is true
+   - Uses the same condition evaluation system as ConditionalAction
+   - Includes safeguards against infinite loops with configurable max_iterations
+   - Returns a success/failure result with the number of iterations executed
+
+4. **ForLoopAction**
+   - Executes actions a specified number of times
+   - Flexible configuration options:
+     - Simple count (0 to N-1)
+     - Custom start, end, and step values
+     - Support for negative step values for countdown loops
+   - Includes validation to prevent infinite loops
+   - Designed to integrate with a future variable system to track the current iteration
+
 ## Testing
 - Comprehensive test suite for all actions
 - Mock events, plugins, and tracking actions for validation
 - Coverage for edge cases and error conditions
+- Thread-safe test implementations using atomic counters
 
 ## Next Steps
-1. **Loop Actions**: Implement While and For loop actions
-2. **Action Configuration UI**: Create UI components for configuring actions
-3. **System Actions**: Implement common system actions (execute program, etc.)
-4. **Thread Management**: Add dedicated action execution thread and pooling
+1. **Action Configuration UI**: Create UI components for configuring actions
+2. **System Actions**: Implement common system actions (execute program, etc.)
+3. **Thread Management**: Add dedicated action execution thread and pooling
+4. **Variable System**: Implement a robust variable system for storing and accessing values
 
 ## Technical Decisions
 

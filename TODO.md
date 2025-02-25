@@ -96,7 +96,7 @@
 ### Standard Actions
 - [x] Flow Control Actions
   - [x] Conditional execution (If/Else)
-  - [ ] Loops (While/For)
+  - [x] Loops (While/For)
   - [x] Delay/Wait
   - [ ] Jump to macro
 - [ ] System Actions
@@ -148,13 +148,12 @@
   - [ ] Troubleshooting guide
 
 ## Next Steps (Priority Order)
-1. Implement remaining flow control actions (Loops)
-2. Add action configuration UI
-3. Create system action implementations
-4. Implement action thread management
-5. Add action persistence
-6. Develop plugin action integration
-7. Write documentation
+1. Add action configuration UI
+2. Create system action implementations
+3. Implement action thread management
+4. Add action persistence
+5. Develop plugin action integration
+6. Write documentation
 
 ## Future Enhancements
 - [ ] Action templates
