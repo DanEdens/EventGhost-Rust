@@ -9,8 +9,15 @@ path = "src/bin/test-gui.rs"
 
 [lib]
 name = "eventghost"
-crate-type = ["cdylib"]
+# Only use rlib for building to avoid "export ordinal too large" error
+crate-type = ["rlib"]
 
+# Configure what symbols are exported from the DLL to avoid "export ordinal too large" errors
+[package.metadata.dlltool]
+prefix-symbols = false
+no-leading-underscore = true
+
+# Add a dependency to help control DLL exports
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
@@ -45,8 +52,23 @@ pkg-config = "0.3"
 [features]
 default = []
 plugin_hot_reload = []
+testing = []  # Feature for testing utilities 
+production = []  # Production feature for future use
 
 [workspace]
 members = [
     "plugins/logger",
 ] 
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = '...'  # Platform-specific.
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+strip = false 

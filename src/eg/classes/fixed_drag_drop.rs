@@ -291,8 +291,10 @@ pub fn enable_drag_drop(tree_view: &TreeView, tree_store: &TreeStore) {
                 // Get the target path at the drop position
                 if let Some((target_path, _, _, _)) = tree_view_for_drop.path_at_pos(x as i32, y as i32) {
                     // Handle the drop logic here
+                    // Get source iterator first
                     if let Some(source_iter) = tree_store_for_drop.iter(&source_path) {
-                        if let Some(target_iter) = tree_store_for_drop.iter(target_path.as_ref().expect("Target path should exist")) {
+                        // Then get target iterator
+                        if let Some(target_iter) = tree_store_for_drop.iter(&target_path) {
                             // Get the target's parent
                             let target_parent = tree_store_for_drop.iter_parent(&target_iter);
                             
@@ -328,7 +330,7 @@ pub fn on_drag_prepare(view: &TreeView, x: f64, y: f64) -> glib::Value {
     // Convert float coordinates to integers for GTK4
     if let Some((path, _, _, _)) = view.path_at_pos(x as i32, y as i32) {
         // Get path indices and convert to string
-        let indices = path.as_ref().expect("Path should exist").indices();
+        let indices = path.indices();
         let mut index_strs = Vec::new();
         for i in 0..indices.len() {
             index_strs.push(indices[i].to_string());
@@ -352,7 +354,7 @@ mod tests {
         gtk::init().expect("Failed to initialize GTK");
         
         let button = Button::new();
-        let source = DragSourceWrapper::new(button.clone().upcast());
+        let source = DragSourceWrapper::new(button.upcast());
         let target = DropTargetWrapper::new(button.upcast());
         
         source.set_data(|| "test data".to_string());
@@ -366,13 +368,12 @@ mod tests {
         gtk::init().expect("Failed to initialize GTK");
         
         let button = Button::new();
-        let source = DragSourceWrapper::new(button.clone().upcast());
+        let source = DragSourceWrapper::new(button.upcast());
         let target = DropTargetWrapper::new_for_files(button.upcast());
         
         let test_path = PathBuf::from("/test/path");
-        let test_path_clone = test_path.clone();
-        source.set_files(move || vec![test_path_clone.clone()]);
-        target.on_drop_files(move |paths| {
+        source.set_files(move || vec![test_path.clone()]);
+        target.on_drop_files(|paths| {
             assert_eq!(paths.len(), 1);
             assert_eq!(paths[0], test_path);
         });

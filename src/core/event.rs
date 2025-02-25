@@ -8,6 +8,9 @@ use std::any::Any;
 use async_trait::async_trait;
 use futures;
 
+#[cfg(any(test, feature = "testing"))]
+use crate::testing::MockEvent;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventType {
     System,
@@ -206,10 +209,6 @@ impl EventManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    mod mocks {
-        pub use crate::testing::mocks::MockEvent;
-    }
-    use mocks::MockEvent;
     use std::time::Duration;
 
     #[tokio::test]

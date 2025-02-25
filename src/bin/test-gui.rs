@@ -1,7 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, Application};
 use gio::Resource;
-extern crate eventghost;
 use eventghost::eg::classes::MainFrame;
 
 fn main() {

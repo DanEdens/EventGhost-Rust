@@ -105,12 +105,12 @@ impl ConfigView {
                         
                         // Don't allow dropping on the same path
                         let source_indices = source_path.indices();
-                        let target_indices = target_path.indices();
+                        let target_indices = target_path.as_ref().expect("Target path should exist").indices();
                         
                         if source_indices != target_indices {
                             // Get iterators for the source and target paths
                             if let Some(source_iter) = tree_store_for_drop.iter(&source_path) {
-                                if let Some(target_iter) = tree_store_for_drop.iter(target_path) {
+                                if let Some(target_iter) = tree_store_for_drop.iter(target_path.as_ref().expect("Target path should exist")) {
                                     // Get the target's parent
                                     let target_parent = tree_store_for_drop.iter_parent(&target_iter);
                                     

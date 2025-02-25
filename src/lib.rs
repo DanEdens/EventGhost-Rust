@@ -5,5 +5,5 @@ pub mod eg;
 pub use core::Error;
 
 // Test utilities
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 pub mod testing; 

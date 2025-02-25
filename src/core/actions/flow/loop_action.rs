@@ -433,8 +433,8 @@ impl Action for ForLoopAction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::mocks::MockPlugin;
-    use crate::testing::mocks::MockEvent;
+    use eventghost::testing::MockPlugin;
+    use eventghost::testing::MockEvent;
     use std::sync::atomic::{AtomicI32, Ordering};
     
     #[tokio::test]

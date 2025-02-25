@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::core::Error;
 use super::property_grid::PropertyGrid;
 use super::UIComponent;
-use crate::eg::config::{Plugin, Config};
+use crate::eg::config::{Plugin, Config, ConfigItem};
 
 pub struct PluginPage {
     pub name: String,
@@ -43,6 +43,7 @@ pub struct PluginConfigDialog {
     pages: Vec<PluginPage>,
     config: Option<Rc<RefCell<Config>>>,
     plugin_id: Option<Uuid>,
+    plugin_values: HashMap<String, String>,
 }
 
 impl PluginConfigDialog {
@@ -62,9 +63,8 @@ impl PluginConfigDialog {
         widget.add_button("Apply", ResponseType::Apply);
         
         // Set up dialog UI
-        let header_bar = HeaderBar::new();
-        header_bar.set_title(Some(&format!("{} Configuration", plugin_name)));
-        
+        let header_bar = gtk::HeaderBar::new();
+        header_bar.set_title_widget(Some(&gtk::Label::new(Some(&format!("{} Configuration", plugin_name)))));
         widget.set_titlebar(Some(&header_bar));
         
         PluginConfigDialog {
@@ -72,6 +72,7 @@ impl PluginConfigDialog {
             pages: Vec::new(),
             config: None,
             plugin_id: None,
+            plugin_values: HashMap::new(),
         }
     }
     
@@ -87,6 +88,7 @@ impl PluginConfigDialog {
     pub fn set_plugin(&mut self, plugin: &Plugin, config: Rc<RefCell<Config>>) {
         self.plugin_id = Some(plugin.id);
         self.config = Some(config);
+        self.plugin_values = plugin.config.clone();
         
         // Update UI with plugin config
         for page in &self.pages {
@@ -98,8 +100,39 @@ impl PluginConfigDialog {
     }
     
     pub fn run(&self) -> ResponseType {
-        let future = self.widget.run_future();
-        MainContext::default().block_on(future)
+        // Create a channel to receive the dialog response
+        let (sender, receiver) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+        
+        // Connect to the response signal to send the response through the channel
+        self.widget.connect_response(move |dialog, response| {
+            sender.send(response).expect("Failed to send response");
+            dialog.close();
+        });
+        
+        // Show the dialog
+        self.widget.show();
+        
+        // Use a new main context to wait for the response
+        let context = glib::MainContext::new();
+        let _acquire = context.acquire();
+        
+        // Use a boolean to track response
+        let mut response_received = false;
+        let mut response_value = ResponseType::Cancel;
+        
+        // Install source to wait for the response
+        let _source_id = receiver.attach(Some(&context), move |response| {
+            response_value = response;
+            response_received = true;
+            glib::Continue(false) // Remove source after first response
+        });
+        
+        // Run the main loop until we get a response
+        while !response_received {
+            context.iteration(true);
+        }
+        
+        response_value
     }
     
     pub fn run_for_plugin(&mut self, plugin: &Plugin, config: Rc<RefCell<Config>>) -> Result<Plugin, Error> {
@@ -141,11 +174,14 @@ impl PluginConfigDialog {
             if let Some(config) = &self.config {
                 if let Some(plugin_id) = self.plugin_id {
                     let mut config = config.borrow_mut();
-                    // Update the plugin in the config
-                    for plugin in &mut config.plugins {
-                        if plugin.id == plugin_id {
-                            *plugin = updated_plugin.clone();
-                            break;
+                    // Find the plugin in the config items
+                    for item in &mut config.items {
+                        if let ConfigItem::Plugin(plugin) = item {
+                            if plugin.id == self.plugin_id.unwrap() {
+                                // Update the plugin values
+                                plugin.config = self.plugin_values.clone();
+                                break;
+                            }
                         }
                     }
                 }
@@ -153,7 +189,7 @@ impl PluginConfigDialog {
             
             Ok(updated_plugin)
         } else {
-            Err(Error::new("Plugin configuration cancelled"))
+            Err(Error::Other("Plugin configuration cancelled".to_string()))
         }
     }
 }

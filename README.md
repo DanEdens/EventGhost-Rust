@@ -54,12 +54,26 @@ A Rust implementation of EventGhost, a powerful automation tool for Windows. Thi
    ```
 4. Build the project:
    ```bash
-   cargo build --release
+   # Build the binary application
+   cargo build --bin test-gui --release
+   
+   # Running tests requires the testing feature flag
+   cargo test --features testing
    ```
+
+### Build Options
+The project uses feature flags to control the build:
+
+- `testing`: Enables testing utilities and mocks for unit tests
+- `production`: Used for production builds
+- `plugin_hot_reload`: Enables hot reloading of plugins during development
+
+### Known Issues
+- When building with `cdylib` crate type, you may encounter an "export ordinal too large" error due to the size of the project. To work around this, the main build uses only `rlib` crate type. The `cdylib` type will only be enabled for releases in the future.
 
 ### Running
 ```bash
-cargo run --release
+cargo run --bin test-gui --release
 ```
 
 ## Development
@@ -72,7 +86,8 @@ src/
 │   ├── classes/   # UI components
 │   ├── config/    # Configuration handling
 │   └── plugins/   # Plugin system
-├── main.rs        # Application entry point
+├── bin/          # Binary entry points
+│   └── test-gui.rs # Main application entry point
 └── resources/     # Application resources
 ```
 
@@ -86,7 +101,7 @@ src/
 ### Testing
 Run the test suite:
 ```bash
-cargo test
+cargo test --features testing
 ```
 
 ## Contributing

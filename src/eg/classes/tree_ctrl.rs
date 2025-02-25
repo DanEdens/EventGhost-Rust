@@ -1,5 +1,7 @@
 use gtk::prelude::*;
-use gtk::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter};
+use gtk::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter, SelectionMode};
+use gdk4::{self, DragAction};
+use gtk::{DragSource as GtkDragSource};
 use glib;
 use super::UIComponent;
 
@@ -13,6 +15,8 @@ pub struct TreeCtrl {
     pub tree_view: TreeView,
     pub store: TreeStore,
     selection: TreeSelection,
+    pub view: TreeView,
+    drag_source: GtkDragSource,
 }
 
 impl TreeCtrl {
@@ -23,31 +27,32 @@ impl TreeCtrl {
         tree_view.set_model(Some(&store));
         
         let selection = tree_view.selection();
+        selection.set_mode(SelectionMode::Single);
+        
+        let drag_source = GtkDragSource::new();
+        drag_source.set_actions(DragAction::COPY | DragAction::MOVE);
+        tree_view.add_controller(drag_source.clone());
         
         container.append(&tree_view);
         
         TreeCtrl {
             container,
-            tree_view,
+            tree_view: tree_view.clone(),
             store,
             selection,
+            drag_source,
+            view: tree_view,
         }
     }
     
     pub fn expand_item(&self, iter: &gtk::TreeIter) {
-        if let Some(path) = self.store.path(iter) {
-            self.tree_view.expand_row(&path, false);
-        } else {
-            eprintln!("Could not find path for the given iter.");
-        }
+        let path = self.store.path(iter);
+        self.tree_view.expand_row(&path, false);
     }
     
     pub fn collapse_item(&self, iter: &gtk::TreeIter) {
-        if let Some(path) = self.store.path(iter) {
-            self.tree_view.collapse_row(&path);
-        } else {
-            eprintln!("Could not find path for the given iter.");
-        }
+        let path = self.store.path(iter);
+        self.tree_view.collapse_row(&path);
     }
     
     pub fn expand_all(&self) {
@@ -62,12 +67,55 @@ impl TreeCtrl {
         &self.selection
     }
     
-    pub fn get_path(&self, iter: &TreeIter) -> Option<TreePath> {
-        Some(self.store.path(iter))
+    pub fn get_path(&self, iter: &TreeIter) -> TreePath {
+        self.store.path(iter)
     }
 
     pub fn get_iter(&self, path: &TreePath) -> Option<TreeIter> {
         self.store.iter(path)
+    }
+
+    pub fn get_path_string(&self, iter: &TreeIter) -> Option<String> {
+        let path = self.store.path(iter);
+        // Convert the TreePath to a string representation
+        let indices = path.indices();
+        let mut index_strs = Vec::new();
+        for i in 0..indices.len() {
+            index_strs.push(indices[i].to_string());
+        }
+        Some(index_strs.join(":"))
+    }
+    
+    pub fn expand_row(&self, iter: &TreeIter, recursive: bool) -> bool {
+        let path = self.store.path(iter);
+        self.view.expand_row(&path, recursive)
+    }
+    
+    pub fn collapse_row(&self, iter: &TreeIter) -> bool {
+        let path = self.store.path(iter);
+        self.view.collapse_row(&path)
+    }
+
+    // Get the selected path as a string
+    pub fn get_selected_path_string(&self) -> Option<String> {
+        self.get_selected_path()
+            .map(|path| {
+                // Convert the TreePath to a string representation
+                let indices = path.indices();
+                let mut index_strs = Vec::new();
+                for i in 0..indices.len() {
+                    index_strs.push(indices[i].to_string());
+                }
+                index_strs.join(":")
+            })
+    }
+
+    pub fn get_selected_path(&self) -> Option<TreePath> {
+        if let Some((model, iter)) = self.selection.selected() {
+            Some(model.path(&iter))
+        } else {
+            None
+        }
     }
 }
 

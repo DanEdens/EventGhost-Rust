@@ -356,10 +356,7 @@ impl PluginRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    mod mocks {
-        pub use crate::testing::mocks::MockPlugin;
-    }
-    use mocks::MockPlugin;
+    use crate::testing::MockPlugin;
     use tempfile::TempDir;
     use std::fs;
     use std::time::Duration;
