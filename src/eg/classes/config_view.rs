@@ -105,30 +105,28 @@ impl ConfigView {
                         
                         // Don't allow dropping on the same path
                         let source_indices = source_path.indices();
-                        if let Some(path) = &target_path {
-                            let target_indices = path.indices();
-                            
-                            if source_indices != target_indices {
-                                // Get iterators for the source and target paths
-                                if let Some(source_iter) = tree_store_for_drop.iter(&source_path) {
-                                    if let Some(target_iter) = tree_store_for_drop.iter(path) {
-                                        // Get the target's parent
-                                        let target_parent = tree_store_for_drop.iter_parent(&target_iter);
-                                        
-                                        // Copy the row to the new location
-                                        let new_iter = tree_store_for_drop.insert_after(target_parent.as_ref(), Some(&target_iter));
-                                        
-                                        // Copy the values
-                                        for i in 0..tree_store_for_drop.n_columns() {
-                                            let column = i32::try_from(i).unwrap_or(0);
-                                            let value = tree_store_for_drop.get_value(&source_iter, column);
-                                            tree_store_for_drop.set_value(&new_iter, column as u32, &value);
-                                        }
-                                        
-                                        // Remove the original row
-                                        tree_store_for_drop.remove(&source_iter);
-                                        return true;
+                        let target_indices = target_path.indices();
+                        
+                        if source_indices != target_indices {
+                            // Get iterators for the source and target paths
+                            if let Some(source_iter) = tree_store_for_drop.iter(&source_path) {
+                                if let Some(target_iter) = tree_store_for_drop.iter(target_path) {
+                                    // Get the target's parent
+                                    let target_parent = tree_store_for_drop.iter_parent(&target_iter);
+                                    
+                                    // Copy the row to the new location
+                                    let new_iter = tree_store_for_drop.insert_after(target_parent.as_ref(), Some(&target_iter));
+                                    
+                                    // Copy the values
+                                    for i in 0..tree_store_for_drop.n_columns() {
+                                        let column = i32::try_from(i).unwrap_or(0);
+                                        let value = tree_store_for_drop.get_value(&source_iter, column);
+                                        tree_store_for_drop.set_value(&new_iter, column as u32, &value);
                                     }
+                                    
+                                    // Remove the original row
+                                    tree_store_for_drop.remove(&source_iter);
+                                    return true;
                                 }
                             }
                         }
