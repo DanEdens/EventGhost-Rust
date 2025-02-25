@@ -5,16 +5,14 @@ mod cli;
 use gtk::prelude::*;
 use gtk::{self, Application};
 use gio::Resource;
-use crate::eg::classes::MainFrame;
-use crate::cli::Cli;
+use log::{debug, error, info, LevelFilter};
 use std::path::Path;
 use std::fs;
-use eventghost_rust::{
-    core::utils,
-    eg::classes::main_frame::MainFrame,
-    cli::Cli,
-};
-use log::{debug, error, info, LevelFilter};
+
+// Import from local modules
+use crate::eg::classes::main_frame::MainFrame;
+use crate::cli::Cli;
+use crate::core::Error;
 
 fn main() -> glib::ExitCode {
     // Parse command line arguments
@@ -50,10 +48,10 @@ fn main() -> glib::ExitCode {
         gio::ApplicationFlags::FLAGS_NONE,
     );
     
-    // Load resources
-    let resource_bytes = glib::Bytes::from_static(include_bytes!("../resources/resources.gresource"));
-    let resource = gio::Resource::from_data(&resource_bytes).expect("Failed to load resources");
-    gio::resources_register(&resource);
+    // Load resources - comment out for now until resources are available
+    // let resource_bytes = glib::Bytes::from_static(include_bytes!("resources.gresource"));
+    // let resource = gio::Resource::from_data(&resource_bytes).expect("Failed to load resources");
+    // gio::resources_register(&resource);
     
     // Connect startup signal
     application.connect_startup(|_| {
@@ -66,6 +64,13 @@ fn main() -> glib::ExitCode {
         
         // Create main frame
         let main_frame = MainFrame::new(app);
+        let main_frame = match main_frame {
+            Ok(frame) => frame,
+            Err(e) => {
+                error!("Failed to create main frame: {}", e);
+                return;
+            }
+        };
         
         // Get config file path from CLI
         let config_file = cli.get_config_file();
@@ -74,19 +79,19 @@ fn main() -> glib::ExitCode {
         // Try to load configuration if file exists
         if config_file.exists() {
             debug!("Loading configuration from {:?}", config_file);
-            if let Err(e) = main_frame.config_view.load_config(&config_file) {
+            if let Err(e) = main_frame.config_view.borrow().as_ref().unwrap().load_config(&config_file) {
                 error!("Failed to load configuration: {}", e);
             } else {
                 info!("Configuration loaded successfully");
                 // Set the config path
-                main_frame.config_view.set_config_path(&config_file);
+                main_frame.config_view.borrow_mut().as_mut().unwrap().set_config_path(&config_file);
             }
         } else {
             debug!("Config file does not exist, using default configuration");
             // Create a new configuration
-            main_frame.config_view.new_config();
+            main_frame.config_view.borrow_mut().as_mut().unwrap().new_config();
             // Set the config path
-            main_frame.config_view.set_config_path(&config_file);
+            main_frame.config_view.borrow_mut().as_mut().unwrap().set_config_path(&config_file);
         }
         
         // Show the main window

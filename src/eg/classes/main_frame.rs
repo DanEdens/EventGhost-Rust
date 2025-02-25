@@ -11,6 +11,7 @@ use crate::core::Error;
 use std::cell::Cell;
 use std::thread::LocalKey;
 use super::config_view::ConfigView;
+use log::error;
 
 // use glib::Error;
 
@@ -92,13 +93,14 @@ impl MainFrame {
         let log_label = gtk::Label::new(Some("Log"));
         notebook.append_page(&log_ctrl.container, Some(&log_label));
 
-        // Create configuration view
+        // Create configuration view and initialize in the Rc<RefCell<Option<ConfigView>>>
         let config_view = ConfigView::new();
+        let container = config_view.container.clone();
         let config_view_rc = Rc::new(RefCell::new(Some(config_view)));
 
         // Add configuration tab
         let config_label = gtk::Label::new(Some("Configuration"));
-        notebook.append_page(&config_view_rc.borrow().as_ref().unwrap().container, Some(&config_label));
+        notebook.append_page(&container, Some(&config_label));
 
         // Add status bar at the bottom
         main_box.append(&status_bar.widget);
@@ -146,7 +148,7 @@ impl MainFrame {
         let config_view = Rc::new(RefCell::new(None::<ConfigView>));
         let config_view_clone = config_view.clone();
         new_button.connect_clicked(move |_| {
-            if let Some(config_view) = &*config_view_clone.borrow() {
+            if let Some(config_view) = config_view_clone.borrow_mut().as_mut() {
                 config_view.new_config();
             }
         });
@@ -154,7 +156,7 @@ impl MainFrame {
         let open_button = toolbar.add_button("open", "/org/eventghost/images/open.png", "Open");
         let config_view_clone = config_view.clone();
         open_button.connect_clicked(move |_| {
-            if let Some(config_view) = &*config_view_clone.borrow() {
+            if let Some(config_view) = config_view_clone.borrow_mut().as_mut() {
                 if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
                     let dialog = gtk::FileChooserDialog::new(
                         Some("Open Configuration"),
@@ -190,25 +192,18 @@ impl MainFrame {
                         dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
                     }
                     
-                    let config_view = config_view.clone();
+                    let config_view_clone2 = config_view_clone.clone();
                     dialog.connect_response(move |dialog, response| {
                         if response == gtk::ResponseType::Accept {
                             if let Some(file) = dialog.file() {
                                 if let Some(path) = file.path() {
-                                    if let Some(config_view) = &*config_view.borrow() {
+                                    if let Some(config_view) = config_view_clone2.borrow_mut().as_mut() {
                                         // Try to load the configuration
                                         if let Err(err) = config_view.load_config(&path) {
-                                            let error_dialog = gtk::MessageDialog::new(
-                                                Some(&window),
-                                                gtk::DialogFlags::MODAL,
-                                                gtk::MessageType::Error,
-                                                gtk::ButtonsType::Ok,
-                                                &format!("Failed to load configuration: {}", err)
-                                            );
-                                            error_dialog.connect_response(move |dialog, _| {
-                                                dialog.close();
-                                            });
-                                            error_dialog.show();
+                                            error!("Failed to load configuration: {}", err);
+                                        } else {
+                                            // Set the configuration path
+                                            config_view.set_config_path(&path);
                                         }
                                     }
                                 }
@@ -225,7 +220,7 @@ impl MainFrame {
         let save_button = toolbar.add_button("save", "/org/eventghost/images/save.png", "Save");
         let config_view_clone = config_view.clone();
         save_button.connect_clicked(move |_| {
-            if let Some(config_view) = &*config_view_clone.borrow() {
+            if let Some(config_view) = config_view_clone.borrow_mut().as_mut() {
                 config_view.save_config();
             }
         });
@@ -455,14 +450,18 @@ impl MainFrame {
         let new_action = gio::SimpleAction::new("new", None);
         let config_view = self.config_view.clone();
         new_action.connect_activate(move |_, _| {
-            config_view.borrow_mut().as_ref().map(|config_view| config_view.new_config());
+            if let Some(config_view) = config_view.borrow_mut().as_mut() {
+                config_view.new_config();
+            }
         });
         application.add_action(&new_action);
 
         let open_action = gio::SimpleAction::new("open", None);
         let config_view = self.config_view.clone();
         open_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.borrow().as_ref().and_then(|config_view| config_view.container.root().and_downcast::<gtk::Window>()) {
+            if let Some(window) = config_view.borrow_mut().as_mut().and_then(|config_view| {
+                config_view.container.root().and_downcast::<gtk::Window>()
+            }) {
                 let dialog = gtk::FileChooserDialog::new(
                     Some("Open Configuration"),
                     Some(&window),
@@ -487,30 +486,18 @@ impl MainFrame {
                 }
                 
                 let config_view_clone = config_view.clone();
+                let config_view_clone2 = config_view_clone.clone();
                 dialog.connect_response(move |dialog, response| {
                     if response == gtk::ResponseType::Accept {
                         if let Some(file) = dialog.file() {
                             if let Some(path) = file.path() {
-                                // Try to load the configuration
-                                match config_view_clone.borrow_mut().as_mut() {
-                                    Some(config_view) => {
-                                        if let Err(err) = config_view.load_config(&path) {
-                                            let error_msg = format!("Failed to load configuration: {}", err);
-                                            let error_dialog = gtk::MessageDialog::new(
-                                                Some(&window),
-                                                gtk::DialogFlags::MODAL,
-                                                gtk::MessageType::Error,
-                                                gtk::ButtonsType::Ok,
-                                                &error_msg
-                                            );
-                                            error_dialog.connect_response(move |dialog, _| {
-                                                dialog.close();
-                                            });
-                                            error_dialog.show();
-                                        }
-                                    },
-                                    None => {
-                                        // This should never happen
+                                if let Some(config_view) = config_view_clone2.borrow_mut().as_mut() {
+                                    // Try to load the configuration
+                                    if let Err(err) = config_view.load_config(&path) {
+                                        error!("Failed to load configuration: {}", err);
+                                    } else {
+                                        // Set the configuration path
+                                        config_view.set_config_path(&path);
                                     }
                                 }
                             }
@@ -527,14 +514,18 @@ impl MainFrame {
         let save_action = gio::SimpleAction::new("save", None);
         let config_view = self.config_view.clone();
         save_action.connect_activate(move |_, _| {
-            config_view.borrow_mut().as_ref().map(|config_view| config_view.save_config());
+            if let Some(config_view) = config_view.borrow_mut().as_mut() {
+                config_view.save_config();
+            }
         });
         application.add_action(&save_action);
 
         let save_as_action = gio::SimpleAction::new("save_as", None);
         let config_view = self.config_view.clone();
         save_as_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.borrow().as_ref().and_then(|config_view| config_view.container.root().and_downcast::<gtk::Window>()) {
+            if let Some(window) = config_view.borrow_mut().as_mut().and_then(|config_view| {
+                config_view.container.root().and_downcast::<gtk::Window>()
+            }) {
                 let dialog = gtk::FileChooserDialog::new(
                     Some("Save Configuration As"),
                     Some(&window),
@@ -563,11 +554,11 @@ impl MainFrame {
                     if response == gtk::ResponseType::Accept {
                         if let Some(file) = dialog.file() {
                             if let Some(path) = file.path() {
-                                // Set the configuration path
-                                config_view_clone.borrow_mut().as_mut().map(|config_view| config_view.set_config_path(&path));
-                                
-                                // Save the configuration
-                                config_view_clone.borrow_mut().as_mut().map(|config_view| config_view.save_config());
+                                // Set the configuration path and save
+                                config_view_clone.borrow_mut().as_mut().map(|config_view| {
+                                    config_view.set_config_path(&path);
+                                    config_view.save_config();
+                                });
                             }
                         }
                     }

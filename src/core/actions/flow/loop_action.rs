@@ -433,7 +433,9 @@ impl Action for ForLoopAction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(any(test, feature = "testing"))]
     use crate::testing::MockPlugin;
+    #[cfg(any(test, feature = "testing"))]
     use crate::testing::MockEvent;
     use std::sync::atomic::{AtomicI32, Ordering};
     

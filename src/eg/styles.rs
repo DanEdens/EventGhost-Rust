@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{CssProvider, StyleContext};
-use gdk4::Display;
+use gtk::gdk;
 use std::str::from_utf8;
 
 /// Initializes the application's CSS styles
@@ -13,7 +13,7 @@ pub fn init_styles() {
 
     // Add the provider to the default screen
     StyleContext::add_provider_for_display(
-        &Display::default().expect("Could not connect to a display."),
+        &gdk::Display::default().expect("Could not connect to a display."),
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );

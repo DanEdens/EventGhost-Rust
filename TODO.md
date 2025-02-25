@@ -164,12 +164,13 @@
 
 ## Next Steps (Priority Order)
 1. ~~Add action configuration UI~~
-2. Fix GTK4 compatibility issues
-3. Create system action implementations 
-4. Implement action thread management
-5. Add action persistence
-6. Develop plugin action integration
-7. Write documentation
+2. ~~Fix Result unwrapping in main.rs~~
+3. Fix GTK4 compatibility issues
+4. Create system action implementations 
+5. Implement action thread management
+6. Add action persistence
+7. Develop plugin action integration
+8. Write documentation
 
 ## Future Enhancements
 - [ ] Action templates

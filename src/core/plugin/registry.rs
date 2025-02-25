@@ -356,6 +356,7 @@ impl PluginRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(any(test, feature = "testing"))]
     use crate::testing::MockPlugin;
     use tempfile::TempDir;
     use std::fs;
