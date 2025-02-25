@@ -1,29 +1,37 @@
 use gtk::prelude::*;
 use gtk::Widget;
 
-// Core modules needed for basic window functionality
+// Module declarations
 pub mod main_frame;
 pub mod menu;
 pub mod toolbar;
-
 pub mod status_bar;
 pub mod dialog;
 pub mod actions;
+pub mod log_ctrl;
+pub mod config_view;
+pub mod config_dialogs;
+pub mod drag_drop;
+pub mod property_grid;
+pub mod plugin_config;
+pub mod tree_ctrl;
+pub mod action_config_dialog;
 
 // Re-export the main components
-pub use main_frame::MainFrame;
-pub use menu::Menu;
-pub use toolbar::Toolbar;
-pub use status_bar::StatusBar;
-pub use dialog::ConfigDialog;
-pub use actions::add_actions;
-
-// Comment out modules that need GTK conversion
-// pub mod drag_drop;
-pub mod log_ctrl;
-// pub mod plugin_config;
-// pub mod property_grid;
-// pub mod tree_ctrl;
+pub use self::main_frame::MainFrame;
+pub use self::menu::Menu;
+pub use self::toolbar::Toolbar;
+pub use self::status_bar::StatusBar;
+pub use self::dialog::{ConfigDialog, Dialog, MessageBox, MessageType};
+pub use self::actions::add_actions;
+pub use self::log_ctrl::LogCtrl;
+pub use self::config_view::ConfigView;
+pub use self::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
+pub use self::drag_drop::{DragManager, DndSource, DndTarget, DndPayload};
+pub use self::property_grid::PropertyGrid;
+pub use self::plugin_config::PluginConfigDialog;
+pub use self::tree_ctrl::TreeCtrl;
+pub use self::action_config_dialog::ActionConfigDialog;
 
 /// Trait for UI components that can be shown/hidden
 pub trait UIComponent {

@@ -80,8 +80,8 @@
   - [ ] State sharing between actions
 
 ### Action UI Components
-- [ ] Action configuration dialog
-  - [ ] Dynamic form generation based on action parameters
+- [x] Action configuration dialog
+  - [x] Dynamic form generation based on action parameters
   - [ ] Validation feedback
   - [ ] Help text integration
 - [ ] Action group tree view

@@ -1,5 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, Dialog, Box, Label, Entry, Grid, Button, ResponseType};
+use gtk::glib::clone;
 use uuid::Uuid;
 use std::collections::HashMap;
 
@@ -209,37 +210,102 @@ impl EventDialog {
 /// Dialog for adding/editing actions
 pub struct ActionDialog {
     base: ConfigDialog,
+    advanced_button: Button,
+    config_dialog: Option<crate::eg::classes::action_config_dialog::ActionConfigDialog>,
 }
 
 impl ActionDialog {
     pub fn new() -> Self {
         let base = ConfigDialog::new("Action");
-        ActionDialog { base }
+        
+        // Add a button for advanced configuration
+        let advanced_button = Button::with_label("Advanced Configuration...");
+        base.dialog.content_area().append(&advanced_button);
+        
+        ActionDialog { 
+            base,
+            advanced_button,
+            config_dialog: None,
+        }
     }
 
     pub fn run_for_new(&self) -> Option<Action> {
+        let mut action = None;
+        let mut parameters = HashMap::new();
+        
+        // Connect button click handler
+        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog => move |_| {
+            // Hide the simple dialog temporarily
+            dialog.hide();
+            
+            // Create and show the advanced configuration dialog
+            let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
+            if let Some(new_action) = config_dialog.run_for_new_config_action() {
+                // Copy the values back to our parameters
+                parameters.clear();
+                parameters.extend(new_action.parameters.clone());
+            }
+            
+            // Show the simple dialog again
+            dialog.show();
+        }));
+        
         if self.base.run() == ResponseType::Ok {
-            Some(Action {
+            action = Some(Action {
                 id: Uuid::new_v4(),
                 name: self.base.get_name(),
-                parameters: HashMap::new(),
-            })
-        } else {
-            None
+                parameters: parameters,
+            });
         }
+        
+        // Disconnect signal handler
+        self.advanced_button.disconnect(advanced_clicked);
+        
+        action
     }
 
     pub fn run_for_edit(&self, action: &Action) -> Option<Action> {
         self.base.set_name(&action.name);
+        
+        let mut result = None;
+        let mut parameters = action.parameters.clone();
+        
+        // Connect button click handler
+        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog, @strong action => move |_| {
+            // Hide the simple dialog temporarily
+            dialog.hide();
+            
+            // Create the action for advanced configuration with current values
+            let config_action = Action {
+                id: action.id,
+                name: dialog.title().to_string(),
+                parameters: parameters.clone(),
+            };
+            
+            // Create and show the advanced configuration dialog
+            let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
+            if let Some(updated_action) = config_dialog.run_for_config_action(&config_action) {
+                // Copy the values back to our parameters
+                parameters.clear();
+                parameters.extend(updated_action.parameters.clone());
+            }
+            
+            // Show the simple dialog again
+            dialog.show();
+        }));
+        
         if self.base.run() == ResponseType::Ok {
-            Some(Action {
+            result = Some(Action {
                 id: action.id,
                 name: self.base.get_name(),
-                parameters: action.parameters.clone(),
-            })
-        } else {
-            None
+                parameters: parameters,
+            });
         }
+        
+        // Disconnect signal handler
+        self.advanced_button.disconnect(advanced_clicked);
+        
+        result
     }
 }
 
