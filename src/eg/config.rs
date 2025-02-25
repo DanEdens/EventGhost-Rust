@@ -4,6 +4,13 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
 use std::io;
+use std::path::{Path, PathBuf};
+use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+use std::cell::RefCell;
+use log::{debug, error, info};
+use quick_xml::de::from_str as xml_from_str;
+use quick_xml::se::to_string as xml_to_string;
 
 /// Represents a plugin instance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,16 +139,53 @@ impl Config {
         self.items.iter_mut().find(|item| item.id() == id)
     }
 
-    /// Saves the configuration to a file in JSON format.
-    pub fn save_to_file(&self, path: &Path) -> io::Result<()> {
-        let json = serde_json::to_string_pretty(self)?;
-        fs::write(path, json)
+    /// Saves the configuration to a file
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+        let path = path.as_ref();
+        let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+        
+        let content = match extension.to_lowercase().as_str() {
+            "xml" | "egtree" => {
+                debug!("Saving configuration as XML to {}", path.display());
+                xml_to_string(&self).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            },
+            _ => {
+                debug!("Saving configuration as JSON to {}", path.display());
+                serde_json::to_string_pretty(&self).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            }
+        };
+        
+        // Create parent directory if it doesn't exist
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        
+        fs::write(path, content)?;
+        info!("Configuration saved to {}", path.display());
+        Ok(())
     }
 
-    /// Loads the configuration from a file in JSON format.
-    pub fn load_from_file(path: &Path) -> io::Result<Self> {
-        let json = fs::read_to_string(path)?;
-        let config = serde_json::from_str(&json)?;
+    /// Loads the configuration from a file
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        let path = path.as_ref();
+        let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+        
+        let content = fs::read_to_string(path)?;
+        
+        let config = match extension.to_lowercase().as_str() {
+            "xml" | "egtree" => {
+                debug!("Loading configuration from XML file {}", path.display());
+                xml_from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            },
+            _ => {
+                debug!("Loading configuration from JSON file {}", path.display());
+                serde_json::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?
+            }
+        };
+        
+        info!("Configuration loaded from {}", path.display());
         Ok(config)
     }
 }

@@ -240,125 +240,55 @@ impl MainFrame {
     /// Create the menu model for the menu bar
     fn create_menu_model(&self) -> Menu {
         let menu_bar = Menu::new();
-
-        // File Menu
+        
+        // File menu
         let file_menu = Menu::new();
         file_menu.append(Some("New"), Some("app.new"));
-        file_menu.append(Some("Open"), Some("app.open"));
+        file_menu.append(Some("Open..."), Some("app.open"));
         file_menu.append(Some("Save"), Some("app.save"));
-        file_menu.append(Some("Save As"), Some("app.save-as"));
-        
-        let separator = Menu::new();
-        file_menu.append_section(None, &separator);
-        
-        file_menu.append(Some("Options"), Some("app.options"));
-        
-        let separator = Menu::new();
-        file_menu.append_section(None, &separator);
-        
+        file_menu.append(Some("Save As..."), Some("app.save_as"));
+        file_menu.append_separator();
+        file_menu.append(Some("Options..."), Some("app.options"));
+        file_menu.append_separator();
         file_menu.append(Some("Restart"), Some("app.restart"));
-        file_menu.append(Some("Restart as Admin"), Some("app.restart-admin"));
-        
-        let separator = Menu::new();
-        file_menu.append_section(None, &separator);
-        
+        file_menu.append(Some("Restart as Admin"), Some("app.restart_admin"));
+        file_menu.append_separator();
         file_menu.append(Some("Exit"), Some("app.quit"));
+        menu_bar.append_submenu(Some("File"), &file_menu);
         
-        let file_item = MenuItem::new(Some("File"), Some("file"));
-        file_item.set_submenu(Some(&file_menu));
-        menu_bar.append_item(&file_item);
-
-        // Edit Menu
+        // Edit menu
         let edit_menu = Menu::new();
         edit_menu.append(Some("Undo"), Some("app.undo"));
         edit_menu.append(Some("Redo"), Some("app.redo"));
-        
-        let separator = Menu::new();
-        edit_menu.append_section(None, &separator);
-        
+        edit_menu.append_separator();
         edit_menu.append(Some("Cut"), Some("app.cut"));
         edit_menu.append(Some("Copy"), Some("app.copy"));
-        edit_menu.append(Some("Python"), Some("app.python"));
         edit_menu.append(Some("Paste"), Some("app.paste"));
-        edit_menu.append(Some("Delete"), Some("app.delete"));
+        edit_menu.append_separator();
+        edit_menu.append(Some("Find..."), Some("app.find"));
+        menu_bar.append_submenu(Some("Edit"), &edit_menu);
         
-        let separator = Menu::new();
-        edit_menu.append_section(None, &separator);
-        
-        edit_menu.append(Some("Find"), Some("app.find"));
-        edit_menu.append(Some("Find Next"), Some("app.find-next"));
-        
-        let edit_item = MenuItem::new(Some("Edit"), Some("edit"));
-        edit_item.set_submenu(Some(&edit_menu));
-        menu_bar.append_item(&edit_item);
-
-        // View Menu
-        let view_menu = Menu::new();
-        view_menu.append(Some("Show Toolbar"), Some("app.show-toolbar"));
-        
-        let separator = Menu::new();
-        view_menu.append_section(None, &separator);
-        
-        // Log settings submenu
-        let log_menu = Menu::new();
-        log_menu.append(Some("Show Time"), Some("app.log-time"));
-        log_menu.append(Some("Show Date"), Some("app.log-date"));
-        log_menu.append(Some("Indent Log"), Some("app.log-indent"));
-        log_menu.append(Some("Clear Log"), Some("app.log-clear"));
-        
-        let log_item = MenuItem::new(Some("Log Settings"), Some("log"));
-        log_item.set_submenu(Some(&log_menu));
-        view_menu.append_item(&log_item);
-        
-        let view_item = MenuItem::new(Some("View"), Some("view"));
-        view_item.set_submenu(Some(&view_menu));
-        menu_bar.append_item(&view_item);
-
-        // Configuration Menu
+        // Configuration menu
         let config_menu = Menu::new();
-        config_menu.append(Some("Add Plugin"), Some("app.add-plugin"));
-        config_menu.append(Some("Add Folder"), Some("app.add-folder"));
-        config_menu.append(Some("Add Macro"), Some("app.add-macro"));
-        config_menu.append(Some("Add Event"), Some("app.add-event"));
-        config_menu.append(Some("Add Action"), Some("app.add-action"));
+        config_menu.append(Some("Add Plugin..."), Some("app.add_plugin"));
+        config_menu.append(Some("Add Folder"), Some("app.add_folder"));
+        config_menu.append(Some("Add Macro"), Some("app.add_macro"));
+        config_menu.append(Some("Add Event"), Some("app.add_event"));
+        config_menu.append(Some("Add Action"), Some("app.add_action"));
+        config_menu.append_separator();
+        config_menu.append(Some("Rename Item"), Some("app.rename_item"));
+        config_menu.append(Some("Delete Item"), Some("app.delete_item"));
+        menu_bar.append_submenu(Some("Configuration"), &config_menu);
         
-        let separator = Menu::new();
-        config_menu.append_section(None, &separator);
-        
-        config_menu.append(Some("Configure"), Some("app.configure"));
-        config_menu.append(Some("Rename"), Some("app.rename"));
-        config_menu.append(Some("Execute"), Some("app.execute"));
-        
-        let config_item = MenuItem::new(Some("Configuration"), Some("configuration"));
-        config_item.set_submenu(Some(&config_menu));
-        menu_bar.append_item(&config_item);
-
-        // Help Menu
+        // Help menu
         let help_menu = Menu::new();
-        help_menu.append(Some("Contents"), Some("app.help-contents"));
+        help_menu.append(Some("Help Contents"), Some("app.help"));
+        help_menu.append(Some("Online Documentation"), Some("app.online_docs"));
+        help_menu.append(Some("Check for Updates"), Some("app.check_updates"));
+        help_menu.append_separator();
+        help_menu.append(Some("About EventGhost"), Some("app.about"));
+        menu_bar.append_submenu(Some("Help"), &help_menu);
         
-        let separator = Menu::new();
-        help_menu.append_section(None, &separator);
-        
-        help_menu.append(Some("Web Homepage"), Some("app.web-homepage"));
-        help_menu.append(Some("Web Forum"), Some("app.web-forum"));
-        help_menu.append(Some("Web Wiki"), Some("app.web-wiki"));
-        
-        let separator = Menu::new();
-        help_menu.append_section(None, &separator);
-        
-        help_menu.append(Some("Check for Updates"), Some("app.check-update"));
-        
-        let separator = Menu::new();
-        help_menu.append_section(None, &separator);
-        
-        help_menu.append(Some("Python Shell"), Some("app.python-shell"));
-        help_menu.append(Some("About"), Some("app.about"));
-        
-        let help_item = MenuItem::new(Some("Help"), Some("help"));
-        help_item.set_submenu(Some(&help_menu));
-        menu_bar.append_item(&help_item);
-
         menu_bar
     }
     
@@ -395,37 +325,263 @@ impl MainFrame {
     }
 
     /// Connect menu item actions
-    fn connect_menu_actions(&mut self) {
-        // Log menu actions
-        let action = gio::SimpleAction::new("log-time", None);
-        let log_ctrl = self.log_ctrl.clone();
-        action.connect_activate(move |_, _| {
-            // We can't modify the log_ctrl directly in the callback
-            // For now, we'll just print that the action was triggered
-            println!("Toggle time logging");
+    pub fn connect_menu_actions(&self, application: &gtk::Application) {
+        // File menu actions
+        let new_action = gio::SimpleAction::new("new", None);
+        let config_view = self.config_view.clone();
+        new_action.connect_activate(move |_, _| {
+            config_view.new_config();
         });
-        self.window.add_action(&action);
+        application.add_action(&new_action);
 
-        let action = gio::SimpleAction::new("log-date", None);
-        let log_ctrl = self.log_ctrl.clone();
-        action.connect_activate(move |_, _| {
-            println!("Toggle date logging");
+        let open_action = gio::SimpleAction::new("open", None);
+        let config_view = self.config_view.clone();
+        open_action.connect_activate(move |_, _| {
+            if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
+                let dialog = gtk::FileChooserDialog::new(
+                    Some("Open Configuration"),
+                    Some(&window),
+                    gtk::FileChooserAction::Open,
+                    &[
+                        ("Cancel", gtk::ResponseType::Cancel),
+                        ("Open", gtk::ResponseType::Accept),
+                    ],
+                );
+                
+                // Add file filters
+                let filter = gtk::FileFilter::new();
+                filter.set_name(Some("EventGhost Configuration Files"));
+                filter.add_pattern("*.json");
+                filter.add_pattern("*.egtree");
+                filter.add_pattern("*.xml");
+                dialog.add_filter(&filter);
+                
+                // Set current folder to config directory
+                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
+                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
+                }
+                
+                let config_view_clone = config_view.clone();
+                dialog.connect_response(move |dialog, response| {
+                    if response == gtk::ResponseType::Accept {
+                        if let Some(file) = dialog.file() {
+                            if let Some(path) = file.path() {
+                                // Try to load the configuration
+                                match config_view_clone.load_config(&path) {
+                                    Ok(_) => {
+                                        // Successfully loaded
+                                    },
+                                    Err(err) => {
+                                        let error_msg = format!("Failed to load configuration: {}", err);
+                                        let error_dialog = gtk::MessageDialog::new(
+                                            Some(&window),
+                                            gtk::DialogFlags::MODAL,
+                                            gtk::MessageType::Error,
+                                            gtk::ButtonsType::Ok,
+                                            &error_msg
+                                        );
+                                        error_dialog.connect_response(move |dialog, _| {
+                                            dialog.close();
+                                        });
+                                        error_dialog.show();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    dialog.close();
+                });
+                
+                dialog.show();
+            }
         });
-        self.window.add_action(&action);
+        application.add_action(&open_action);
 
-        let action = gio::SimpleAction::new("log-indent", None);
-        let log_ctrl = self.log_ctrl.clone();
-        action.connect_activate(move |_, _| {
-            println!("Toggle indent");
+        let save_action = gio::SimpleAction::new("save", None);
+        let config_view = self.config_view.clone();
+        save_action.connect_activate(move |_, _| {
+            config_view.save_config();
         });
-        self.window.add_action(&action);
+        application.add_action(&save_action);
 
-        let action = gio::SimpleAction::new("log-clear", None);
-        let log_ctrl = self.log_ctrl.clone();
-        action.connect_activate(move |_, _| {
-            log_ctrl.clear();
+        let save_as_action = gio::SimpleAction::new("save_as", None);
+        let config_view = self.config_view.clone();
+        save_as_action.connect_activate(move |_, _| {
+            if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
+                let dialog = gtk::FileChooserDialog::new(
+                    Some("Save Configuration As"),
+                    Some(&window),
+                    gtk::FileChooserAction::Save,
+                    &[
+                        ("Cancel", gtk::ResponseType::Cancel),
+                        ("Save", gtk::ResponseType::Accept),
+                    ],
+                );
+                
+                // Add file filters
+                let filter = gtk::FileFilter::new();
+                filter.set_name(Some("EventGhost Configuration Files"));
+                filter.add_pattern("*.json");
+                filter.add_pattern("*.egtree");
+                filter.add_pattern("*.xml");
+                dialog.add_filter(&filter);
+                
+                // Set current folder to config directory
+                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
+                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
+                }
+                
+                let config_view_clone = config_view.clone();
+                dialog.connect_response(move |dialog, response| {
+                    if response == gtk::ResponseType::Accept {
+                        if let Some(file) = dialog.file() {
+                            if let Some(path) = file.path() {
+                                // Set the configuration path
+                                config_view_clone.set_config_path(&path);
+                                
+                                // Save the configuration
+                                config_view_clone.save_config();
+                            }
+                        }
+                    }
+                    dialog.close();
+                });
+                
+                dialog.show();
+            }
         });
-        self.window.add_action(&action);
+        application.add_action(&save_as_action);
+
+        // Other file menu actions (placeholder implementations)
+        let options_action = gio::SimpleAction::new("options", None);
+        options_action.connect_activate(|_, _| {
+            println!("Options menu item clicked");
+        });
+        application.add_action(&options_action);
+
+        let restart_action = gio::SimpleAction::new("restart", None);
+        restart_action.connect_activate(|_, _| {
+            println!("Restart menu item clicked");
+        });
+        application.add_action(&restart_action);
+
+        let restart_admin_action = gio::SimpleAction::new("restart_admin", None);
+        restart_admin_action.connect_activate(|_, _| {
+            println!("Restart as Admin menu item clicked");
+        });
+        application.add_action(&restart_admin_action);
+
+        let quit_action = gio::SimpleAction::new("quit", None);
+        let window = self.window.clone();
+        quit_action.connect_activate(move |_, _| {
+            window.close();
+        });
+        application.add_action(&quit_action);
+
+        // Edit menu actions (placeholder implementations)
+        let undo_action = gio::SimpleAction::new("undo", None);
+        undo_action.connect_activate(|_, _| {
+            println!("Undo menu item clicked");
+        });
+        application.add_action(&undo_action);
+
+        let redo_action = gio::SimpleAction::new("redo", None);
+        redo_action.connect_activate(|_, _| {
+            println!("Redo menu item clicked");
+        });
+        application.add_action(&redo_action);
+
+        let cut_action = gio::SimpleAction::new("cut", None);
+        cut_action.connect_activate(|_, _| {
+            println!("Cut menu item clicked");
+        });
+        application.add_action(&cut_action);
+
+        let copy_action = gio::SimpleAction::new("copy", None);
+        copy_action.connect_activate(|_, _| {
+            println!("Copy menu item clicked");
+        });
+        application.add_action(&copy_action);
+
+        let paste_action = gio::SimpleAction::new("paste", None);
+        paste_action.connect_activate(|_, _| {
+            println!("Paste menu item clicked");
+        });
+        application.add_action(&paste_action);
+
+        let find_action = gio::SimpleAction::new("find", None);
+        find_action.connect_activate(|_, _| {
+            println!("Find menu item clicked");
+        });
+        application.add_action(&find_action);
+
+        // Configuration menu actions (placeholder implementations)
+        let add_plugin_action = gio::SimpleAction::new("add_plugin", None);
+        add_plugin_action.connect_activate(|_, _| {
+            println!("Add Plugin menu item clicked");
+        });
+        application.add_action(&add_plugin_action);
+
+        let add_folder_action = gio::SimpleAction::new("add_folder", None);
+        add_folder_action.connect_activate(|_, _| {
+            println!("Add Folder menu item clicked");
+        });
+        application.add_action(&add_folder_action);
+
+        let add_macro_action = gio::SimpleAction::new("add_macro", None);
+        add_macro_action.connect_activate(|_, _| {
+            println!("Add Macro menu item clicked");
+        });
+        application.add_action(&add_macro_action);
+
+        let add_event_action = gio::SimpleAction::new("add_event", None);
+        add_event_action.connect_activate(|_, _| {
+            println!("Add Event menu item clicked");
+        });
+        application.add_action(&add_event_action);
+
+        let add_action_action = gio::SimpleAction::new("add_action", None);
+        add_action_action.connect_activate(|_, _| {
+            println!("Add Action menu item clicked");
+        });
+        application.add_action(&add_action_action);
+
+        let rename_item_action = gio::SimpleAction::new("rename_item", None);
+        rename_item_action.connect_activate(|_, _| {
+            println!("Rename Item menu item clicked");
+        });
+        application.add_action(&rename_item_action);
+
+        let delete_item_action = gio::SimpleAction::new("delete_item", None);
+        delete_item_action.connect_activate(|_, _| {
+            println!("Delete Item menu item clicked");
+        });
+        application.add_action(&delete_item_action);
+
+        // Help menu actions (placeholder implementations)
+        let help_action = gio::SimpleAction::new("help", None);
+        help_action.connect_activate(|_, _| {
+            println!("Help Contents menu item clicked");
+        });
+        application.add_action(&help_action);
+
+        let online_docs_action = gio::SimpleAction::new("online_docs", None);
+        online_docs_action.connect_activate(|_, _| {
+            println!("Online Documentation menu item clicked");
+        });
+        application.add_action(&online_docs_action);
+
+        let check_updates_action = gio::SimpleAction::new("check_updates", None);
+        check_updates_action.connect_activate(|_, _| {
+            println!("Check for Updates menu item clicked");
+        });
+        application.add_action(&check_updates_action);
+
+        let about_action = gio::SimpleAction::new("about", None);
+        about_action.connect_activate(|_, _| {
+            println!("About EventGhost menu item clicked");
+        });
+        application.add_action(&about_action);
     }
 }
 

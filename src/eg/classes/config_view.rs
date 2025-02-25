@@ -190,8 +190,24 @@ impl ConfigView {
         self.config_path = Some(path.as_ref().to_path_buf());
     }
 
+    /// Creates a new empty configuration
+    pub fn new_config(&self) {
+        // Create a new empty configuration
+        let config = Config::new();
+        self.config.replace(config);
+        
+        // Clear the tree store
+        self.tree_store.clear();
+        
+        // Add root folders
+        self.add_root_folders();
+        
+        // Reset the config path
+        self.config_path = None;
+    }
+
     /// Saves the configuration to disk with error handling
-    fn save_config(&self) {
+    pub fn save_config(&self) {
         if let Some(path) = &self.config_path {
             match self.config.borrow().save_to_file(path) {
                 Ok(_) => {
@@ -236,6 +252,50 @@ impl ConfigView {
                     });
                     dialog.show();
                 }
+            }
+        } else {
+            // No path set, show save as dialog
+            if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
+                let dialog = gtk::FileChooserDialog::new(
+                    Some("Save Configuration As"),
+                    Some(&window),
+                    gtk::FileChooserAction::Save,
+                    &[
+                        ("Cancel", gtk::ResponseType::Cancel),
+                        ("Save", gtk::ResponseType::Accept),
+                    ],
+                );
+                
+                // Add file filters
+                let filter = gtk::FileFilter::new();
+                filter.set_name(Some("EventGhost Configuration Files"));
+                filter.add_pattern("*.json");
+                filter.add_pattern("*.egtree");
+                filter.add_pattern("*.xml");
+                dialog.add_filter(&filter);
+                
+                // Set current folder to config directory
+                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
+                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
+                }
+                
+                let config_view = self.clone();
+                dialog.connect_response(move |dialog, response| {
+                    if response == gtk::ResponseType::Accept {
+                        if let Some(file) = dialog.file() {
+                            if let Some(path) = file.path() {
+                                // Set the configuration path
+                                config_view.set_config_path(&path);
+                                
+                                // Save the configuration
+                                config_view.save_config();
+                            }
+                        }
+                    }
+                    dialog.close();
+                });
+                
+                dialog.show();
             }
         }
     }
@@ -666,6 +726,19 @@ impl ConfigView {
         }
         
         response_value == gtk::ResponseType::Yes
+    }
+}
+
+// Add Clone implementation for ConfigView
+impl Clone for ConfigView {
+    fn clone(&self) -> Self {
+        Self {
+            container: Box::new(gtk::Orientation::Vertical, 0),
+            tree_view: self.tree_view.clone(),
+            tree_store: self.tree_store.clone(),
+            config: self.config.clone(),
+            config_path: self.config_path.clone(),
+        }
     }
 }
 

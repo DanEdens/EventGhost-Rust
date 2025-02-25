@@ -15,6 +15,17 @@
   - [x] Drag and drop support
   - [x] Parent-child validation
   - [x] Auto-save functionality
+- [x] Basic UI layout
+- [x] Toolbar with icons
+- [x] Menu bar
+- [x] Status bar
+- [x] Log view
+- [x] Configuration tree view
+- [x] Save/load configuration
+  - [x] Command line argument handling for configuration paths
+  - [x] Connect file menu actions to save/load functions
+  - [x] Support for .egtree XML format
+  - [x] Fix path handling for configuration files
 
 ## Core
 - [x] Plugin System
@@ -37,9 +48,17 @@
   - [ ] Builtin actions
   - [ ] Plugin-defined actions
 - [x] Persistence
-  - [x] Save/load configuration
+  - [ ] Save/load configuration (partially implemented but not working)
   - [x] Auto-save
-  - [ ] Import/export  
+  - [ ] Import/export
+  
+## Build and Deployment
+- [x] Fix "export ordinal too large" errors in DLL builds
+- [x] Configure build for different scenarios (testing, production)
+- [x] Separate library (rlib) from dynamically linked library (cdylib)
+- [ ] Windows installer
+- [ ] Linux packages
+- [ ] Mac bundle
 
 ## Plugins
 - [ ] Python plugin loader
@@ -48,11 +67,6 @@
   - [x] Proper error handling
   - [x] State management
 - [ ] Common plugins (to be defined)
-
-## Deployment
-- [ ] Windows installer
-- [ ] Linux packages
-- [ ] Mac bundle
 
 ## Documentation
 - [x] User guide

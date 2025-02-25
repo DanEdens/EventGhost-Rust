@@ -19,12 +19,12 @@ no-leading-underscore = true
 
 # Add a dependency to help control DLL exports
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.32", features = ["full"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-log = { version = "0.4", features = ["serde"] }
+log = "0.4"
 env_logger = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
@@ -37,11 +37,13 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 bitflags = "2.4"
-gtk = { version = "0.6", package = "gtk4", features = ["v4_8"] }
+gtk = { version = "0.7", package = "gtk4" }
 gdk4 = "0.6"
-gio = "0.17"
-glib = "0.17"
+gio = "0.18"
+glib = "0.18"
 windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }
+clap = { version = "4.4", features = ["derive"] }
+quick-xml = { version = "0.30", features = ["serialize"] }
 
 [dev-dependencies]
 tokio-test = "0.4" 
