@@ -6,9 +6,11 @@ use crate::eg::classes::log_ctrl::LogCtrl;
 use super::UIComponent;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::borrow::Borrow;
 use crate::core::Error;
 use std::cell::Cell;
 use std::thread::LocalKey;
+use super::config_view::ConfigView;
 
 // use glib::Error;
 
@@ -28,7 +30,7 @@ pub struct MainFrame {
     /// The log control
     pub log_ctrl: LogCtrl,
     /// The configuration view
-    pub config_view: ConfigView,
+    pub config_view: Rc<RefCell<Option<ConfigView>>>,
     /// The main container
     pub container: Box,
     /// The paned container for log and tree
@@ -92,15 +94,11 @@ impl MainFrame {
 
         // Create configuration view
         let config_view = ConfigView::new();
-
-        // Store the config_view in thread-local storage
-        Self::CONFIG_VIEW.with(|cell| {
-            *cell.borrow_mut() = Rc::new(RefCell::new(Some(config_view.clone())));
-        });
+        let config_view_rc = Rc::new(RefCell::new(Some(config_view)));
 
         // Add configuration tab
         let config_label = gtk::Label::new(Some("Configuration"));
-        notebook.append_page(&config_view.container, Some(&config_label));
+        notebook.append_page(&config_view_rc.borrow().as_ref().unwrap().container, Some(&config_label));
 
         // Add status bar at the bottom
         main_box.append(&status_bar.widget);
@@ -112,7 +110,7 @@ impl MainFrame {
             toolbar,
             status_bar,
             log_ctrl,
-            config_view,
+            config_view: config_view_rc,
             container: main_box,
             paned,
             notebook,
@@ -457,14 +455,14 @@ impl MainFrame {
         let new_action = gio::SimpleAction::new("new", None);
         let config_view = self.config_view.clone();
         new_action.connect_activate(move |_, _| {
-            config_view.new_config();
+            config_view.borrow_mut().as_ref().map(|config_view| config_view.new_config());
         });
         application.add_action(&new_action);
 
         let open_action = gio::SimpleAction::new("open", None);
         let config_view = self.config_view.clone();
         open_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
+            if let Some(window) = config_view.borrow().as_ref().and_then(|config_view| config_view.container.root().and_downcast::<gtk::Window>()) {
                 let dialog = gtk::FileChooserDialog::new(
                     Some("Open Configuration"),
                     Some(&window),
@@ -494,23 +492,25 @@ impl MainFrame {
                         if let Some(file) = dialog.file() {
                             if let Some(path) = file.path() {
                                 // Try to load the configuration
-                                match config_view_clone.load_config(&path) {
-                                    Ok(_) => {
-                                        // Successfully loaded
+                                match config_view_clone.borrow_mut().as_mut() {
+                                    Some(config_view) => {
+                                        if let Err(err) = config_view.load_config(&path) {
+                                            let error_msg = format!("Failed to load configuration: {}", err);
+                                            let error_dialog = gtk::MessageDialog::new(
+                                                Some(&window),
+                                                gtk::DialogFlags::MODAL,
+                                                gtk::MessageType::Error,
+                                                gtk::ButtonsType::Ok,
+                                                &error_msg
+                                            );
+                                            error_dialog.connect_response(move |dialog, _| {
+                                                dialog.close();
+                                            });
+                                            error_dialog.show();
+                                        }
                                     },
-                                    Err(err) => {
-                                        let error_msg = format!("Failed to load configuration: {}", err);
-                                        let error_dialog = gtk::MessageDialog::new(
-                                            Some(&window),
-                                            gtk::DialogFlags::MODAL,
-                                            gtk::MessageType::Error,
-                                            gtk::ButtonsType::Ok,
-                                            &error_msg
-                                        );
-                                        error_dialog.connect_response(move |dialog, _| {
-                                            dialog.close();
-                                        });
-                                        error_dialog.show();
+                                    None => {
+                                        // This should never happen
                                     }
                                 }
                             }
@@ -527,14 +527,14 @@ impl MainFrame {
         let save_action = gio::SimpleAction::new("save", None);
         let config_view = self.config_view.clone();
         save_action.connect_activate(move |_, _| {
-            config_view.save_config();
+            config_view.borrow_mut().as_ref().map(|config_view| config_view.save_config());
         });
         application.add_action(&save_action);
 
         let save_as_action = gio::SimpleAction::new("save_as", None);
         let config_view = self.config_view.clone();
         save_as_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
+            if let Some(window) = config_view.borrow().as_ref().and_then(|config_view| config_view.container.root().and_downcast::<gtk::Window>()) {
                 let dialog = gtk::FileChooserDialog::new(
                     Some("Save Configuration As"),
                     Some(&window),
@@ -564,10 +564,10 @@ impl MainFrame {
                         if let Some(file) = dialog.file() {
                             if let Some(path) = file.path() {
                                 // Set the configuration path
-                                config_view_clone.set_config_path(&path);
+                                config_view_clone.borrow_mut().as_mut().map(|config_view| config_view.set_config_path(&path));
                                 
                                 // Save the configuration
-                                config_view_clone.save_config();
+                                config_view_clone.borrow_mut().as_mut().map(|config_view| config_view.save_config());
                             }
                         }
                     }
@@ -709,93 +709,6 @@ impl MainFrame {
             println!("About EventGhost menu item clicked");
         });
         application.add_action(&about_action);
-    }
-}
-
-/// Represents the configuration view for EventGhost.
-pub struct ConfigView {
-    /// The main container for the configuration view
-    pub container: Box,
-    /// The tree view displaying the configuration hierarchy
-    tree_view: TreeView,
-    /// The tree store holding the configuration data
-    tree_store: TreeStore,
-}
-
-// Implement Clone for ConfigView
-impl Clone for ConfigView {
-    fn clone(&self) -> Self {
-        ConfigView {
-            container: self.container.clone(),
-            tree_view: self.tree_view.clone(),
-            tree_store: self.tree_store.clone(),
-        }
-    }
-}
-
-impl ConfigView {
-    /// Creates a new ConfigView instance.
-    ///
-    /// # Returns
-    /// A new ConfigView with a configured container and tree view
-    pub fn new() -> Self {
-        // Create main container
-        let container = Box::new(Orientation::Vertical, 0);
-
-        // Create tree store with columns:
-        // 0: item name (String)
-        // 1: item type (String)
-        // 2: icon name (String)
-        let tree_store = TreeStore::new(&[
-            glib::Type::STRING, // item name
-            glib::Type::STRING, // item type
-            glib::Type::STRING, // icon name
-        ]);
-        
-        // Create tree view
-        let tree_view = TreeView::with_model(&tree_store);
-        tree_view.set_headers_visible(true);
-        
-        // Add columns to tree view
-        let column = gtk::TreeViewColumn::new();
-        let cell = gtk::CellRendererPixbuf::new();
-        column.pack_start(&cell, false);
-        column.add_attribute(&cell, "icon-name", 2);
-        tree_view.append_column(&column);
-        
-        let column = gtk::TreeViewColumn::new();
-        column.set_title("Name");
-        let cell = gtk::CellRendererText::new();
-        column.pack_start(&cell, true);
-        column.add_attribute(&cell, "text", 0);
-        tree_view.append_column(&column);
-        
-        let column = gtk::TreeViewColumn::new();
-        column.set_title("Type");
-        let cell = gtk::CellRendererText::new();
-        column.pack_start(&cell, true);
-        column.add_attribute(&cell, "text", 1);
-        tree_view.append_column(&column);
-        
-        // Add some initial data to the tree store
-        let iter = tree_store.append(None);
-        tree_store.set_value(&iter, 0, &"Plugins".to_value());
-        tree_store.set_value(&iter, 1, &"Folder".to_value());
-        tree_store.set_value(&iter, 2, &"folder".to_value());
-        
-        let iter = tree_store.append(None);
-        tree_store.set_value(&iter, 0, &"Macros".to_value());
-        tree_store.set_value(&iter, 1, &"Folder".to_value());
-        tree_store.set_value(&iter, 2, &"folder".to_value());
-        
-        // Add tree view to container
-        container.append(&tree_view);
-
-        ConfigView { 
-            container,
-            tree_view,
-            tree_store,
-        }
     }
 }
 
