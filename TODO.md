@@ -82,6 +82,7 @@
 ### Action UI Components
 - [x] Action configuration dialog
   - [x] Dynamic form generation based on action parameters
+  - [x] Property grid for parameter display and editing
   - [ ] Validation feedback
   - [ ] Help text integration
 - [ ] Action group tree view
@@ -148,12 +149,13 @@
   - [ ] Troubleshooting guide
 
 ## Next Steps (Priority Order)
-1. Add action configuration UI
-2. Create system action implementations
-3. Implement action thread management
-4. Add action persistence
-5. Develop plugin action integration
-6. Write documentation
+1. ~~Add action configuration UI~~
+2. Fix GTK4 compatibility issues
+3. Create system action implementations 
+4. Implement action thread management
+5. Add action persistence
+6. Develop plugin action integration
+7. Write documentation
 
 ## Future Enhancements
 - [ ] Action templates

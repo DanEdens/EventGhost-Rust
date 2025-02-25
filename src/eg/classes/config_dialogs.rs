@@ -232,10 +232,10 @@ impl ActionDialog {
 
     pub fn run_for_new(&self) -> Option<Action> {
         let mut action = None;
-        let mut parameters = HashMap::new();
+        let parameters = std::rc::Rc::new(std::cell::RefCell::new(HashMap::new()));
         
         // Connect button click handler
-        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog => move |_| {
+        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog, @strong parameters => move |_| {
             // Hide the simple dialog temporarily
             dialog.hide();
             
@@ -243,8 +243,9 @@ impl ActionDialog {
             let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
             if let Some(new_action) = config_dialog.run_for_new_config_action() {
                 // Copy the values back to our parameters
-                parameters.clear();
-                parameters.extend(new_action.parameters.clone());
+                let mut params = parameters.borrow_mut();
+                params.clear();
+                params.extend(new_action.parameters.clone());
             }
             
             // Show the simple dialog again
@@ -255,7 +256,7 @@ impl ActionDialog {
             action = Some(Action {
                 id: Uuid::new_v4(),
                 name: self.base.get_name(),
-                parameters: parameters,
+                parameters: parameters.borrow().clone(),
             });
         }
         
@@ -269,10 +270,10 @@ impl ActionDialog {
         self.base.set_name(&action.name);
         
         let mut result = None;
-        let mut parameters = action.parameters.clone();
+        let parameters = std::rc::Rc::new(std::cell::RefCell::new(action.parameters.clone()));
         
         // Connect button click handler
-        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog, @strong action => move |_| {
+        let advanced_clicked = self.advanced_button.connect_clicked(clone!(@weak self.base.dialog as dialog, @strong parameters, @strong action => move |_| {
             // Hide the simple dialog temporarily
             dialog.hide();
             
@@ -280,15 +281,16 @@ impl ActionDialog {
             let config_action = Action {
                 id: action.id,
                 name: action.name.clone(),
-                parameters: parameters.clone(),
+                parameters: parameters.borrow().clone(),
             };
             
             // Create and show the advanced configuration dialog
             let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
             if let Some(updated_action) = config_dialog.run_for_config_action(&config_action) {
                 // Copy the values back to our parameters
-                parameters.clear();
-                parameters.extend(updated_action.parameters.clone());
+                let mut params = parameters.borrow_mut();
+                params.clear();
+                params.extend(updated_action.parameters.clone());
             }
             
             // Show the simple dialog again
@@ -299,7 +301,7 @@ impl ActionDialog {
             result = Some(Action {
                 id: action.id,
                 name: self.base.get_name(),
-                parameters: parameters,
+                parameters: parameters.borrow().clone(),
             });
         }
         

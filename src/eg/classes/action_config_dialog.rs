@@ -253,15 +253,7 @@ impl ActionConfigDialog {
     
     /// Format property value for display
     fn format_property_value(&self, value: &PropertyValue) -> String {
-        match value {
-            PropertyValue::String(s) => s.clone(),
-            PropertyValue::Int(i) => i.to_string(),
-            PropertyValue::Float(f) => f.to_string(),
-            PropertyValue::Bool(b) => b.to_string(),
-            PropertyValue::Enum(s, _) => s.clone(),
-            PropertyValue::Color(c) => format!("#{:08x}", c),
-            PropertyValue::Custom(_) => "<custom>".to_string(),
-        }
+        value.to_string()
     }
     
     /// Get a string description of the property value type
@@ -291,7 +283,9 @@ impl ActionConfigDialog {
                     // Update the property grid with this value
                     // For a real implementation, we would need to update the actual Property
                     // object and then refresh the grid. For now, we'll assume string properties.
-                    self.property_grid.set_property(display_name, value, "string");
+                    if !self.property_grid.update_property_value(display_name, value) {
+                        self.property_grid.set_property(display_name, value, "string");
+                    }
                 }
             }
         }
@@ -309,14 +303,23 @@ impl ActionConfigDialog {
                 should_select_on_execute: self.select_on_execute_check.is_active(),
             };
             
-            // TODO: Extract values from property grid into config.args
-            // In a real implementation, we would iterate through the property grid
-            // and convert each property back to a string in "name=value" format
+            // Extract values from property grid into config.args
+            // For each parameter, get the value from the property grid and format it as "name=value"
+            for (name, display_name) in &self.param_name_map {
+                if let Some(value) = self.property_grid.get_property_value(display_name) {
+                    config.args.push(format!("{}={}", name, value));
+                }
+            }
             
             Some(config)
         } else {
             None
         }
+    }
+    
+    /// Run the dialog future and return the future
+    pub fn run_future(&self) -> impl std::future::Future<Output = ResponseType> + '_ {
+        self.dialog.run_future()
     }
     
     /// Run the dialog for a ConfigAction and return the updated action if OK was pressed
@@ -332,11 +335,13 @@ impl ActionConfigDialog {
             self.select_on_execute_check.set_active(select == "true");
         }
         
-        // Add sample parameters to the property grid for demonstration
+        // Add parameters to the property grid for demonstration
         for (name, value) in &action.parameters {
             if name != "enabled" && name != "select_on_execute" {
                 if let Some(display_name) = self.param_name_map.get(name) {
-                    self.property_grid.set_property(display_name, value, "string");
+                    if !self.property_grid.update_property_value(display_name, value) {
+                        self.property_grid.set_property(display_name, value, "string");
+                    }
                 }
             }
         }
@@ -354,11 +359,10 @@ impl ActionConfigDialog {
             parameters.insert("select_on_execute".to_string(), 
                               self.select_on_execute_check.is_active().to_string());
             
-            // TODO: In a real implementation, we would extract all values from the property grid
-            // For now, we'll just copy over the existing parameters
-            for (k, v) in &action.parameters {
-                if k != "enabled" && k != "select_on_execute" {
-                    parameters.insert(k.clone(), v.clone());
+            // Extract all values from the property grid
+            for (param_name, display_name) in &self.param_name_map {
+                if let Some(value) = self.property_grid.get_property_value(display_name) {
+                    parameters.insert(param_name.clone(), value);
                 }
             }
             
@@ -384,7 +388,9 @@ impl ActionConfigDialog {
         
         for (name, value) in &param_map {
             if let Some(display_name) = self.param_name_map.get(name) {
-                self.property_grid.set_property(display_name, value, "string");
+                if !self.property_grid.update_property_value(display_name, value) {
+                    self.property_grid.set_property(display_name, value, "string");
+                }
             }
         }
         
@@ -400,8 +406,12 @@ impl ActionConfigDialog {
             parameters.insert("select_on_execute".to_string(), 
                               self.select_on_execute_check.is_active().to_string());
             
-            // Add sample parameters
-            parameters.extend(param_map);
+            // Extract all values from the property grid
+            for (param_name, display_name) in &self.param_name_map {
+                if let Some(value) = self.property_grid.get_property_value(display_name) {
+                    parameters.insert(param_name.clone(), value);
+                }
+            }
             
             Some(ConfigAction {
                 id: Uuid::new_v4(),

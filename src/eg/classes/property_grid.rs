@@ -66,6 +66,18 @@ impl PropertyValue {
             None
         }
     }
+    
+    pub fn to_string(&self) -> String {
+        match self {
+            PropertyValue::String(s) => s.clone(),
+            PropertyValue::Int(i) => i.to_string(),
+            PropertyValue::Float(f) => f.to_string(),
+            PropertyValue::Bool(b) => b.to_string(),
+            PropertyValue::Enum(s, _) => s.clone(),
+            PropertyValue::Color(c) => format!("#{:08x}", c),
+            PropertyValue::Custom(_) => "<custom>".to_string(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -86,7 +98,6 @@ impl std::fmt::Debug for Property {
             .field("description", &self.description)
             .field("value", &self.value)
             .field("readonly", &self.readonly)
-            // .field("validator", &self.validator.as_ref().map(|_| "<validator_fn>"))
             .field("validator", &"<validator_fn>")
             .finish()
     }
@@ -212,6 +223,51 @@ impl PropertyGrid {
     
     pub fn clear(&self) {
         self.store.clear();
+    }
+    
+    /// Get the value of a property by its name
+    pub fn get_property_value(&self, name: &str) -> Option<String> {
+        if let Some(model) = self.tree_view.model() {
+            // Iterate through all rows to find the property
+            if let Some(iter) = model.iter_first() {
+                let mut current_iter = iter;
+                loop {
+                    let property_name: String = model.get(&current_iter, 0);
+                    if property_name == name {
+                        return Some(model.get(&current_iter, 1));
+                    }
+                    
+                    if !model.iter_next(&current_iter) {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        None
+    }
+    
+    /// Update the value of a property by name
+    pub fn update_property_value(&self, name: &str, value: &str) -> bool {
+        if let Some(model) = self.tree_view.model() {
+            // Iterate through all rows to find the property
+            if let Some(iter) = model.iter_first() {
+                let mut current_iter = iter;
+                loop {
+                    let property_name: String = model.get(&current_iter, 0);
+                    if property_name == name {
+                        self.store.set(&current_iter, &[(1, &value)]);
+                        return true;
+                    }
+                    
+                    if !model.iter_next(&current_iter) {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        false
     }
 }
 

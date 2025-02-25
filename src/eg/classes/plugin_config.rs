@@ -1,235 +1,183 @@
 use gtk::prelude::*;
-use gtk::{self, Dialog as GtkDialog, Box as GtkBox, Label, Entry, Button, ResponseType};
-use crate::core::Error;
-use super::UIComponent;
-use super::dialog::{Dialog, DialogResult};
-use super::property_grid::{PropertyGrid, PropertySource, Property};
+use gtk::{self, Dialog, Button, Entry, Label, ResponseType, Grid, Window, HeaderBar, Box};
+use gtk::glib::MainContext;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::result::Result;
 use std::collections::HashMap;
-use gio::Application;
+use uuid::Uuid;
+use crate::core::Error;
+use super::property_grid::PropertyGrid;
+use super::UIComponent;
+use crate::eg::config::{Plugin, Config};
 
-#[derive(Debug)]
-pub struct ConfigPage {
-    title: String,
-    description: String,
-    property_grid: PropertyGrid,
+pub struct PluginPage {
+    pub name: String,
+    pub widget: Box,
+    pub property_grid: PropertyGrid,
 }
 
-pub struct ConfigDialog {
-    widget: GtkDialog,
-    container: GtkBox,
-    pages: Vec<ConfigPage>,
-    current_page: usize,
-    is_visible: bool,
-    result: DialogResult,
-    changes: HashMap<String, Property>,
-    property_grid: PropertyGrid,
-}
-
-// Phase 4: Configuration System - Not yet implemented
-#[allow(dead_code)]
-impl ConfigDialog {
-    const DEFAULT_DESCRIPTION: &'static str = "";
-
-    pub fn new(title: &str, app: &Application) -> Self {
-        let widget = GtkDialog::new();
-        widget.set_application(Some(app));
-        widget.set_title(Some(title));
-        
-        let container = GtkBox::new(gtk::Orientation::Vertical, 6);
-        widget.content_area().append(&container);
+impl PluginPage {
+    pub fn new(name: &str) -> Self {
+        let widget = Box::new(gtk::Orientation::Vertical, 6);
+        widget.set_margin_top(12);
+        widget.set_margin_bottom(12);
+        widget.set_margin_start(12);
+        widget.set_margin_end(12);
         
         let property_grid = PropertyGrid::new();
-        container.append(property_grid.get_widget());
         
-        ConfigDialog {
+        // Add property grid to page
+        widget.append(property_grid.get_widget());
+        
+        PluginPage {
+            name: name.to_string(),
             widget,
-            container,
-            pages: Vec::new(),
-            current_page: 0,
-            is_visible: false,
-            result: DialogResult::Cancel,
-            changes: HashMap::new(),
             property_grid,
         }
     }
-    
-    pub fn add_field(&self, label: &str, value: &str) -> Entry {
-        let hbox = GtkBox::new(gtk::Orientation::Horizontal, 12);
-        let label = Label::new(Some(label));
-        let entry = Entry::new();
-        entry.set_text(value);
+}
+
+pub struct PluginConfigDialog {
+    widget: Dialog,
+    pages: Vec<PluginPage>,
+    config: Option<Rc<RefCell<Config>>>,
+    plugin_id: Option<Uuid>,
+}
+
+impl PluginConfigDialog {
+    pub fn new(parent: &Window, plugin_name: &str) -> Self {
+        // Create dialog
+        let widget = Dialog::builder()
+            .title(&format!("{} Configuration", plugin_name))
+            .modal(true)
+            .default_width(500)
+            .default_height(400)
+            .transient_for(parent)
+            .build();
         
-        hbox.append(&label);
-        hbox.append(&entry);
-        self.container.append(&hbox);
+        // Set up dialog buttons
+        widget.add_button("Cancel", ResponseType::Cancel);
+        widget.add_button("OK", ResponseType::Ok);
+        widget.add_button("Apply", ResponseType::Apply);
         
-        entry
+        // Set up dialog UI
+        let header_bar = HeaderBar::new();
+        header_bar.set_title(Some(&format!("{} Configuration", plugin_name)));
+        
+        widget.set_titlebar(Some(&header_bar));
+        
+        PluginConfigDialog {
+            widget,
+            pages: Vec::new(),
+            config: None,
+            plugin_id: None,
+        }
     }
     
-    pub fn add_button(&self, label: &str) -> Button {
-        let button = Button::with_label(label);
-        self.widget.add_action_widget(&button, ResponseType::Ok);
-        button
+    pub fn add_page(&mut self, page: PluginPage) {
+        // Add the page widget to the dialog
+        let content_area = self.widget.content_area();
+        content_area.append(&page.widget);
+        
+        // Store the page
+        self.pages.push(page);
     }
-
-    pub fn add_page(&mut self, title: &str, description: &str) -> Result<(), Error> {
-        todo!("Phase 4: Configuration System")
-    }
-
-    pub fn set_plugin(&mut self, plugin: Box<dyn PropertySource + Send + Sync>) -> Result<(), Error> {
-        todo!()
-    }
-
-    pub fn set_current_page(&mut self, index: usize) -> Result<(), Error> {
-        if index >= self.pages.len() {
-            return Err(Error::Config("Invalid page index".into()));
-        }
-        self.current_page = index;
-        Ok(())
-    }
-
-    pub fn get_current_page(&self) -> usize {
-        self.current_page
-    }
-
-    pub fn get_page_count(&self) -> usize {
-        self.pages.len()
-    }
-
-    pub fn set_description(&mut self, text: &str) {
-        if let Some(page) = self.pages.get_mut(self.current_page) {
-            page.description = text.to_string();
+    
+    pub fn set_plugin(&mut self, plugin: &Plugin, config: Rc<RefCell<Config>>) {
+        self.plugin_id = Some(plugin.id);
+        self.config = Some(config);
+        
+        // Update UI with plugin config
+        for page in &self.pages {
+            // Set properties based on plugin config
+            for (key, value) in &plugin.config {
+                page.property_grid.set_property(key, value, "string");
+            }
         }
     }
-
-    pub fn get_description(&self) -> String {
-        self.pages.get(self.current_page)
-            .map(|page| page.description.clone())
-            .unwrap_or_else(String::new)
-    }
-
-    pub fn validate_changes(&self) -> Result<(), String> {
-        for property in self.changes.values() {
-            property.validate()?;
-        }
-        Ok(())
-    }
-
-    pub fn apply_changes(&mut self) -> Result<(), Error> {
-        self.validate_changes()
-            .map_err(|e| Error::Config(e.into()))?;
-        todo!()
-    }
-
-    pub fn reset_changes(&mut self) -> Result<(), Error> {
-        self.changes.clear();
-        for page in &mut self.pages {
-            page.property_grid.refresh()?;
-        }
-        Ok(())
-    }
-
-    fn on_property_changed(&mut self, name: String, value: Property) {
-        self.changes.insert(name, value);
-    }
-
+    
     pub fn run(&self) -> ResponseType {
-        self.widget.run()
+        let future = self.widget.run_future();
+        MainContext::default().block_on(future)
     }
     
-    pub fn close(&self) {
-        self.widget.close();
+    pub fn run_for_plugin(&mut self, plugin: &Plugin, config: Rc<RefCell<Config>>) -> Result<Plugin, Error> {
+        self.set_plugin(plugin, config);
+        
+        let response = self.run();
+        
+        if response == ResponseType::Ok || response == ResponseType::Apply {
+            // Collect properties from all pages
+            let mut new_config = HashMap::new();
+            
+            for page in &self.pages {
+                // Get properties from the grid
+                if let Some(model) = page.property_grid.tree_view.model() {
+                    if let Some(iter) = model.iter_first() {
+                        let mut current_iter = iter;
+                        loop {
+                            let name: String = model.get(&current_iter, 0);
+                            let value: String = model.get(&current_iter, 1);
+                            
+                            new_config.insert(name, value);
+                            
+                            if !model.iter_next(&current_iter) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Create new plugin config
+            let updated_plugin = Plugin {
+                id: plugin.id,
+                name: plugin.name.clone(),
+                config: new_config,
+            };
+            
+            // If we have a config and plugin_id, update the config
+            if let Some(config) = &self.config {
+                if let Some(plugin_id) = self.plugin_id {
+                    let mut config = config.borrow_mut();
+                    // Update the plugin in the config
+                    for plugin in &mut config.plugins {
+                        if plugin.id == plugin_id {
+                            *plugin = updated_plugin.clone();
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            Ok(updated_plugin)
+        } else {
+            Err(Error::new("Plugin configuration cancelled"))
+        }
     }
 }
 
-impl Dialog for ConfigDialog {
-    fn show_modal(&mut self) -> Result<DialogResult, Error> {
-        let response = self.widget.run();
-        self.widget.close();
-        Ok(response.into())
-    }
-
-    fn end_dialog(&mut self, result: DialogResult) {
-        self.result = result;
-    }
-
-    fn on_init(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn on_command(&mut self, _command: u32) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn show(&self) {
-        self.widget.present();
-    }
-
-    fn hide(&self) {
-        self.widget.hide();
-    }
-}
-
-impl UIComponent for ConfigDialog {
+impl UIComponent for PluginConfigDialog {
     fn get_widget(&self) -> &gtk::Widget {
         self.widget.upcast_ref()
-    }
-
-    fn is_visible(&self) -> bool {
-        self.is_visible
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::property_grid::{PropertyValue};
-
-    struct TestPlugin {
-        name: String,
-        enabled: bool,
-    }
-
-    impl PropertySource for TestPlugin {
-        fn get_properties(&self) -> Vec<Property> {
-            vec![
-                Property::new("name", "General", PropertyValue::String(self.name.clone()))
-                    .with_description("Plugin name")
-                    .with_validator(|value| {
-                        if let PropertyValue::String(s) = value {
-                            if s.is_empty() {
-                                return Err("Name cannot be empty".into());
-                            }
-                        }
-                        Ok(())
-                    }),
-                Property::new("enabled", "State", PropertyValue::Bool(self.enabled))
-                    .with_description("Enable/disable plugin"),
-            ]
-        }
-
-        fn set_property(&mut self, name: &str, value: PropertyValue) -> Result<(), Error> {
-            match (name, value) {
-                ("name", PropertyValue::String(s)) => self.name = s,
-                ("enabled", PropertyValue::Bool(b)) => self.enabled = b,
-                _ => return Err(Error::Config("Invalid property".into())),
-            }
-            Ok(())
-        }
-    }
-
+    
     #[test]
-    fn test_config_dialog_initialization() {
+    fn test_plugin_config_dialog() {
         gtk::init().expect("Failed to initialize GTK");
         
-        let dialog = ConfigDialog::new("Test Config", &gio::Application::new());
-        assert!(!dialog.widget.is_visible());
-    }
-
-    #[test]
-    fn test_config_dialog() {
-        let dialog = ConfigDialog::new("Test Config", &gio::Application::new()).unwrap();
-        dialog.show();
-        dialog.hide();
+        let window = Window::new();
+        let mut dialog = PluginConfigDialog::new(&window, "Test Plugin");
+        
+        let page = PluginPage::new("General");
+        dialog.add_page(page);
+        
+        assert!(dialog.widget.is_visible());
     }
 } 
