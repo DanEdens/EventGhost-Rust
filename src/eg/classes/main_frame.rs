@@ -7,6 +7,8 @@ use super::UIComponent;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::core::Error;
+use std::cell::Cell;
+use std::thread::LocalKey;
 
 // use glib::Error;
 
@@ -36,6 +38,11 @@ pub struct MainFrame {
 }
 
 impl MainFrame {
+    /// Thread-local storage for ConfigView
+    thread_local! {
+        static CONFIG_VIEW: RefCell<Rc<RefCell<Option<ConfigView>>>> = RefCell::new(Rc::new(RefCell::new(None)));
+    }
+
     /// Creates a new MainFrame instance.
     ///
     /// # Arguments
@@ -86,6 +93,11 @@ impl MainFrame {
         // Create configuration view
         let config_view = ConfigView::new();
 
+        // Store the config_view in thread-local storage
+        Self::CONFIG_VIEW.with(|cell| {
+            *cell.borrow_mut() = Rc::new(RefCell::new(Some(config_view.clone())));
+        });
+
         // Add configuration tab
         let config_label = gtk::Label::new(Some("Configuration"));
         notebook.append_page(&config_view.container, Some(&config_label));
@@ -133,16 +145,99 @@ impl MainFrame {
     fn init_toolbar_buttons(toolbar: &mut Toolbar) {
         // File operations
         let new_button = toolbar.add_button("new", "/org/eventghost/images/new.png", "New");
-        new_button.connect_clicked(|_| println!("New button clicked"));
+        let config_view = Rc::new(RefCell::new(None::<ConfigView>));
+        let config_view_clone = config_view.clone();
+        new_button.connect_clicked(move |_| {
+            if let Some(config_view) = &*config_view_clone.borrow() {
+                config_view.new_config();
+            }
+        });
 
         let open_button = toolbar.add_button("open", "/org/eventghost/images/open.png", "Open");
-        open_button.connect_clicked(|_| println!("Open button clicked"));
+        let config_view_clone = config_view.clone();
+        open_button.connect_clicked(move |_| {
+            if let Some(config_view) = &*config_view_clone.borrow() {
+                if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
+                    let dialog = gtk::FileChooserDialog::new(
+                        Some("Open Configuration"),
+                        Some(&window),
+                        gtk::FileChooserAction::Open,
+                        &[
+                            ("Cancel", gtk::ResponseType::Cancel),
+                            ("Open", gtk::ResponseType::Accept),
+                        ],
+                    );
+                    
+                    // Add file filters
+                    let json_filter = gtk::FileFilter::new();
+                    json_filter.set_name(Some("JSON Configuration Files"));
+                    json_filter.add_pattern("*.json");
+                    dialog.add_filter(&json_filter);
+                    
+                    let xml_filter = gtk::FileFilter::new();
+                    xml_filter.set_name(Some("XML Configuration Files"));
+                    xml_filter.add_pattern("*.xml");
+                    xml_filter.add_pattern("*.egtree");
+                    dialog.add_filter(&xml_filter);
+                    
+                    let all_filter = gtk::FileFilter::new();
+                    all_filter.set_name(Some("All Configuration Files"));
+                    all_filter.add_pattern("*.json");
+                    all_filter.add_pattern("*.xml");
+                    all_filter.add_pattern("*.egtree");
+                    dialog.add_filter(&all_filter);
+                    
+                    // Set current folder to config directory
+                    if let Ok(config_dir) = crate::core::utils::get_config_dir() {
+                        dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
+                    }
+                    
+                    let config_view = config_view.clone();
+                    dialog.connect_response(move |dialog, response| {
+                        if response == gtk::ResponseType::Accept {
+                            if let Some(file) = dialog.file() {
+                                if let Some(path) = file.path() {
+                                    if let Some(config_view) = &*config_view.borrow() {
+                                        // Try to load the configuration
+                                        if let Err(err) = config_view.load_config(&path) {
+                                            let error_dialog = gtk::MessageDialog::new(
+                                                Some(&window),
+                                                gtk::DialogFlags::MODAL,
+                                                gtk::MessageType::Error,
+                                                gtk::ButtonsType::Ok,
+                                                &format!("Failed to load configuration: {}", err)
+                                            );
+                                            error_dialog.connect_response(move |dialog, _| {
+                                                dialog.close();
+                                            });
+                                            error_dialog.show();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        dialog.close();
+                    });
+                    
+                    dialog.show();
+                }
+            }
+        });
 
         let save_button = toolbar.add_button("save", "/org/eventghost/images/save.png", "Save");
-        save_button.connect_clicked(|_| println!("Save button clicked"));
-        save_button.set_sensitive(false);
+        let config_view_clone = config_view.clone();
+        save_button.connect_clicked(move |_| {
+            if let Some(config_view) = &*config_view_clone.borrow() {
+                config_view.save_config();
+            }
+        });
 
         toolbar.add_separator();
+
+        // Store the config_view for later use
+        MainFrame::CONFIG_VIEW.with(|cell| {
+            *cell.borrow_mut() = config_view;
+        });
 
         // Edit operations
         let cut_button = toolbar.add_button("cut", "/org/eventghost/images/cut.png", "Cut");
@@ -237,59 +332,91 @@ impl MainFrame {
         toolbar.set_button_tooltip("collapse-all", "Collapse All");
     }
 
-    /// Create the menu model for the menu bar
-    fn create_menu_model(&self) -> Menu {
-        let menu_bar = Menu::new();
+    /// Creates the menu model for the application.
+    fn create_menu_model(&self) -> gio::Menu {
+        let menu_model = gio::Menu::new();
         
         // File menu
-        let file_menu = Menu::new();
+        let file_menu = gio::Menu::new();
         file_menu.append(Some("New"), Some("app.new"));
-        file_menu.append(Some("Open..."), Some("app.open"));
+        file_menu.append(Some("Open"), Some("app.open"));
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        file_menu.append_section(None, &separator);
+        
         file_menu.append(Some("Save"), Some("app.save"));
-        file_menu.append(Some("Save As..."), Some("app.save_as"));
-        file_menu.append_separator();
-        file_menu.append(Some("Options..."), Some("app.options"));
-        file_menu.append_separator();
+        file_menu.append(Some("Save As"), Some("app.save-as"));
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        file_menu.append_section(None, &separator);
+        
+        file_menu.append(Some("Options"), Some("app.options"));
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        file_menu.append_section(None, &separator);
+        
         file_menu.append(Some("Restart"), Some("app.restart"));
-        file_menu.append(Some("Restart as Admin"), Some("app.restart_admin"));
-        file_menu.append_separator();
+        file_menu.append(Some("Restart as Admin"), Some("app.restart-admin"));
         file_menu.append(Some("Exit"), Some("app.quit"));
-        menu_bar.append_submenu(Some("File"), &file_menu);
+        
+        menu_model.append_submenu(Some("File"), &file_menu);
         
         // Edit menu
-        let edit_menu = Menu::new();
+        let edit_menu = gio::Menu::new();
         edit_menu.append(Some("Undo"), Some("app.undo"));
         edit_menu.append(Some("Redo"), Some("app.redo"));
-        edit_menu.append_separator();
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        edit_menu.append_section(None, &separator);
+        
         edit_menu.append(Some("Cut"), Some("app.cut"));
         edit_menu.append(Some("Copy"), Some("app.copy"));
         edit_menu.append(Some("Paste"), Some("app.paste"));
-        edit_menu.append_separator();
-        edit_menu.append(Some("Find..."), Some("app.find"));
-        menu_bar.append_submenu(Some("Edit"), &edit_menu);
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        edit_menu.append_section(None, &separator);
+        
+        edit_menu.append(Some("Find"), Some("app.find"));
+        edit_menu.append(Some("Replace"), Some("app.replace"));
+        
+        menu_model.append_submenu(Some("Edit"), &edit_menu);
         
         // Configuration menu
-        let config_menu = Menu::new();
-        config_menu.append(Some("Add Plugin..."), Some("app.add_plugin"));
-        config_menu.append(Some("Add Folder"), Some("app.add_folder"));
-        config_menu.append(Some("Add Macro"), Some("app.add_macro"));
-        config_menu.append(Some("Add Event"), Some("app.add_event"));
-        config_menu.append(Some("Add Action"), Some("app.add_action"));
-        config_menu.append_separator();
-        config_menu.append(Some("Rename Item"), Some("app.rename_item"));
-        config_menu.append(Some("Delete Item"), Some("app.delete_item"));
-        menu_bar.append_submenu(Some("Configuration"), &config_menu);
+        let config_menu = gio::Menu::new();
+        config_menu.append(Some("Add Plugin"), Some("app.add-plugin"));
+        config_menu.append(Some("Add Folder"), Some("app.add-folder"));
+        config_menu.append(Some("Add Macro"), Some("app.add-macro"));
+        config_menu.append(Some("Add Event"), Some("app.add-event"));
+        config_menu.append(Some("Add Action"), Some("app.add-action"));
+        
+        // Add separator
+        let separator = gio::Menu::new();
+        config_menu.append_section(None, &separator);
+        
+        config_menu.append(Some("Expand All"), Some("app.expand-all"));
+        config_menu.append(Some("Collapse All"), Some("app.collapse-all"));
+        
+        menu_model.append_submenu(Some("Configuration"), &config_menu);
         
         // Help menu
-        let help_menu = Menu::new();
-        help_menu.append(Some("Help Contents"), Some("app.help"));
-        help_menu.append(Some("Online Documentation"), Some("app.online_docs"));
-        help_menu.append(Some("Check for Updates"), Some("app.check_updates"));
-        help_menu.append_separator();
-        help_menu.append(Some("About EventGhost"), Some("app.about"));
-        menu_bar.append_submenu(Some("Help"), &help_menu);
+        let help_menu = gio::Menu::new();
+        help_menu.append(Some("Documentation"), Some("app.documentation"));
+        help_menu.append(Some("Website"), Some("app.website"));
         
-        menu_bar
+        // Add separator
+        let separator = gio::Menu::new();
+        help_menu.append_section(None, &separator);
+        
+        help_menu.append(Some("About"), Some("app.about"));
+        
+        menu_model.append_submenu(Some("Help"), &help_menu);
+        
+        menu_model
     }
     
     /// Shows the main application window.

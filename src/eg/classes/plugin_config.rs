@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, Dialog, Button, Entry, Label, ResponseType, Grid, Window, HeaderBar, Box};
-use gtk::glib::MainContext;
+use gtk::glib;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::result::Result;
@@ -101,7 +101,7 @@ impl PluginConfigDialog {
     
     pub fn run(&self) -> ResponseType {
         // Create a channel to receive the dialog response
-        let (sender, receiver) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+        let (sender, receiver) = gtk::glib::MainContext::channel(gtk::glib::PRIORITY_DEFAULT);
         
         // Connect to the response signal to send the response through the channel
         self.widget.connect_response(move |dialog, response| {
@@ -113,7 +113,7 @@ impl PluginConfigDialog {
         self.widget.show();
         
         // Use a new main context to wait for the response
-        let context = glib::MainContext::new();
+        let context = gtk::glib::MainContext::new();
         let _acquire = context.acquire();
         
         // Use a boolean to track response
@@ -124,7 +124,7 @@ impl PluginConfigDialog {
         let _source_id = receiver.attach(Some(&context), move |response| {
             response_value = response;
             response_received = true;
-            glib::Continue(false) // Remove source after first response
+            gtk::glib::ControlFlow::Break // Remove source after first response
         });
         
         // Run the main loop until we get a response

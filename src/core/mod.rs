@@ -17,6 +17,7 @@ pub mod logging;
 pub mod named_pipe;
 pub mod action;
 pub mod actions;
+pub mod utils;
 
 pub use error::Error;
 pub use config::Config;

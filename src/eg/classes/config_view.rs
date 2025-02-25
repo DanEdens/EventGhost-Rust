@@ -1,12 +1,14 @@
 use gtk::prelude::*;
 use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath};
 use gio::{Menu, SimpleAction, SimpleActionGroup};
-use gdk4::ModifierType;
-use glib::{self, clone};
+use gtk::gdk::ModifierType;
+use gtk::glib::{self, clone};
 use uuid::Uuid;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::path::{Path, PathBuf};
+use std::io;
+use log::{debug, error, info};
 
 use crate::eg::config::{Config, ConfigItem, Plugin, Folder, Macro, Event, Action};
 use super::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
@@ -28,6 +30,7 @@ fn path_to_string(path: &TreePath) -> Option<String> {
 }
 
 /// Represents the configuration view for EventGhost.
+#[derive(Clone)]
 pub struct ConfigView {
     /// The main container for the configuration view
     pub container: Box,
@@ -38,7 +41,7 @@ pub struct ConfigView {
     /// The configuration data
     config: Rc<RefCell<Config>>,
     /// The path to save the configuration to
-    config_path: Option<PathBuf>,
+    config_path: Rc<RefCell<Option<PathBuf>>>,
 }
 
 impl ConfigView {
@@ -67,7 +70,7 @@ impl ConfigView {
         
         // Set up drag and drop using GTK4 APIs
         let drag_source = gtk::DragSource::new();
-        drag_source.set_actions(gdk4::DragAction::MOVE);
+        drag_source.set_actions(gtk::gdk::DragAction::MOVE);
         
         // Set up content provider when drag begins
         let tree_store_clone = tree_store.clone();
@@ -77,7 +80,8 @@ impl ConfigView {
             if let Some((model, iter)) = selection.selected() {
                 let path = model.path(&iter);
                 if let Some(path_str) = path_to_string(&path) {
-                    return Some(gdk4::ContentProvider::for_value(&path_str.to_value()));
+                    // Create content provider with the path string
+                    return Some(gtk::gdk::ContentProvider::for_value(&path_str.to_value()));
                 }
             }
             None
@@ -86,7 +90,7 @@ impl ConfigView {
         tree_view.add_controller(drag_source);
         
         // Set up drop target
-        let drop_target = gtk::DropTarget::new(glib::Type::STRING, gdk4::DragAction::MOVE);
+        let drop_target = gtk::DropTarget::new(gtk::glib::Type::STRING, gtk::gdk::DragAction::MOVE);
         let tree_store_for_drop = tree_store.clone();
         let tree_view_for_drop = tree_view.clone();
         
@@ -170,7 +174,7 @@ impl ConfigView {
             tree_view,
             tree_store,
             config,
-            config_path: None,
+            config_path: Rc::new(RefCell::new(None)),
         };
 
         // Set up context menu
@@ -185,9 +189,9 @@ impl ConfigView {
         config_view
     }
 
-    /// Sets the path to save the configuration to.
-    pub fn set_config_path<P: AsRef<Path>>(&mut self, path: P) {
-        self.config_path = Some(path.as_ref().to_path_buf());
+    /// Sets the configuration path.
+    pub fn set_config_path<P: AsRef<Path>>(&self, path: P) {
+        *self.config_path.borrow_mut() = Some(path.as_ref().to_path_buf());
     }
 
     /// Creates a new empty configuration
@@ -203,54 +207,34 @@ impl ConfigView {
         self.add_root_folders();
         
         // Reset the config path
-        self.config_path = None;
+        *self.config_path.borrow_mut() = None;
     }
 
     /// Saves the configuration to disk with error handling
     pub fn save_config(&self) {
-        if let Some(path) = &self.config_path {
+        if let Some(path) = &*self.config_path.borrow() {
+            debug!("Saving configuration to {}", path.display());
             match self.config.borrow().save_to_file(path) {
                 Ok(_) => {
-                    // Optionally show a status message
+                    info!("Configuration saved successfully to {}", path.display());
+                    // Show success message in status bar or log
                     if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
-                        // Find the status bar widget - look for the last widget with "status" in its name
-                        if let Some(status_box) = window.child() {
-                            let mut child = status_box.first_child();
-                            let mut status_bar = None;
-                            
-                            // Try to find a status bar component by traversing widgets
-                            while let Some(widget) = child {
-                                let name = widget.widget_name();
-                                if name.contains("status") {
-                                    // Found a likely status bar
-                                    status_bar = Some(widget.clone());
-                                }
-                                // Move to next sibling
-                                child = widget.next_sibling();
-                            }
-                            
-                            if let Some(status_bar) = status_bar {
-                                if let Some(status) = status_bar.downcast_ref::<gtk::Label>() {
-                                    // Update the status label text
-                                    status.set_text(&format!("Configuration saved to {}", path.display()));
-                                }
-                            }
-                        }
+                        let dialog = gtk::MessageDialog::new(
+                            Some(&window),
+                            gtk::DialogFlags::MODAL,
+                            gtk::MessageType::Info,
+                            gtk::ButtonsType::Ok,
+                            &format!("Configuration saved to {}", path.display())
+                        );
+                        dialog.connect_response(move |dialog, _| {
+                            dialog.close();
+                        });
+                        dialog.show();
                     }
-                }
+                },
                 Err(err) => {
-                    let error_msg = format!("Failed to save configuration: {}", err);
-                    let dialog = gtk::MessageDialog::new(
-                        None::<&gtk::Window>,
-                        gtk::DialogFlags::MODAL,
-                        gtk::MessageType::Error,
-                        gtk::ButtonsType::Ok,
-                        &error_msg
-                    );
-                    dialog.connect_response(move |dialog, _| {
-                        dialog.close();
-                    });
-                    dialog.show();
+                    error!("Failed to save configuration: {}", err);
+                    self.show_error(&format!("Failed to save configuration: {}", err));
                 }
             }
         } else {
@@ -267,28 +251,39 @@ impl ConfigView {
                 );
                 
                 // Add file filters
-                let filter = gtk::FileFilter::new();
-                filter.set_name(Some("EventGhost Configuration Files"));
-                filter.add_pattern("*.json");
-                filter.add_pattern("*.egtree");
-                filter.add_pattern("*.xml");
-                dialog.add_filter(&filter);
+                let json_filter = gtk::FileFilter::new();
+                json_filter.set_name(Some("JSON Configuration Files"));
+                json_filter.add_pattern("*.json");
+                dialog.add_filter(&json_filter);
+                
+                let xml_filter = gtk::FileFilter::new();
+                xml_filter.set_name(Some("XML Configuration Files"));
+                xml_filter.add_pattern("*.xml");
+                xml_filter.add_pattern("*.egtree");
+                dialog.add_filter(&xml_filter);
+                
+                let all_filter = gtk::FileFilter::new();
+                all_filter.set_name(Some("All Configuration Files"));
+                all_filter.add_pattern("*.json");
+                all_filter.add_pattern("*.xml");
+                all_filter.add_pattern("*.egtree");
+                dialog.add_filter(&all_filter);
                 
                 // Set current folder to config directory
                 if let Ok(config_dir) = crate::core::utils::get_config_dir() {
                     dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
                 }
                 
-                let config_view = self.clone();
+                let config_view_clone = self.clone();
                 dialog.connect_response(move |dialog, response| {
                     if response == gtk::ResponseType::Accept {
                         if let Some(file) = dialog.file() {
                             if let Some(path) = file.path() {
                                 // Set the configuration path
-                                config_view.set_config_path(&path);
+                                config_view_clone.set_config_path(&path);
                                 
                                 // Save the configuration
-                                config_view.save_config();
+                                config_view_clone.save_config();
                             }
                         }
                     }
@@ -300,21 +295,118 @@ impl ConfigView {
         }
     }
 
-    /// Loads the configuration from disk.
-    pub fn load_config<P: AsRef<Path>>(&mut self, path: P) -> std::io::Result<()> {
-        let config = Config::load_from_file(path.as_ref())?;
-        self.config = Rc::new(RefCell::new(config));
-        self.config_path = Some(path.as_ref().to_path_buf());
+    /// Loads a configuration from a file
+    pub fn load_config<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
+        let path_ref = path.as_ref();
+        debug!("Loading configuration from {}", path_ref.display());
         
-        // Clear the tree store
-        self.tree_store.clear();
-        
-        // Add all items to the tree
-        for item in self.config.borrow().items.iter() {
-            self.add_item_to_tree(item.clone(), None);
+        // Check if file exists
+        if !path_ref.exists() {
+            let err = io::Error::new(
+                io::ErrorKind::NotFound, 
+                format!("Configuration file not found: {}", path_ref.display())
+            );
+            error!("{}", err);
+            return Err(err);
         }
         
-        Ok(())
+        // Try to load the configuration
+        match Config::load_from_file(path_ref) {
+            Ok(config) => {
+                // Update the configuration
+                self.config.replace(config);
+                
+                // Update the config path
+                self.set_config_path(path_ref);
+                
+                // Clear the tree store
+                self.tree_store.clear();
+                
+                // Add root folders
+                self.add_root_folders();
+                
+                // Add items to the tree
+                self.populate_tree_from_config();
+                
+                info!("Configuration loaded successfully from {}", path_ref.display());
+                Ok(())
+            },
+            Err(err) => {
+                let error_msg = format!("Failed to load configuration: {}", err);
+                error!("{}", error_msg);
+                self.show_error(&error_msg);
+                Err(err)
+            }
+        }
+    }
+    
+    /// Populates the tree view from the loaded configuration
+    fn populate_tree_from_config(&self) {
+        let config = self.config.borrow();
+        
+        // Find the root folders
+        let mut plugins_iter = None;
+        let mut macros_iter = None;
+        
+        // Get the root iterators
+        let mut iter = self.tree_store.iter_first();
+        while let Some(it) = iter {
+            let name = self.tree_store.value(&it, 0).get::<String>().unwrap_or_default();
+            if name == "Plugins" {
+                plugins_iter = Some(it.clone());
+            } else if name == "Macros" {
+                macros_iter = Some(it.clone());
+            }
+            iter = self.tree_store.iter_next(&it);
+        }
+        
+        // Add items to the tree
+        for item in &config.items {
+            match item {
+                ConfigItem::Plugin(plugin) => {
+                    if let Some(ref parent) = plugins_iter {
+                        self.add_item_to_tree(item.clone(), Some(parent));
+                    }
+                },
+                ConfigItem::Folder(folder) => {
+                    // Add folders to the appropriate parent
+                    // For simplicity, we'll add all folders to the root for now
+                    if let Some(ref parent) = macros_iter {
+                        self.add_item_to_tree(item.clone(), Some(parent));
+                    }
+                },
+                ConfigItem::Macro(macro_) => {
+                    if let Some(ref parent) = macros_iter {
+                        self.add_item_to_tree(item.clone(), Some(parent));
+                    }
+                },
+                ConfigItem::Event(event) => {
+                    // Events should be added to their parent macros
+                    // For simplicity, we'll add all events to the macros folder for now
+                    if let Some(ref parent) = macros_iter {
+                        self.add_item_to_tree(item.clone(), Some(parent));
+                    }
+                },
+                ConfigItem::Action(action) => {
+                    // Actions should be added to their parent macros
+                    // For simplicity, we'll add all actions to the macros folder for now
+                    if let Some(ref parent) = macros_iter {
+                        self.add_item_to_tree(item.clone(), Some(parent));
+                    }
+                },
+            }
+        }
+        
+        // Expand the root folders
+        if let Some(plugins_iter) = plugins_iter {
+            let path = self.tree_store.path(&plugins_iter).unwrap();
+            self.tree_view.expand_row(&path, false);
+        }
+        
+        if let Some(macros_iter) = macros_iter {
+            let path = self.tree_store.path(&macros_iter).unwrap();
+            self.tree_view.expand_row(&path, false);
+        }
     }
 
     /// Sets up the context menu for the tree view
@@ -352,7 +444,7 @@ impl ConfigView {
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
-                        config_path: None 
+                        config_path: Rc::new(RefCell::new(None)) 
                     };
                     config_view.add_item_to_tree(ConfigItem::Plugin(plugin), Some(&iter));
                 }
@@ -370,7 +462,7 @@ impl ConfigView {
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
-                        config_path: None 
+                        config_path: Rc::new(RefCell::new(None)) 
                     };
                     config_view.add_item_to_tree(ConfigItem::Folder(folder), Some(&iter));
                 }
@@ -388,7 +480,7 @@ impl ConfigView {
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
-                        config_path: None 
+                        config_path: Rc::new(RefCell::new(None)) 
                     };
                     config_view.add_item_to_tree(ConfigItem::Macro(macro_), Some(&iter));
                 }
@@ -406,7 +498,7 @@ impl ConfigView {
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
-                        config_path: None 
+                        config_path: Rc::new(RefCell::new(None)) 
                     };
                     config_view.add_item_to_tree(ConfigItem::Event(event), Some(&iter));
                 }
@@ -424,7 +516,7 @@ impl ConfigView {
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
-                        config_path: None 
+                        config_path: Rc::new(RefCell::new(None)) 
                     };
                     config_view.add_item_to_tree(ConfigItem::Action(action), Some(&iter));
                 }
@@ -474,7 +566,7 @@ impl ConfigView {
                                     tree_view: tree_view.clone(), 
                                     tree_store, 
                                     config: config.clone(),
-                                    config_path: None 
+                                    config_path: Rc::new(RefCell::new(None)) 
                                 };
                                 config_view.update_item_in_tree(&iter, &edited_item);
                             }
@@ -493,7 +585,7 @@ impl ConfigView {
                     tree_view: tree_view.clone(), 
                     tree_store, 
                     config,
-                    config_path: None 
+                    config_path: Rc::new(RefCell::new(None)) 
                 };
                 config_view.remove_item_from_tree(&iter);
             }
@@ -665,80 +757,64 @@ impl ConfigView {
         self.save_config();
     }
 
-    /// Shows an error dialog with the given message
+    /// Shows an error message dialog
     fn show_error(&self, message: &str) {
-        let dialog = gtk::MessageDialog::new(
-            None::<&gtk::Window>,
-            gtk::DialogFlags::MODAL,
-            gtk::MessageType::Error,
-            gtk::ButtonsType::Ok,
-            message
-        );
-        
-        // Connect to the response signal
-        dialog.connect_response(move |dialog, _| {
-            dialog.close();
-        });
-        
-        dialog.show();
+        if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
+            let dialog = gtk::MessageDialog::new(
+                Some(&window),
+                gtk::DialogFlags::MODAL,
+                gtk::MessageType::Error,
+                gtk::ButtonsType::Ok,
+                message
+            );
+            
+            // Connect response signal to close the dialog
+            dialog.connect_response(move |dialog, _| {
+                dialog.close();
+            });
+            
+            // Show the dialog
+            dialog.show();
+        } else {
+            // Fallback to logging if we can't show a dialog
+            error!("Error: {}", message);
+        }
     }
 
-    /// Shows a confirmation dialog with the given message
+    /// Shows a confirmation dialog and returns the response
     fn show_confirmation(&self, message: &str) -> bool {
-        let dialog = gtk::MessageDialog::new(
-            None::<&gtk::Window>,
-            gtk::DialogFlags::MODAL,
-            gtk::MessageType::Question,
-            gtk::ButtonsType::YesNo,
-            message
-        );
-
-        // Create a channel to receive the dialog response
-        let (sender, receiver) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+        let (sender, receiver) = gtk::glib::MainContext::channel(gtk::glib::PRIORITY_DEFAULT);
         
-        // Connect to the response signal to send the response through the channel
-        dialog.connect_response(clone!(@strong sender => move |dialog, response| {
-            sender.send(response).expect("Failed to send response");
-            dialog.close();
-        }));
-        
-        // Show the dialog
-        dialog.show();
-        
-        // Use a new main context to wait for the response
-        let context = glib::MainContext::new();
-        let _acquire = context.acquire(); // Use _acquire to avoid unused variable warning
-        
-        // Use a boolean to track response
-        let mut response_received = false;
-        let mut response_value = gtk::ResponseType::No;
-        
-        // Install source to wait for the response
-        let _source_id = receiver.attach(Some(&context), move |response| {
-            response_value = response;
-            response_received = true;
-            glib::Continue(false) // Remove source after first response
-        });
-        
-        // Run the main loop until we get a response
-        while !response_received {
-            context.iteration(true);
+        if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
+            let dialog = gtk::MessageDialog::new(
+                Some(&window),
+                gtk::DialogFlags::MODAL,
+                gtk::MessageType::Question,
+                gtk::ButtonsType::YesNo,
+                message
+            );
+            
+            let sender_clone = sender.clone();
+            dialog.connect_response(move |dialog, response| {
+                let confirmed = response == gtk::ResponseType::Yes;
+                sender_clone.send(confirmed).expect("Failed to send response");
+                dialog.close();
+            });
+            
+            dialog.show();
+            
+            // Set up a one-shot receiver
+            let result = receiver.attach(None, move |confirmed| {
+                gtk::glib::ControlFlow::Break
+            });
+            
+            // Wait for the response
+            while let Some(confirmed) = result {
+                return confirmed;
+            }
         }
         
-        response_value == gtk::ResponseType::Yes
-    }
-}
-
-// Add Clone implementation for ConfigView
-impl Clone for ConfigView {
-    fn clone(&self) -> Self {
-        Self {
-            container: Box::new(gtk::Orientation::Vertical, 0),
-            tree_view: self.tree_view.clone(),
-            tree_store: self.tree_store.clone(),
-            config: self.config.clone(),
-            config_path: self.config_path.clone(),
-        }
+        false
     }
 }
 
