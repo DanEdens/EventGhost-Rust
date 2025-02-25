@@ -1,8 +1,8 @@
 use gtk::prelude::*;
 use gtk::{self, Application};
 use gio::Resource;
-// Temporarily comment this import while debugging tests 
-// use eventghost::eg::classes::MainFrame;
+extern crate eventghost;
+use eventghost::eg::classes::MainFrame;
 
 fn main() {
     // Initialize GTK
