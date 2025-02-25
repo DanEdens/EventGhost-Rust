@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter, SelectionMode};
-use gdk4::{self, DragAction};
+// use gdk4::{self, DragAction}; // Comment this out as it has version conflicts
 use gtk::{DragSource as GtkDragSource};
 use glib;
 use super::UIComponent;
@@ -30,7 +30,7 @@ impl TreeCtrl {
         selection.set_mode(SelectionMode::Single);
         
         let drag_source = GtkDragSource::new();
-        drag_source.set_actions(DragAction::COPY | DragAction::MOVE);
+        drag_source.set_actions(gtk::gdk::DragAction::COPY | gtk::gdk::DragAction::MOVE);
         tree_view.add_controller(drag_source.clone());
         
         container.append(&tree_view);

@@ -783,7 +783,7 @@ impl ConfigView {
 
     /// Shows a confirmation dialog and returns the response
     fn show_confirmation(&self, message: &str) -> bool {
-        let (sender, receiver) = gtk::glib::MainContext::channel(gtk::glib::PRIORITY_DEFAULT);
+        let (sender, receiver) = gtk::glib::MainContext::channel(glib::Priority::DEFAULT);
         
         if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
             let dialog = gtk::MessageDialog::new(

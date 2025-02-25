@@ -101,7 +101,7 @@ impl PluginConfigDialog {
     
     pub fn run(&self) -> ResponseType {
         // Create a channel to receive the dialog response
-        let (sender, receiver) = gtk::glib::MainContext::channel(gtk::glib::PRIORITY_DEFAULT);
+        let (sender, receiver) = gtk::glib::MainContext::channel(glib::Priority::DEFAULT);
         
         // Connect to the response signal to send the response through the channel
         self.widget.connect_response(move |dialog, response| {

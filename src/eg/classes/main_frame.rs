@@ -722,6 +722,17 @@ pub struct ConfigView {
     tree_store: TreeStore,
 }
 
+// Implement Clone for ConfigView
+impl Clone for ConfigView {
+    fn clone(&self) -> Self {
+        ConfigView {
+            container: self.container.clone(),
+            tree_view: self.tree_view.clone(),
+            tree_store: self.tree_store.clone(),
+        }
+    }
+}
+
 impl ConfigView {
     /// Creates a new ConfigView instance.
     ///

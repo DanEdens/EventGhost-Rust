@@ -80,11 +80,11 @@ pub fn add_actions(app: &Application) {
     app.add_action(&find_next_action);
 
     // View menu actions
-    let show_toolbar_action = gio::SimpleAction::new_stateful("show-toolbar", None, true.to_variant());
+    let show_toolbar_action = gio::SimpleAction::new_stateful("show-toolbar", None, &true.to_variant());
     show_toolbar_action.connect_activate(|action, _| {
         let state = action.state().unwrap();
         let new_state = !state.get::<bool>().unwrap();
-        action.set_state(new_state.to_variant());
+        action.set_state(&new_state.to_variant());
         println!("Show toolbar toggled: {}", new_state);
     });
     app.add_action(&show_toolbar_action);
