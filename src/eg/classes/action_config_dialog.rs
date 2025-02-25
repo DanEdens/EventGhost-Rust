@@ -4,10 +4,11 @@ use gtk::{self, Dialog, Box, Label, Entry, Grid, Button, Frame, CheckButton,
 use uuid::Uuid;
 use std::collections::HashMap;
 use std::sync::Arc;
+use gtk::glib::MainContext;
 
 use crate::core::action::{ActionConfig, Action};
 use crate::eg::config::Action as ConfigAction;
-use super::property_grid::{PropertyGrid, Property, PropertyValue};
+use super::property_grid::{PropertyGrid, Property, PropertyValue, PropertyValueType};
 use super::UIComponent;
 use crate::core::Error;
 
@@ -197,7 +198,7 @@ impl ActionConfigDialog {
     
     /// Set the action to be configured
     pub fn set_action(&mut self, action: Arc<dyn Action>) {
-        self.action = Some(action);
+        self.action = Some(action.clone());
         self.name_entry.set_text(action.get_name());
         
         // Clear existing properties
@@ -238,10 +239,11 @@ impl ActionConfigDialog {
                 
             // Add to property grid
             let prop = param.to_property(current_value);
+            let type_str = self.get_property_type_string(&prop.get_value().get_type());
             self.property_grid.set_property(
                 &prop.get_name(), 
                 &self.format_property_value(&prop.get_value()),
-                prop.get_value().get_type().to_string().as_str()
+                &type_str
             );
             
             // Track parameter name mapping
@@ -259,6 +261,19 @@ impl ActionConfigDialog {
             PropertyValue::Enum(s, _) => s.clone(),
             PropertyValue::Color(c) => format!("#{:08x}", c),
             PropertyValue::Custom(_) => "<custom>".to_string(),
+        }
+    }
+    
+    /// Get a string description of the property value type
+    fn get_property_type_string(&self, value_type: &PropertyValueType) -> String {
+        match value_type {
+            PropertyValueType::String => "string".to_string(),
+            PropertyValueType::Int => "int".to_string(),
+            PropertyValueType::Float => "float".to_string(),
+            PropertyValueType::Bool => "bool".to_string(),
+            PropertyValueType::Color => "color".to_string(),
+            PropertyValueType::Enum => "enum".to_string(),
+            PropertyValueType::Custom => "custom".to_string(),
         }
     }
     
@@ -284,7 +299,10 @@ impl ActionConfigDialog {
     
     /// Run the dialog and return the updated config if OK was pressed
     pub fn run(&self) -> Option<ActionConfig> {
-        if self.dialog.run() == ResponseType::Ok {
+        let future = self.dialog.run_future();
+        let response = MainContext::default().block_on(future);
+        
+        if response == ResponseType::Ok {
             let mut config = ActionConfig {
                 args: Vec::new(),
                 enabled: self.enabled_check.is_active(),
@@ -323,7 +341,10 @@ impl ActionConfigDialog {
             }
         }
         
-        if self.dialog.run() == ResponseType::Ok {
+        let future = self.dialog.run_future();
+        let response = MainContext::default().block_on(future);
+        
+        if response == ResponseType::Ok {
             // Create a new action with updated values
             let mut parameters = HashMap::new();
             
@@ -367,7 +388,10 @@ impl ActionConfigDialog {
             }
         }
         
-        if self.dialog.run() == ResponseType::Ok {
+        let future = self.dialog.run_future();
+        let response = MainContext::default().block_on(future);
+        
+        if response == ResponseType::Ok {
             let mut parameters = HashMap::new();
             
             // Add basic parameters

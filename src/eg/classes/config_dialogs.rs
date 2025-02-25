@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, Dialog, Box, Label, Entry, Grid, Button, ResponseType};
-use gtk::glib::clone;
+use gtk::glib::{self, clone, MainContext};
 use uuid::Uuid;
 use std::collections::HashMap;
 
@@ -55,7 +55,8 @@ impl ConfigDialog {
     }
 
     fn run(&self) -> ResponseType {
-        self.dialog.run()
+        let future = self.dialog.run_future();
+        MainContext::default().block_on(future)
     }
 }
 
@@ -278,7 +279,7 @@ impl ActionDialog {
             // Create the action for advanced configuration with current values
             let config_action = Action {
                 id: action.id,
-                name: dialog.title().to_string(),
+                name: action.name.clone(),
                 parameters: parameters.clone(),
             };
             
