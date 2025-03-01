@@ -1,7 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath};
 use gio::{Menu, SimpleAction, SimpleActionGroup};
-use gtk::gdk::ModifierType;
+use gdk4::ModifierType;
 use gtk::glib::{self, clone};
 use uuid::Uuid;
 use std::cell::RefCell;

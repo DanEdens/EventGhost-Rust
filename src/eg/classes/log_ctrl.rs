@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{self, TreeView, TreeViewColumn, CellRendererText, CellRendererPixbuf, ScrolledWindow, ListStore};
 use glib;
+use gdk4;
 use chrono::{DateTime, Local};
 use std::collections::VecDeque;
 use std::sync::{Mutex, Arc};
@@ -212,7 +213,7 @@ impl LogCtrl {
         gesture.connect_pressed(glib::clone!(@weak popover, @weak widget => move |gesture, _, x, y| {
             if gesture.current_button() == 3 {
                 popover.set_parent(&widget);
-                popover.set_pointing_to(Some(&gtk::gdk::Rectangle::new(
+                popover.set_pointing_to(Some(&gdk4::Rectangle::new(
                     x as i32,
                     y as i32,
                     1,

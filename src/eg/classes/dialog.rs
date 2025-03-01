@@ -1,5 +1,6 @@
 use gtk::prelude::*;
 use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog as GtkMessageDialog, ColorChooserDialog, ResponseType, FileChooserAction, Window};
+use gdk4;
 // use gtk::gdk;
 use crate::core::Error;
 use super::UIComponent;
@@ -212,7 +213,7 @@ impl CommonDialogs {
     }
 
     /// Show a color picker dialog
-    pub fn color_picker(parent: Option<&gtk::Window>, initial_color: Option<gtk::gdk::RGBA>) -> Result<Option<gtk::gdk::RGBA>, Error> {
+    pub fn color_picker(parent: Option<&gtk::Window>, initial_color: Option<gdk4::RGBA>) -> Result<Option<gdk4::RGBA>, Error> {
         let dialog = ColorChooserDialog::new(Some("Choose a color"), parent);
         
         if let Some(color) = initial_color {
