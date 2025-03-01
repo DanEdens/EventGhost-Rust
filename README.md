@@ -180,7 +180,22 @@ Throughout this project, we've learned:
 
 1. **GTK4 Transition**: Moving from older GTK versions requires careful management of imports and APIs
 2. **Rust for UI**: Rust provides excellent safety guarantees but requires different patterns than traditional UI frameworks
-3. **Testing Complexity**: UI-heavy applications need specialized testing approaches
-4. **Balancing New vs Legacy**: Finding the right balance between modern design and compatibility is challenging
+3. **RefCell Management**: Using `Rc<RefCell<T>>` in GTK applications requires careful borrowing strategies to avoid runtime panics - see our [LESSONS_LEARNED.md](docs/LESSONS_LEARNED.md) document for detailed insights
+4. **Testing Complexity**: UI-heavy applications need specialized testing approaches
+5. **Balancing New vs Legacy**: Finding the right balance between modern design and compatibility is challenging
 
 We continue to document our learning in each major feature implementation.
+
+## Recent Improvements
+
+### GTK4 Compatibility
+- Updated import paths to use GTK4 components
+- Fixed ModifierType imports to use `gdk4::ModifierType`
+- Updated Rectangle imports to use `gdk4::Rectangle`
+- Fixed RGBA imports to use `gdk4::RGBA`
+
+### Rust Ownership and GTK Integration
+- Fixed RefCell borrowing issues in UI components to prevent runtime panics
+- Added Clone implementations to dialog structs and property grids
+- Created consistent patterns for borrowing in GTK callbacks
+- Improved error handling for mutable borrows in the configuration system
