@@ -327,4 +327,25 @@ When working with TreeView components and complex layouts in GTK4, we discovered
 
 2. **Nested Containers**: When nesting containers, ensure each level has proper expansion settings.
 
-These improvements helped us resolve visibility issues where tree views and other components would only display properly in full-screen mode. By applying these GTK4 layout best practices, components now resize properly and maintain visibility at various window sizes. 
+These improvements helped us resolve visibility issues where tree views and other components would only display properly in full-screen mode. By applying these GTK4 layout best practices, components now resize properly and maintain visibility at various window sizes.
+
+# GTK4 Menu Component Import Changes
+
+When working with menus and tree models in GTK4, we encountered several import-related issues:
+
+1. **MenuItem Location Change**: In GTK4, the `MenuItem` component has moved:
+   - Previously available directly from `gtk::MenuItem`
+   - Now should be imported from `gio::MenuItem`
+   - Alternatively, accessible as `gtk::AccessibleRole::MenuItem` for accessibility purposes
+
+2. **ModelExt Trait Changes**: The `ModelExt` trait handling has changed:
+   - No longer needs to be explicitly imported in most cases
+   - Already included through `gtk::prelude::*`
+   - Explicit imports can cause conflicts with the prelude version
+
+3. **Menu Model Architecture**: GTK4 uses a more model-based approach to menus:
+   - `gio::Menu` for the menu model
+   - `gio::MenuItem` for menu items
+   - `gtk::PopoverMenu` for context menus instead of older menu widgets
+
+These changes reflect GTK4's architectural shift toward more separation between models and views in UI components, which helps create more maintainable and testable code but requires careful attention to imports. 
