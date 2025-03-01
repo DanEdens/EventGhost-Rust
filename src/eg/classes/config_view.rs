@@ -1,6 +1,6 @@
 use gtk::prelude::*;
-use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath, Entry, HeaderBar, Label, MenuItem, ModelExt, Orientation, PopoverMenu, ScrolledWindow, Widget};
-use gio::{Menu, SimpleAction, SimpleActionGroup};
+use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath, Entry, HeaderBar, Label, Orientation, PopoverMenu, ScrolledWindow, Widget};
+use gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
 use gdk4::ModifierType;
 use gtk::glib::{self, clone};
 use uuid::Uuid;
