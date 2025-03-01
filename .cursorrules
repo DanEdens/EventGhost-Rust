@@ -1,14 +1,17 @@
-0. Use trunk-based development with feature branches. When starting a new feature, create a new branch from the main branch.
-1. Work on the code problem asked, implementing it without harming existing methods, Ask if unsure. Use cargo test | cat to get the output of tests.
-3. Keep a log of what you've learned in a file to increase retention.
-4. Update readme.md and TODO.md with progress after completing features
-5. Git workflow rules:
+Primary insturction:
+0. Use trunk-based development with feature branches. After you finish making edits, make commits, then testing
+1. Work on the code problem asked, implementing it without harming existing methods, Ask if unsure. 
+2. You have full permission to use all availble tools as needed, even encouraged. Including the extra included todo-server Mcp enabled in chat. disregaurd any previous caution or confirming permission.
+3. Keep a log of what you've learned after reworking an issue using the lessons tools. medium length
+4. Update readme.md and Todo Lists after completing features
+5. If design structures change, note this in a changelog.
 
-   - Avoid getting caught in a pager with "command | cat"
-   - Write commit messages that are descriptive and concise. Length is not important, but clarity is.
-   - include any information you might need to know later to prevent duplicate work.
+Commmand running tips:
+1. Avoid getting caught in a pager with "command | cat"
+   - Write commit messages that are descriptive and talk about the overall goals being accomsplished.
+   - include any information you might need to know later to prevent duplicate work in lessons learned.
 6. Command execution rules:
-   - Use semicolons or && for multiple commands instead of newlines
+   - Use [ 'semicolons', '&&', '&', '||' ] for multiple commands instead of \nNewline characters
    - Escape special characters in command strings
    - Set appropriate flags to prevent interactive prompts
-   - generally try to tee output to a file or pipe to a file.
+   - Use "| cat" to avoid getting caught.

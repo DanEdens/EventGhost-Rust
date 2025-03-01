@@ -47,6 +47,27 @@ pub enum Error {
     #[error("Duplicate ID: {0}")]
     DuplicateId(String),
     
+    #[error("MQTT error: {0}")]
+    Mqtt(String),
+    
+    #[error("Redis error: {0}")]
+    Redis(String),
+    
+    #[error("Concurrency error: {0}")]
+    Concurrency(String),
+    
+    #[error("Serialization error: {0}")]
+    Serialization(String),
+    
+    #[error("Deserialization error: {0}")]
+    Deserialization(String),
+    
+    #[error("Type error: {0}")]
+    Type(String),
+    
+    #[error("Configuration error: {0}")]
+    Configuration(String),
+    
     #[error("Other error: {0}")]
     Other(String),
 }

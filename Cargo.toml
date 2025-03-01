@@ -44,6 +44,9 @@ glib = "0.18"
 windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }
 clap = { version = "4.4", features = ["derive"] }
 quick-xml = { version = "0.30", features = ["serialize"] }
+# Added for globals implementation
+rumqttc = { version = "0.22", optional = true }
+redis = { version = "0.23", features = ["tokio-comp"], optional = true }
 
 [dev-dependencies]
 tokio-test = "0.4" 
@@ -56,6 +59,8 @@ default = []
 plugin_hot_reload = []
 testing = []  # Feature for testing utilities 
 production = []  # Production feature for future use
+globals_mqtt = ["rumqttc"]  # MQTT-based globals implementation
+globals_redis = ["redis"]   # Redis-based globals implementation
 
 [workspace]
 members = [

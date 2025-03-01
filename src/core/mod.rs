@@ -8,6 +8,7 @@
 //! - Configuration persistence
 //! - Logging system
 //! - Error handling
+//! - Globals system with MQTT and Redis backends
 
 pub mod config;
 pub mod event;
@@ -18,6 +19,7 @@ pub mod named_pipe;
 pub mod action;
 pub mod actions;
 pub mod utils;
+pub mod globals;
 
 pub use error::Error;
 pub use config::Config;
@@ -40,6 +42,12 @@ pub use action::ActionResult;
 
 // Action implementations
 pub use actions::DelayAction;
+
+// Globals types
+pub use globals::GlobalsStore;
+pub use globals::GlobalsConfig;
+pub use globals::GlobalsBackendType;
+pub use globals::GlobalValue;
 
 // Re-export config types
 pub use config::ConfigStore;

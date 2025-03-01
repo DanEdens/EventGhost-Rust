@@ -181,12 +181,16 @@
 - [ ] Remote action execution
 
 ## Python Compatibility
+- [x] Implement eg.globals equivalent
+  - [x] Support for local, MQTT, and Redis backends
+  - [x] Serialization of different data types
+  - [x] Publish/subscribe functionality
+  - [ ] Additional compatibility with legacy Python code
 - [ ] Support legacy Python plugins
   - [ ] Python binding layer
   - [ ] Python plugin bridge
   - [ ] Support for Python callables in actions
 - [ ] Core API compatibility
-  - [ ] Implement eg.globals equivalent
   - [ ] Match Python API function signatures
   - [ ] Support for Python events in Rust
 - [ ] UI compatibility
