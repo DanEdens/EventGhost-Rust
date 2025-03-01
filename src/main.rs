@@ -4,7 +4,7 @@ mod cli;
 
 use gtk::prelude::*;
 use gtk::{self, Application};
-use gio::Resource;
+use gio::{self, Resource};
 use log::{debug, error, info, LevelFilter};
 use std::path::Path;
 use std::fs;
@@ -33,7 +33,7 @@ fn main() -> glib::ExitCode {
     info!("EventGhost Rust starting up");
     debug!("Debug logging enabled");
     
-    // Ensure config directory exists
+    // Ensure config directory existssrc/main.rs
     let config_dir = cli.get_config_dir();
     if !config_dir.exists() {
         debug!("Creating config directory: {:?}", config_dir);
@@ -48,10 +48,11 @@ fn main() -> glib::ExitCode {
         gio::ApplicationFlags::FLAGS_NONE,
     );
     
-    // Load resources - comment out for now until resources are available
-    // let resource_bytes = glib::Bytes::from_static(include_bytes!("resources.gresource"));
-    // let resource = gio::Resource::from_data(&resource_bytes).expect("Failed to load resources");
-    // gio::resources_register(&resource);
+    // Load and register resources - uncommented and updated to match test-gui.rs
+    let resource_bytes = include_bytes!("resources.gresource");
+    let resource = Resource::from_data(&glib::Bytes::from_static(resource_bytes))
+        .expect("Failed to load resources");
+    gio::resources_register(&resource);
     
     // Connect startup signal
     application.connect_startup(|_| {
