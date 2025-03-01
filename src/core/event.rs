@@ -7,9 +7,76 @@ use std::fmt::Debug;
 use std::any::Any;
 use async_trait::async_trait;
 use futures;
+use uuid;
 
+// Remove the external import and implement a mock directly
+// for testing purposes
 #[cfg(any(test, feature = "testing"))]
-use crate::testing::MockEvent;
+mod test_utils {
+    use super::*;
+    use chrono::{DateTime, Local};
+    use std::any::Any;
+    use uuid::Uuid;
+    
+    #[derive(Debug, Clone)]
+    pub struct MockEvent {
+        id: String,
+        event_type: EventType, 
+        payload: EventPayload,
+        timestamp: DateTime<Local>,
+        source: Option<String>,
+    }
+    
+    impl MockEvent {
+        pub fn new(event_type: EventType, payload: EventPayload) -> Self {
+            Self {
+                id: Uuid::new_v4().to_string(),
+                event_type,
+                payload,
+                timestamp: Local::now(),
+                source: Some("test".to_string()),
+            }
+        }
+    }
+    
+    impl Event for MockEvent {
+        fn get_id(&self) -> &str {
+            &self.id
+        }
+        
+        fn get_type(&self) -> EventType {
+            self.event_type
+        }
+        
+        fn get_payload(&self) -> &EventPayload {
+            &self.payload
+        }
+        
+        fn get_timestamp(&self) -> DateTime<Local> {
+            self.timestamp
+        }
+        
+        fn get_source(&self) -> Option<&str> {
+            self.source.as_deref()
+        }
+        
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+        
+        fn as_any_mut(&mut self) -> &mut dyn Any {
+            self
+        }
+        
+        fn clone_event(&self) -> Box<dyn Event + Send + Sync> {
+            Box::new(self.clone())
+        }
+    }
+}
+
+// Re-export MockEvent for tests
+#[cfg(any(test, feature = "testing"))]
+pub use test_utils::MockEvent;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventType {
