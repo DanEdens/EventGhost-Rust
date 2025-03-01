@@ -22,7 +22,7 @@ pub struct Cli {
     pub debug_level: u8,
 
     /// Start hidden in system tray
-    #[arg(short, long)]
+    #[arg(short = 'H', long)]
     pub hide: bool,
 
     /// Allow multiple instances
@@ -56,7 +56,7 @@ pub enum Commands {
 impl Cli {
     /// Parse command line arguments
     pub fn parse() -> Self {
-        Parser::parse()
+        <Self as Parser>::parse()
     }
     
     /// Get the configuration directory
