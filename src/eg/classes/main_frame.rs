@@ -480,11 +480,20 @@ impl MainFrame {
         // Configure paned container
         self.paned.set_wide_handle(true);
         self.paned.set_position(250); // Set initial position
+        self.paned.set_hexpand(true);  // Allow the paned to expand horizontally
+        self.paned.set_vexpand(true);  // Allow the paned to expand vertically
         main_box.append(&self.paned);
+        
+        // Ensure the config view container expands properly
+        self.config_view.container.set_hexpand(true);
+        self.config_view.container.set_vexpand(true);
+        self.config_view.container.set_size_request(200, -1); // Set minimum width, default height
 
         // Configure notebook
         self.notebook.set_scrollable(true);
         self.notebook.set_show_border(true);
+        self.notebook.set_hexpand(true);  // Allow the notebook to expand horizontally
+        self.notebook.set_vexpand(true);  // Allow the notebook to expand vertically
         
         // Add configuration view to the start pane
         self.paned.set_start_child(Some(&self.config_view.container));

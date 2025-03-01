@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath};
+use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath, Entry, HeaderBar, Label, MenuItem, ModelExt, Orientation, PopoverMenu, ScrolledWindow, Widget};
 use gio::{Menu, SimpleAction, SimpleActionGroup};
 use gdk4::ModifierType;
 use gtk::glib::{self, clone};
@@ -35,6 +35,8 @@ fn path_to_string(path: &TreePath) -> Option<String> {
 pub struct ConfigView {
     /// The main container for the configuration view
     pub container: Box,
+    /// Scrolled window for the tree view
+    scrolled_window: ScrolledWindow,
     /// The tree view displaying the configuration hierarchy
     tree_view: TreeView,
     /// The tree store holding the configuration data
@@ -68,6 +70,12 @@ impl ConfigView {
         tree_view.set_headers_visible(true);
         tree_view.set_reorderable(true);
         tree_view.selection().set_mode(SelectionMode::Single);
+        
+        // Create scrolled window for tree view
+        let scrolled_window = ScrolledWindow::new();
+        scrolled_window.set_hexpand(true);
+        scrolled_window.set_vexpand(true);
+        scrolled_window.set_child(Some(&tree_view));
         
         // Set up drag and drop using GTK4 APIs
         let drag_source = gtk::DragSource::new();
@@ -148,11 +156,15 @@ impl ConfigView {
         let cell = CellRendererPixbuf::new();
         column.pack_start(&cell, false);
         column.add_attribute(&cell, "icon-name", COL_ICON);
+        column.set_sizing(gtk::TreeViewColumnSizing::Autosize);
         tree_view.append_column(&column);
         
         // Add name column
         let column = TreeViewColumn::new();
         column.set_title("Name");
+        column.set_expand(true); // Allow name column to expand
+        column.set_sizing(gtk::TreeViewColumnSizing::Fixed);
+        column.set_fixed_width(200); // Set minimum width
         let cell = CellRendererText::new();
         column.pack_start(&cell, true);
         column.add_attribute(&cell, "text", COL_NAME);
@@ -161,6 +173,7 @@ impl ConfigView {
         // Add type column
         let column = TreeViewColumn::new();
         column.set_title("Type");
+        column.set_sizing(gtk::TreeViewColumnSizing::Autosize);
         let cell = CellRendererText::new();
         column.pack_start(&cell, true);
         column.add_attribute(&cell, "text", COL_TYPE);
@@ -172,6 +185,7 @@ impl ConfigView {
         // Create instance
         let config_view = ConfigView {
             container,
+            scrolled_window,
             tree_view,
             tree_store,
             config,
@@ -182,7 +196,7 @@ impl ConfigView {
         config_view.setup_context_menu();
         
         // Add tree view to container
-        config_view.container.append(&config_view.tree_view);
+        config_view.container.append(&config_view.scrolled_window);
 
         // Add some initial data
         config_view.add_root_folders();
@@ -546,6 +560,7 @@ impl ConfigView {
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let config_view = ConfigView { 
                         container: Box::new(gtk::Orientation::Vertical, 0), 
+                        scrolled_window: ScrolledWindow::new(), 
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
@@ -564,6 +579,7 @@ impl ConfigView {
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let config_view = ConfigView { 
                         container: Box::new(gtk::Orientation::Vertical, 0), 
+                        scrolled_window: ScrolledWindow::new(), 
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
@@ -582,6 +598,7 @@ impl ConfigView {
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let config_view = ConfigView { 
                         container: Box::new(gtk::Orientation::Vertical, 0), 
+                        scrolled_window: ScrolledWindow::new(), 
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
@@ -600,6 +617,7 @@ impl ConfigView {
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let config_view = ConfigView { 
                         container: Box::new(gtk::Orientation::Vertical, 0), 
+                        scrolled_window: ScrolledWindow::new(), 
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
@@ -618,6 +636,7 @@ impl ConfigView {
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let config_view = ConfigView { 
                         container: Box::new(gtk::Orientation::Vertical, 0), 
+                        scrolled_window: ScrolledWindow::new(), 
                         tree_view: tree_view.clone(), 
                         tree_store, 
                         config,
@@ -668,6 +687,7 @@ impl ConfigView {
                             if let Some(edited_item) = edited_item {
                                 let config_view = ConfigView { 
                                     container: Box::new(gtk::Orientation::Vertical, 0), 
+                                    scrolled_window: ScrolledWindow::new(), 
                                     tree_view: tree_view.clone(), 
                                     tree_store, 
                                     config: config.clone(),
@@ -687,6 +707,7 @@ impl ConfigView {
             if let Some((_, iter)) = tree_view.selection().selected() {
                 let config_view = ConfigView { 
                     container: Box::new(gtk::Orientation::Vertical, 0), 
+                    scrolled_window: ScrolledWindow::new(), 
                     tree_view: tree_view.clone(), 
                     tree_store, 
                     config,
@@ -701,7 +722,7 @@ impl ConfigView {
         self.tree_view.insert_action_group("config", Some(&action_group));
         
         // Create popover menu
-        let popover = gtk::PopoverMenu::from_model(Some(&menu));
+        let popover = PopoverMenu::from_model(Some(&menu));
         
         // Add context menu controller
         let gesture = gtk::GestureClick::new();
