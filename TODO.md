@@ -17,6 +17,8 @@
   - [x] Auto-save functionality
 - [x] Basic UI layout
 - [x] Toolbar with icons
+  - [x] Fix resource loading for icons in main application
+  - [x] Ensure consistent resource handling between test and main binaries
 - [x] Menu bar
 - [x] Status bar
 - [x] Log view
@@ -168,11 +170,12 @@
 2. ~~Fix Result unwrapping in main.rs~~
 3. ~~Fix GTK4 compatibility issues~~
 4. ~~Enhance .egtree file format support~~
-5. Create system action implementations 
-6. Implement action thread management
-7. Add action persistence
-8. Develop plugin action integration
-9. Write documentation
+5. ~~Fix resource loading for icons~~
+6. Create system action implementations 
+7. Implement action thread management
+8. Add action persistence
+9. Develop plugin action integration
+10. Write documentation
 
 ## Future Enhancements
 - [ ] Action templates
@@ -242,5 +245,7 @@
 - Mock implementations are crucial for testing in a UI-heavy application
 - Need to balance Python compatibility with modern Rust idioms
 - Consider approach for plugins: native Rust vs Python bridge vs both
+- Resource loading in GTK applications requires proper initialization and path handling
+- Borrow checker issues in GTK applications often require restructuring UI initialization
 
 

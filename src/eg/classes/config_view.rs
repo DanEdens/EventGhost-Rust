@@ -956,6 +956,31 @@ impl ConfigView {
         
         false
     }
+
+    /// Public method to add an item to the tree
+    pub fn add_item(&self, item: ConfigItem, parent: Option<&TreeIter>) -> Option<TreeIter> {
+        self.add_item_to_tree(item, parent)
+    }
+
+    /// Public method to get the tree view
+    pub fn get_tree_view(&self) -> &gtk::TreeView {
+        &self.tree_view
+    }
+
+    /// Public method to expand all items in the tree
+    pub fn expand_all(&self) {
+        self.tree_view.expand_all();
+    }
+
+    /// Public method to collapse all items in the tree
+    pub fn collapse_all(&self) {
+        self.tree_view.collapse_all();
+    }
+
+    /// Public method to get the selected item
+    pub fn get_selected(&self) -> Option<(gtk::TreeModel, gtk::TreeIter)> {
+        self.tree_view.selection().selected()
+    }
 }
 
 #[cfg(test)]
