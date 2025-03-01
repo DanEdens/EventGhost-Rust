@@ -9,6 +9,7 @@ use std::rc::Rc;
 use std::path::{Path, PathBuf};
 use std::io;
 use log::{debug, error, info};
+use std::collections::HashMap;
 
 use crate::eg::config::{Config, ConfigItem, Plugin, Folder, Macro, Event, Action};
 use super::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
@@ -295,8 +296,8 @@ impl ConfigView {
         }
     }
 
-    /// Loads a configuration from a file
-    pub fn load_config<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
+    /// Loads a configuration from a file.
+    pub fn load_config<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
         let path_ref = path.as_ref();
         debug!("Loading configuration from {}", path_ref.display());
         
@@ -312,7 +313,17 @@ impl ConfigView {
         
         // Try to load the configuration
         match Config::load_from_file(path_ref) {
-            Ok(config) => {
+            Ok(mut config) => {
+                // Try to decode plugin data for .egtree files
+                if let Some(ext) = path_ref.extension().and_then(|e| e.to_str()) {
+                    if ext.to_lowercase() == "egtree" {
+                        debug!("Attempting to decode plugin data from .egtree file");
+                        if let Err(e) = config.decode_plugin_data() {
+                            error!("Error decoding plugin data: {}", e);
+                        }
+                    }
+                }
+                
                 // Update the configuration
                 self.config.replace(config);
                 
@@ -344,19 +355,15 @@ impl ConfigView {
     fn populate_tree_from_config(&self) {
         let config = self.config.borrow();
         
-        // Find the root folders
-        let mut plugins_iter = None;
-        let mut macros_iter = None;
+        // Find the root folders (Plugins, Folders, Autostart, etc.)
+        let mut root_folders = HashMap::new();
         
         // Get the root iterators
         let mut iter = self.tree_store.iter_first();
         while let Some(it) = iter {
-            let name = self.tree_store.get::<String>(&it, 0);
-            if name == "Plugins" {
-                plugins_iter = Some(it.clone());
-            } else if name == "Macros" {
-                macros_iter = Some(it.clone());
-            }
+            let name = self.tree_store.get::<String>(&it, COL_NAME as i32);
+            root_folders.insert(name, it.clone());
+            
             if !self.tree_store.iter_next(&it) {
                 break;
             } else {
@@ -364,44 +371,86 @@ impl ConfigView {
             }
         }
         
-        // Add items to the tree
+        // Get key folders by name
+        let plugins_iter = root_folders.get("Plugins").cloned();
+        let macros_iter = root_folders.get("Macros").cloned();
+        let autostart_iter = root_folders.get("Autostart").cloned();
+        
+        // First, find and process all autostart/folder items to build the hierarchy
+        let mut folder_iters = HashMap::new();
+        
+        // Map all folders by ID for hierarchy construction
+        for item in &config.items {
+            match item {
+                ConfigItem::Folder(folder) => {
+                    let parent_iter = if folder.name == "Autostart" {
+                        autostart_iter.clone()
+                    } else {
+                        macros_iter.clone()
+                    };
+                    
+                    if let Some(parent) = parent_iter {
+                        let iter = self.add_item_to_tree(item.clone(), Some(&parent));
+                        folder_iters.insert(folder.id, iter);
+                    }
+                },
+                _ => {}
+            }
+        }
+        
+        // Add remaining items to the tree
         for item in &config.items {
             match item {
                 ConfigItem::Plugin(plugin) => {
-                    if let Some(ref parent) = plugins_iter {
-                        self.add_item_to_tree(item.clone(), Some(parent));
-                    }
-                },
-                ConfigItem::Folder(folder) => {
-                    // Add folders to the appropriate parent
-                    // For simplicity, we'll add all folders to the root for now
-                    if let Some(ref parent) = macros_iter {
-                        self.add_item_to_tree(item.clone(), Some(parent));
+                    // Add to Plugins folder or Autostart based on hierarchy
+                    let parent_iter = if self.item_has_autostart_parent(item) {
+                        autostart_iter.clone()
+                    } else {
+                        plugins_iter.clone()
+                    };
+                    
+                    if let Some(parent) = parent_iter {
+                        self.add_item_to_tree(item.clone(), Some(&parent));
                     }
                 },
                 ConfigItem::Macro(macro_) => {
+                    // Skip Autostart as it's already added
+                    if macro_.name == "Autostart" {
+                        continue;
+                    }
+                    
+                    // Add macros to the Macros folder
                     if let Some(ref parent) = macros_iter {
                         self.add_item_to_tree(item.clone(), Some(parent));
                     }
                 },
                 ConfigItem::Event(event) => {
-                    // Events should be added to their parent macros
-                    // For simplicity, we'll add all events to the macros folder for now
-                    if let Some(ref parent) = macros_iter {
-                        self.add_item_to_tree(item.clone(), Some(parent));
+                    // Find parent macro and add event to it
+                    let parent_id = self.find_parent_id_for_event(event.id);
+                    if let Some(parent_id) = parent_id {
+                        if let Some(iter) = folder_iters.get(&parent_id) {
+                            if let Some(it) = iter {
+                                self.add_item_to_tree(item.clone(), Some(it));
+                            }
+                        }
                     }
                 },
                 ConfigItem::Action(action) => {
-                    // Actions should be added to their parent macros
-                    // For simplicity, we'll add all actions to the macros folder for now
-                    if let Some(ref parent) = macros_iter {
-                        self.add_item_to_tree(item.clone(), Some(parent));
+                    // Find parent macro and add action to it
+                    let parent_id = self.find_parent_id_for_action(action.id);
+                    if let Some(parent_id) = parent_id {
+                        if let Some(iter) = folder_iters.get(&parent_id) {
+                            if let Some(it) = iter {
+                                self.add_item_to_tree(item.clone(), Some(it));
+                            }
+                        }
                     }
                 },
+                _ => {}
             }
         }
         
-        // Expand the root folders
+        // Expand the root nodes by default
         if let Some(plugins_iter) = plugins_iter {
             let path = self.tree_store.path(&plugins_iter);
             self.tree_view.expand_row(&path, false);
@@ -411,8 +460,55 @@ impl ConfigView {
             let path = self.tree_store.path(&macros_iter);
             self.tree_view.expand_row(&path, false);
         }
+        
+        if let Some(autostart_iter) = autostart_iter {
+            let path = self.tree_store.path(&autostart_iter);
+            self.tree_view.expand_row(&path, false);
+        }
     }
-
+    
+    /// Checks if an item belongs to the Autostart folder
+    fn item_has_autostart_parent(&self, item: &ConfigItem) -> bool {
+        // For simplicity, assume plugins with certain attributes are in autostart
+        // In a real implementation, you'd need to check the XML hierarchy
+        match item {
+            ConfigItem::Plugin(plugin) => {
+                plugin.config.contains_key("XML_Guid")
+            },
+            _ => false
+        }
+    }
+    
+    /// Finds the parent macro ID for an event
+    fn find_parent_id_for_event(&self, event_id: Uuid) -> Option<Uuid> {
+        let config = self.config.borrow();
+        
+        for item in &config.items {
+            if let ConfigItem::Macro(macro_) = item {
+                if macro_.events.contains(&event_id) {
+                    return Some(macro_.id);
+                }
+            }
+        }
+        
+        None
+    }
+    
+    /// Finds the parent macro ID for an action
+    fn find_parent_id_for_action(&self, action_id: Uuid) -> Option<Uuid> {
+        let config = self.config.borrow();
+        
+        for item in &config.items {
+            if let ConfigItem::Macro(macro_) = item {
+                if macro_.actions.contains(&action_id) {
+                    return Some(macro_.id);
+                }
+            }
+        }
+        
+        None
+    }
+    
     /// Sets up the context menu for the tree view
     fn setup_context_menu(&self) {
         // Create menu model
@@ -620,21 +716,34 @@ impl ConfigView {
         self.tree_view.add_controller(gesture);
     }
 
-    /// Adds the root folders (Plugins and Macros) to the tree
+    /// Adds the root folders to the tree.
     fn add_root_folders(&self) {
         // Add Plugins folder
-        let plugins_folder = Folder {
-            id: Uuid::new_v4(),
-            name: "Plugins".to_string(),
-        };
-        self.add_item_to_tree(ConfigItem::Folder(plugins_folder), None);
-
+        let plugins_iter = self.tree_store.append(None);
+        self.tree_store.set(&plugins_iter, &[
+            (COL_NAME as u32, &"Plugins"),
+            (COL_TYPE as u32, &"Folder"),
+            (COL_ICON as u32, &"folder"),
+            (COL_ID as u32, &"plugins"),
+        ]);
+        
         // Add Macros folder
-        let macros_folder = Folder {
-            id: Uuid::new_v4(),
-            name: "Macros".to_string(),
-        };
-        self.add_item_to_tree(ConfigItem::Folder(macros_folder), None);
+        let macros_iter = self.tree_store.append(None);
+        self.tree_store.set(&macros_iter, &[
+            (COL_NAME as u32, &"Macros"),
+            (COL_TYPE as u32, &"Folder"),
+            (COL_ICON as u32, &"folder"),
+            (COL_ID as u32, &"macros"),
+        ]);
+        
+        // Add Autostart folder
+        let autostart_iter = self.tree_store.append(None);
+        self.tree_store.set(&autostart_iter, &[
+            (COL_NAME as u32, &"Autostart"),
+            (COL_TYPE as u32, &"Folder"),
+            (COL_ICON as u32, &"folder"),
+            (COL_ID as u32, &"autostart"),
+        ]);
     }
 
     /// Validates if a child item can be added to a parent item
@@ -668,45 +777,74 @@ impl ConfigView {
         None
     }
 
-    /// Adds a configuration item to the tree store with validation
+    /// Adds an item to the tree view.
     fn add_item_to_tree(&self, item: ConfigItem, parent: Option<&TreeIter>) -> Option<TreeIter> {
-        // Get parent item if it exists
-        let parent_item = parent.and_then(|p| self.get_item_for_iter(p));
+        let icon = match &item {
+            ConfigItem::Plugin(_) => "applications-utilities",
+            ConfigItem::Folder(_) => "folder",
+            ConfigItem::Macro(_) => "view-list-symbolic",
+            ConfigItem::Event(_) => "emblem-important-symbolic",
+            ConfigItem::Action(_) => "media-playback-start-symbolic",
+        };
         
-        // Validate parent-child relationship
-        if !self.validate_parent_child(parent_item.as_ref(), &item) {
-            let error_msg = format!(
-                "Cannot add {} to {}",
-                self.get_item_type(&item),
-                parent_item.map_or("root".to_string(), |p| self.get_item_type(&p).to_string())
-            );
-            let dialog = gtk::MessageDialog::new(
-                None::<&gtk::Window>,
-                gtk::DialogFlags::MODAL,
-                gtk::MessageType::Error,
-                gtk::ButtonsType::Ok,
-                &error_msg
-            );
-            dialog.connect_response(move |dialog, _| {
-                dialog.close();
-            });
-            dialog.show();
-            return None;
-        }
-
+        let name = item.name().to_string();
+        let item_type = match &item {
+            ConfigItem::Plugin(_) => "Plugin",
+            ConfigItem::Folder(_) => "Folder",
+            ConfigItem::Macro(_) => "Macro",
+            ConfigItem::Event(_) => "Event",
+            ConfigItem::Action(_) => "Action",
+        };
+        
+        // Add more detailed information to display name based on item type
+        let display_name = match &item {
+            ConfigItem::Plugin(plugin) => {
+                if let Some(file) = plugin.config.get("File") {
+                    format!("{} ({})", name, file)
+                } else {
+                    name
+                }
+            },
+            ConfigItem::Action(action) => {
+                if let Some(script) = action.parameters.get("Script") {
+                    if script.starts_with("EventGhost.") || script.starts_with("System.") {
+                        let parts: Vec<&str> = script.split('(').collect();
+                        if !parts.is_empty() {
+                            format!("{} - {}", name, parts[0])
+                        } else {
+                            name
+                        }
+                    } else {
+                        // Show first 30 chars of script for Python scripts
+                        let script_preview = if script.len() > 30 {
+                            format!("{}...", &script[..30])
+                        } else {
+                            script.clone()
+                        };
+                        if name == "Action" {
+                            format!("Python: {}", script_preview)
+                        } else {
+                            format!("{} - {}", name, script_preview)
+                        }
+                    }
+                } else {
+                    name
+                }
+            },
+            _ => name
+        };
+        
+        // Create a new row in the tree store
         let iter = self.tree_store.append(parent);
         
-        self.tree_store.set_value(&iter, COL_NAME as u32, &item.name().to_value());
-        self.tree_store.set_value(&iter, COL_TYPE as u32, &self.get_item_type(&item).to_value());
-        self.tree_store.set_value(&iter, COL_ICON as u32, &self.get_item_icon(&item).to_value());
-        self.tree_store.set_value(&iter, COL_ID as u32, &item.id().to_string().to_value());
-
-        // Add to configuration
-        self.config.borrow_mut().add_item(item);
-
-        // Save changes
-        self.save_config();
-
+        // Set values for the new row
+        self.tree_store.set(&iter, &[
+            (COL_NAME as u32, &display_name),
+            (COL_TYPE as u32, &item_type),
+            (COL_ICON as u32, &icon),
+            (COL_ID as u32, &item.id().to_string()),
+        ]);
+        
         Some(iter)
     }
 
@@ -840,6 +978,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(n_children, 2); // Plugins and Macros folders
+        assert_eq!(n_children, 3); // Plugins, Macros, and Autostart folders
     }
 } 

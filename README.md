@@ -120,28 +120,14 @@ This project is licensed under the GPL-2.0 License - see the LICENSE file for de
 - Rust community for the amazing ecosystem
 
 ## Current Status
-This project is under active development. Current focus areas:
-- Implementing remaining core functionality
-- Improving UI/UX
-- Adding plugin compatibility layer
-- Enhancing configuration management
-
-## Roadmap
-See [TODO.md](TODO.md) for planned features and enhancements.
-
-## Features
-
-- **Modern GTK4-based UI**
-- **Plugin System**: Load and unload plugins dynamically
-- **Event System**: Create and manage events
-- **Macro System**: Trigger actions based on events
-- **Action System**: Configure and execute actions in response to events
-- **Configuration UI**: Create and manage your configuration
-- **Action Configuration UI**: Configure actions with dynamic parameters
-
-## Current Status
 
 EventGhost-Rust is currently in active development. The core architecture is in place, and we're actively implementing features to reach feature parity with the original EventGhost.
+
+### Recent Enhancements
+
+- **Enhanced .egtree Configuration Handling**: Improved handling of .egtree configuration files with base64 encoding/decoding support.
+- **Detailed Item Display in Configuration View**: Items in the tree view now display more detailed information (e.g., file paths for plugins, script previews for actions).
+- **Autostart Folder**: Added the Autostart folder to the configuration tree to better organize startup items.
 
 ## GTK4 Compatibility
 

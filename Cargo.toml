@@ -47,6 +47,7 @@ quick-xml = { version = "0.30", features = ["serialize"] }
 # Added for globals implementation
 rumqttc = { version = "0.22", optional = true }
 redis = { version = "0.23", features = ["tokio-comp"], optional = true }
+base64 = "0.21"
 
 [dev-dependencies]
 tokio-test = "0.4" 

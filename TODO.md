@@ -26,6 +26,7 @@
   - [x] Connect file menu actions to save/load functions
   - [x] Support for .egtree XML format
   - [x] Fix path handling for configuration files
+  - [x] Enhance .egtree file format support with base64 encoding/decoding
 
 ## Core
 - [x] Plugin System
@@ -165,12 +166,13 @@
 ## Next Steps (Priority Order)
 1. ~~Add action configuration UI~~
 2. ~~Fix Result unwrapping in main.rs~~
-3. Fix GTK4 compatibility issues
-4. Create system action implementations 
-5. Implement action thread management
-6. Add action persistence
-7. Develop plugin action integration
-8. Write documentation
+3. ~~Fix GTK4 compatibility issues~~
+4. ~~Enhance .egtree file format support~~
+5. Create system action implementations 
+6. Implement action thread management
+7. Add action persistence
+8. Develop plugin action integration
+9. Write documentation
 
 ## Future Enhancements
 - [ ] Action templates
