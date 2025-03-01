@@ -11,6 +11,7 @@ use super::property_grid::PropertyGrid;
 use super::UIComponent;
 use crate::eg::config::{Plugin, Config, ConfigItem};
 
+#[derive(Clone)]
 pub struct PluginPage {
     pub name: String,
     pub widget: Box,
@@ -38,6 +39,7 @@ impl PluginPage {
     }
 }
 
+#[derive(Clone)]
 pub struct PluginConfigDialog {
     widget: Dialog,
     pages: Vec<PluginPage>,
@@ -173,7 +175,9 @@ impl PluginConfigDialog {
             // If we have a config and plugin_id, update the config
             if let Some(config) = &self.config {
                 if let Some(plugin_id) = self.plugin_id {
-                    let mut config = config.borrow_mut();
+                    // Use a shadowed variable to avoid ownership issues with borrow_mut
+                    let config_clone = config.clone();
+                    let mut config = config_clone.borrow_mut();
                     // Find the plugin in the config items
                     for item in &mut config.items {
                         if let ConfigItem::Plugin(plugin) = item {

@@ -190,25 +190,30 @@ impl ConfigView {
         config_view
     }
 
-    /// Sets the configuration path.
+    /// Sets the path where the configuration should be saved.
     pub fn set_config_path<P: AsRef<Path>>(&self, path: P) {
-        *self.config_path.borrow_mut() = Some(path.as_ref().to_path_buf());
+        // Use a shadowed variable to avoid ownership issues with borrow_mut
+        let config_path = self.config_path.clone();
+        *config_path.borrow_mut() = Some(path.as_ref().to_path_buf());
     }
-
-    /// Creates a new empty configuration
+    
+    /// Creates a new configuration.
     pub fn new_config(&self) {
+        debug!("Creating new configuration");
+        
         // Create a new empty configuration
-        let config = Config::new();
-        self.config.replace(config);
+        // Use shadowed variables to avoid ownership issues with borrow_mut
+        let config = self.config.clone();
+        *config.borrow_mut() = Config::new();
         
-        // Clear the tree store
-        self.tree_store.clear();
+        // Clear the save path
+        let config_path = self.config_path.clone();
+        *config_path.borrow_mut() = None;
         
-        // Add root folders
-        self.add_root_folders();
+        // Repopulate the tree view
+        self.populate_tree_from_config();
         
-        // Reset the config path
-        *self.config_path.borrow_mut() = None;
+        info!("New configuration created successfully");
     }
 
     /// Saves the configuration to disk with error handling
@@ -880,7 +885,11 @@ impl ConfigView {
                     let msg = format!("Are you sure you want to delete {}?", item.name());
                     if self.show_confirmation(&msg) {
                         drop(config_ref); // Explicitly drop the borrow
-                        self.config.borrow_mut().remove_item(id);
+                        
+                        // Use a shadowed variable to avoid ownership issues with borrow_mut
+                        let config = self.config.clone();
+                        config.borrow_mut().remove_item(id);
+                        
                         self.tree_store.remove(iter);
                         self.save_config();
                     }
@@ -980,6 +989,61 @@ impl ConfigView {
     /// Public method to get the selected item
     pub fn get_selected(&self) -> Option<(gtk::TreeModel, gtk::TreeIter)> {
         self.tree_view.selection().selected()
+    }
+
+    /// Add a folder item to the configuration
+    pub fn add_folder(&self) {
+        let iter_opt = self.get_selected().map(|(_, iter)| iter);
+        
+        let dialog = super::config_dialogs::FolderDialog::new();
+        if let Some(folder) = dialog.run_for_new() {
+            self.add_item(crate::eg::config::ConfigItem::Folder(folder), iter_opt.as_ref());
+            self.save_config();
+        }
+    }
+    
+    /// Add a plugin item to the configuration
+    pub fn add_plugin(&self) {
+        let iter_opt = self.get_selected().map(|(_, iter)| iter);
+        
+        let dialog = super::config_dialogs::PluginDialog::new();
+        if let Some(plugin) = dialog.run_for_new() {
+            self.add_item(crate::eg::config::ConfigItem::Plugin(plugin), iter_opt.as_ref());
+            self.save_config();
+        }
+    }
+    
+    /// Add a macro item to the configuration
+    pub fn add_macro(&self) {
+        let iter_opt = self.get_selected().map(|(_, iter)| iter);
+        
+        let dialog = super::config_dialogs::MacroDialog::new();
+        if let Some(macro_) = dialog.run_for_new() {
+            self.add_item(crate::eg::config::ConfigItem::Macro(macro_), iter_opt.as_ref());
+            self.save_config();
+        }
+    }
+    
+    /// Add an event item to the configuration
+    pub fn add_event(&self) {
+        let iter_opt = self.get_selected().map(|(_, iter)| iter);
+        
+        let dialog = super::config_dialogs::EventDialog::new();
+        if let Some(event) = dialog.run_for_new() {
+            self.add_item(crate::eg::config::ConfigItem::Event(event), iter_opt.as_ref());
+            self.save_config();
+        }
+    }
+    
+    /// Add an action item to the configuration
+    pub fn add_action(&self) {
+        let iter_opt = self.get_selected().map(|(_, iter)| iter);
+        
+        let dialog = super::config_dialogs::ActionDialog::new();
+        if let Some(action) = dialog.run_for_new() {
+            self.add_item(crate::eg::config::ConfigItem::Action(action), iter_opt.as_ref());
+            self.save_config();
+        }
     }
 }
 

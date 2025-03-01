@@ -13,6 +13,7 @@ use super::UIComponent;
 use crate::core::Error;
 
 /// Represents a parameter that can be configured in the action configuration dialog
+#[derive(Clone)]
 pub struct ActionParameter {
     pub name: String,
     pub display_name: String,
@@ -96,6 +97,7 @@ impl ActionParameter {
 }
 
 /// Dialog for configuring actions with dynamic parameters
+#[derive(Clone)]
 pub struct ActionConfigDialog {
     dialog: Dialog,
     name_entry: Entry,

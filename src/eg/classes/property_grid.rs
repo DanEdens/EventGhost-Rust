@@ -169,7 +169,7 @@ pub trait PropertySource: Send + Sync + Debug {
     fn get_properties(&self) -> Vec<Property>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PropertyGrid {
     pub widget: Box,
     pub tree_view: TreeView,

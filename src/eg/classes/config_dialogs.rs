@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use crate::eg::config::{Plugin, Folder, Macro, Event, Action};
 
 /// Base dialog for configuration items
+#[derive(Clone)]
 pub struct ConfigDialog {
     dialog: Dialog,
     name_entry: Entry,
@@ -61,6 +62,7 @@ impl ConfigDialog {
 }
 
 /// Dialog for adding/editing plugins
+#[derive(Clone)]
 pub struct PluginDialog {
     base: ConfigDialog,
 }
@@ -98,6 +100,7 @@ impl PluginDialog {
 }
 
 /// Dialog for adding/editing folders
+#[derive(Clone)]
 pub struct FolderDialog {
     base: ConfigDialog,
 }
@@ -133,6 +136,7 @@ impl FolderDialog {
 }
 
 /// Dialog for adding/editing macros
+#[derive(Clone)]
 pub struct MacroDialog {
     base: ConfigDialog,
 }
@@ -172,6 +176,7 @@ impl MacroDialog {
 }
 
 /// Dialog for adding/editing events
+#[derive(Clone)]
 pub struct EventDialog {
     base: ConfigDialog,
 }
@@ -209,6 +214,7 @@ impl EventDialog {
 }
 
 /// Dialog for adding/editing actions
+#[derive(Clone)]
 pub struct ActionDialog {
     base: ConfigDialog,
     advanced_button: Button,
@@ -243,7 +249,8 @@ impl ActionDialog {
             let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
             if let Some(new_action) = config_dialog.run_for_new_config_action() {
                 // Copy the values back to our parameters
-                let mut params = parameters.borrow_mut();
+                let params_clone = parameters.clone();
+                let mut params = params_clone.borrow_mut();
                 params.clear();
                 params.extend(new_action.parameters.clone());
             }
@@ -288,7 +295,8 @@ impl ActionDialog {
             let config_dialog = crate::eg::classes::action_config_dialog::ActionConfigDialog::new();
             if let Some(updated_action) = config_dialog.run_for_config_action(&config_action) {
                 // Copy the values back to our parameters
-                let mut params = parameters.borrow_mut();
+                let params_clone = parameters.clone();
+                let mut params = params_clone.borrow_mut();
                 params.clear();
                 params.extend(updated_action.parameters.clone());
             }
