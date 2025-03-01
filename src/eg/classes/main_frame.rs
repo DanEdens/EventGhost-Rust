@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window};
 use gio::{Menu, MenuItem};
 use super::{Toolbar, StatusBar};
 use crate::eg::classes::log_ctrl::LogCtrl;
@@ -11,19 +11,19 @@ use crate::core::Error;
 use std::cell::Cell;
 use std::thread::LocalKey;
 use super::config_view::ConfigView;
-use log::error;
-use log::info;
+use log::{error, info, debug};
+use crate::eg::classes::dialog::{FileDialogOptions, CommonDialogs};
 
 // use glib::Error;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 800;
 const DEFAULT_WINDOW_HEIGHT: i32 = 600;
 
-/// Represents the main application window for EventGhost.
+/// The main application window
 pub struct MainFrame {
-    /// The main GTK application window
-    pub(crate) window: ApplicationWindow,
-    /// The main menu bar
+    /// The application window
+    pub window: ApplicationWindow,
+    /// The menu bar
     pub menu_bar: PopoverMenuBar,
     /// The toolbar
     pub toolbar: Toolbar,
@@ -32,7 +32,7 @@ pub struct MainFrame {
     /// The log control
     pub log_ctrl: LogCtrl,
     /// The configuration view
-    pub config_view: Rc<RefCell<Option<ConfigView>>>,
+    pub config_view: ConfigView,
     /// The main container
     pub container: Box,
     /// The paned container for log and tree
@@ -44,7 +44,7 @@ pub struct MainFrame {
 impl MainFrame {
     /// Thread-local storage for ConfigView
     thread_local! {
-        static CONFIG_VIEW: RefCell<Rc<RefCell<Option<ConfigView>>>> = RefCell::new(Rc::new(RefCell::new(None)));
+        static CONFIG_VIEW: RefCell<Option<ConfigView>> = RefCell::new(None);
     }
 
     /// Creates a new MainFrame instance.
@@ -63,8 +63,8 @@ impl MainFrame {
         // Initialize log control with an empty widget for now
         let log_ctrl = crate::eg::classes::log_ctrl::LogCtrl::new();
         
-        // Initialize config view
-        let config_view = Rc::new(RefCell::new(None));
+        // Create config view first
+        let config_view = crate::eg::classes::config_view::ConfigView::new();
         
         // Set up container boxes
         let container = Box::new(Orientation::Vertical, 0);
@@ -92,12 +92,12 @@ impl MainFrame {
             notebook,
         };
         
+        // Create menu model and set it on the menu bar
+        let menu_model = main_frame.create_menu_model();
+        main_frame.menu_bar.set_menu_model(Some(&menu_model));
+        
         // Set up UI layout
         main_frame.setup_ui();
-        
-        // Set up configuration view
-        let config_view_instance = crate::eg::classes::config_view::ConfigView::new();
-        main_frame.config_view.borrow_mut().replace(config_view_instance);
         
         // Connect menu actions
         main_frame.connect_menu_actions(app);
@@ -303,274 +303,166 @@ impl MainFrame {
         let new_action = gio::SimpleAction::new("new", None);
         let config_view = self.config_view.clone();
         new_action.connect_activate(move |_, _| {
-            if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                config_view.new_config();
-            }
+            config_view.new_config();
         });
         application.add_action(&new_action);
-
+        
         let open_action = gio::SimpleAction::new("open", None);
         let config_view = self.config_view.clone();
+        let window = self.window.clone();
         open_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.borrow_mut().as_mut().and_then(|config_view| {
-                config_view.container.root().and_downcast::<gtk::Window>()
-            }) {
-                let dialog = gtk::FileChooserDialog::new(
-                    Some("Open Configuration"),
-                    Some(&window),
-                    gtk::FileChooserAction::Open,
-                    &[
-                        ("Cancel", gtk::ResponseType::Cancel),
-                        ("Open", gtk::ResponseType::Accept),
-                    ],
-                );
-                
-                // Add file filters
-                let filter = gtk::FileFilter::new();
-                filter.set_name(Some("EventGhost Configuration Files"));
-                filter.add_pattern("*.json");
-                filter.add_pattern("*.egtree");
-                filter.add_pattern("*.xml");
-                dialog.add_filter(&filter);
-                
-                // Add an "All Files" filter
-                let all_files_filter = gtk::FileFilter::new();
-                all_files_filter.set_name(Some("All Files"));
-                all_files_filter.add_pattern("*");
-                dialog.add_filter(&all_files_filter);
-                
-                // Set current folder to config directory
-                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
-                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
-                }
-                
-                let config_view_clone = config_view.clone();
-                dialog.connect_response(move |dialog, response| {
-                    if response == gtk::ResponseType::Accept {
-                        if let Some(file) = dialog.file() {
-                            if let Some(path) = file.path() {
-                                if let Some(config_view) = config_view_clone.borrow_mut().as_mut() {
-                                    info!("Attempting to load configuration from {}", path.display());
-                                    
-                                    // Try to load the configuration
-                                    match config_view.load_config(&path) {
-                                        Ok(_) => {
-                                            // Configuration loaded successfully
-                                            info!("Configuration loaded successfully from {}", path.display());
-                                            
-                                            // Update window title if needed
-                                            if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
-                                                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                                                    window.set_title(Some(&format!("EventGhost - {}", filename)));
-                                                }
-                                            }
-                                        },
-                                        Err(err) => {
-                                            // Show error to user
-                                            error!("Failed to load configuration: {}", err);
-                                            
-                                            // The error message dialog is shown in the load_config method
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            let options = FileDialogOptions {
+                title: "Open Configuration".to_string(),
+                filter: "EventGhost Configuration (*.json;*.xml)|*.json;*.xml".to_string(),
+                default_ext: "json".to_string(),
+                initial_dir: "".to_string(),
+                file_name: "".to_string(),
+                multi_select: false,
+            };
+            
+            let window_ref: &Window = window.upcast_ref();
+            if let Ok(files) = CommonDialogs::open_file(Some(window_ref), options) {
+                if let Some(file) = files.first() {
+                    if let Err(e) = config_view.load_config(file) {
+                        eprintln!("Error loading configuration: {}", e);
+                    } else {
+                        config_view.set_config_path(file);
                     }
-                    dialog.close();
-                });
-                
-                dialog.show();
+                }
             }
         });
         application.add_action(&open_action);
-
+        
         let save_action = gio::SimpleAction::new("save", None);
         let config_view = self.config_view.clone();
         save_action.connect_activate(move |_, _| {
-            if let Some(config_view) = config_view.borrow_mut().as_mut() {
+            config_view.save_config();
+        });
+        application.add_action(&save_action);
+        
+        let save_as_action = gio::SimpleAction::new("saveas", None);
+        let config_view = self.config_view.clone();
+        let window = self.window.clone();
+        save_as_action.connect_activate(move |_, _| {
+            let options = FileDialogOptions {
+                title: "Save Configuration As".to_string(),
+                filter: "EventGhost Configuration (*.json)|*.json".to_string(),
+                default_ext: "json".to_string(),
+                initial_dir: "".to_string(),
+                file_name: "".to_string(),
+                multi_select: false,
+            };
+            
+            let window_ref: &Window = window.upcast_ref();
+            if let Ok(Some(file)) = CommonDialogs::save_file(Some(window_ref), options) {
+                config_view.set_config_path(&file);
                 config_view.save_config();
             }
         });
-        application.add_action(&save_action);
-
-        let save_as_action = gio::SimpleAction::new("save_as", None);
-        let config_view = self.config_view.clone();
-        save_as_action.connect_activate(move |_, _| {
-            if let Some(window) = config_view.borrow_mut().as_mut().and_then(|config_view| {
-                config_view.container.root().and_downcast::<gtk::Window>()
-            }) {
-                let dialog = gtk::FileChooserDialog::new(
-                    Some("Save Configuration As"),
-                    Some(&window),
-                    gtk::FileChooserAction::Save,
-                    &[
-                        ("Cancel", gtk::ResponseType::Cancel),
-                        ("Save", gtk::ResponseType::Accept),
-                    ],
-                );
-                
-                // Add file filters
-                let filter = gtk::FileFilter::new();
-                filter.set_name(Some("EventGhost Configuration Files"));
-                filter.add_pattern("*.json");
-                filter.add_pattern("*.egtree");
-                filter.add_pattern("*.xml");
-                dialog.add_filter(&filter);
-                
-                // Set current folder to config directory
-                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
-                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
-                }
-                
-                let config_view_clone = config_view.clone();
-                dialog.connect_response(move |dialog, response| {
-                    if response == gtk::ResponseType::Accept {
-                        if let Some(file) = dialog.file() {
-                            if let Some(path) = file.path() {
-                                // Set the configuration path and save
-                                config_view_clone.borrow_mut().as_mut().map(|config_view| {
-                                    config_view.set_config_path(&path);
-                                    config_view.save_config();
-                                });
-                            }
-                        }
-                    }
-                    dialog.close();
-                });
-                
-                dialog.show();
-            }
-        });
         application.add_action(&save_as_action);
-
-        // Other file menu actions (placeholder implementations)
-        let options_action = gio::SimpleAction::new("options", None);
-        options_action.connect_activate(|_, _| {
-            println!("Options menu item clicked");
-        });
-        application.add_action(&options_action);
-
-        let restart_action = gio::SimpleAction::new("restart", None);
-        restart_action.connect_activate(|_, _| {
-            println!("Restart menu item clicked");
-        });
-        application.add_action(&restart_action);
-
-        let restart_admin_action = gio::SimpleAction::new("restart-admin", None);
-        restart_admin_action.connect_activate(|_, _| {
-            println!("Restart as Admin menu item clicked");
-        });
-        application.add_action(&restart_admin_action);
-
-        let quit_action = gio::SimpleAction::new("quit", None);
-        let window = self.window.clone();
-        quit_action.connect_activate(move |_, _| {
-            window.close();
-        });
-        application.add_action(&quit_action);
-
-        // Edit menu actions (placeholder implementations)
+        
+        // Edit menu actions
         let undo_action = gio::SimpleAction::new("undo", None);
-        undo_action.connect_activate(|_, _| {
-            println!("Undo menu item clicked");
+        undo_action.connect_activate(move |_, _| {
+            debug!("Undo action triggered");
+            // TODO: Implement undo
         });
         application.add_action(&undo_action);
-
+        
         let redo_action = gio::SimpleAction::new("redo", None);
-        redo_action.connect_activate(|_, _| {
-            println!("Redo menu item clicked");
+        redo_action.connect_activate(move |_, _| {
+            debug!("Redo action triggered");
+            // TODO: Implement redo
         });
         application.add_action(&redo_action);
-
+        
         let cut_action = gio::SimpleAction::new("cut", None);
-        cut_action.connect_activate(|_, _| {
-            println!("Cut menu item clicked");
+        let config_view_clone = self.config_view.clone();
+        cut_action.connect_activate(move |_, _| {
+            debug!("Cut action triggered");
+            // TODO: Implement cut
         });
         application.add_action(&cut_action);
-
+        
         let copy_action = gio::SimpleAction::new("copy", None);
-        copy_action.connect_activate(|_, _| {
-            println!("Copy menu item clicked");
+        let config_view_clone = self.config_view.clone();
+        copy_action.connect_activate(move |_, _| {
+            debug!("Copy action triggered");
         });
         application.add_action(&copy_action);
-
+        
         let paste_action = gio::SimpleAction::new("paste", None);
-        paste_action.connect_activate(|_, _| {
-            println!("Paste menu item clicked");
+        paste_action.connect_activate(move |_, _| {
+            debug!("Paste action triggered");
+            // TODO: Implement paste
         });
         application.add_action(&paste_action);
-
-        let find_action = gio::SimpleAction::new("find", None);
-        find_action.connect_activate(|_, _| {
-            println!("Find menu item clicked");
-        });
-        application.add_action(&find_action);
-
-        // Configuration menu actions (placeholder implementations)
+        
+        // Configuration menu actions
         let add_plugin_action = gio::SimpleAction::new("add_plugin", None);
-        add_plugin_action.connect_activate(|_, _| {
-            println!("Add Plugin menu item clicked");
+        let main_frame = self.clone();
+        add_plugin_action.connect_activate(move |_, _| {
+            main_frame.add_plugin();
         });
         application.add_action(&add_plugin_action);
-
+        
         let add_folder_action = gio::SimpleAction::new("add_folder", None);
-        add_folder_action.connect_activate(|_, _| {
-            println!("Add Folder menu item clicked");
+        let main_frame = self.clone();
+        add_folder_action.connect_activate(move |_, _| {
+            main_frame.add_folder();
         });
         application.add_action(&add_folder_action);
-
+        
         let add_macro_action = gio::SimpleAction::new("add_macro", None);
-        add_macro_action.connect_activate(|_, _| {
-            println!("Add Macro menu item clicked");
+        let main_frame = self.clone();
+        add_macro_action.connect_activate(move |_, _| {
+            main_frame.add_macro();
         });
         application.add_action(&add_macro_action);
-
+        
         let add_event_action = gio::SimpleAction::new("add_event", None);
-        add_event_action.connect_activate(|_, _| {
-            println!("Add Event menu item clicked");
+        let main_frame = self.clone();
+        add_event_action.connect_activate(move |_, _| {
+            main_frame.add_event();
         });
         application.add_action(&add_event_action);
-
+        
         let add_action_action = gio::SimpleAction::new("add_action", None);
-        add_action_action.connect_activate(|_, _| {
-            println!("Add Action menu item clicked");
+        let main_frame = self.clone();
+        add_action_action.connect_activate(move |_, _| {
+            main_frame.add_action();
         });
         application.add_action(&add_action_action);
-
-        let rename_item_action = gio::SimpleAction::new("rename_item", None);
-        rename_item_action.connect_activate(|_, _| {
-            println!("Rename Item menu item clicked");
+        
+        let expand_all_action = gio::SimpleAction::new("expand_all", None);
+        let config_view = self.config_view.clone();
+        expand_all_action.connect_activate(move |_, _| {
+            config_view.expand_all();
         });
-        application.add_action(&rename_item_action);
-
-        let delete_item_action = gio::SimpleAction::new("delete_item", None);
-        delete_item_action.connect_activate(|_, _| {
-            println!("Delete Item menu item clicked");
+        application.add_action(&expand_all_action);
+        
+        let collapse_all_action = gio::SimpleAction::new("collapse_all", None);
+        let config_view = self.config_view.clone();
+        collapse_all_action.connect_activate(move |_, _| {
+            config_view.collapse_all();
         });
-        application.add_action(&delete_item_action);
-
-        // Help menu actions (placeholder implementations)
-        let help_action = gio::SimpleAction::new("help", None);
-        help_action.connect_activate(|_, _| {
-            println!("Help Contents menu item clicked");
-        });
-        application.add_action(&help_action);
-
-        let online_docs_action = gio::SimpleAction::new("online_docs", None);
-        online_docs_action.connect_activate(|_, _| {
-            println!("Online Documentation menu item clicked");
-        });
-        application.add_action(&online_docs_action);
-
-        let check_updates_action = gio::SimpleAction::new("check_updates", None);
-        check_updates_action.connect_activate(|_, _| {
-            println!("Check for Updates menu item clicked");
-        });
-        application.add_action(&check_updates_action);
-
+        application.add_action(&collapse_all_action);
+        
+        // Help menu actions
         let about_action = gio::SimpleAction::new("about", None);
-        about_action.connect_activate(|_, _| {
-            println!("About EventGhost menu item clicked");
+        let window = self.window.clone();
+        about_action.connect_activate(move |_, _| {
+            let dialog = AboutDialog::new();
+            dialog.set_transient_for(Some(&window));
+            dialog.set_modal(true);
+            dialog.set_program_name(Some("EventGhost"));
+            dialog.set_version(Some("0.1.0"));
+            dialog.set_comments(Some("EventGhost reimplementation in Rust"));
+            dialog.set_authors(&["EventGhost Team"]);
+            dialog.set_website(Some("https://eventghost.net"));
+            dialog.set_website_label("EventGhost Website");
+            dialog.set_license_type(License::Gpl30);
+            dialog.show();
         });
         application.add_action(&about_action);
     }
@@ -587,50 +479,44 @@ impl MainFrame {
 
         // Configure paned container
         self.paned.set_wide_handle(true);
-        self.paned.set_position(400); // Set initial position
+        self.paned.set_position(250); // Set initial position
         main_box.append(&self.paned);
 
         // Configure notebook
         self.notebook.set_scrollable(true);
         self.notebook.set_show_border(true);
-        self.paned.set_start_child(Some(&self.notebook));
+        
+        // Add configuration view to the start pane
+        self.paned.set_start_child(Some(&self.config_view.container));
+        
+        // Add notebook to the end pane
+        self.paned.set_end_child(Some(&self.notebook));
 
         // Configure log window
         self.log_ctrl.container.set_size_request(400, 300); // Set minimum size
         
-        // Add log tab
+        // Add log tab to the notebook
         let log_label = gtk::Label::new(Some("Log"));
         self.notebook.append_page(&self.log_ctrl.container, Some(&log_label));
-
-        // Add configuration tab
-        let config_ref = self.config_view.as_ref().borrow();
-        if let Some(config_view) = config_ref.as_ref() {
-            let config_label = gtk::Label::new(Some("Configuration"));
-            self.notebook.append_page(&config_view.container, Some(&config_label));
-        }
 
         // Add status bar at the bottom
         main_box.append(&self.status_bar.widget);
     }
 
-    /// Connect toolbar buttons to actions
-    fn init_toolbar_buttons(&self, application: &gtk::Application) {
+    /// Initialize toolbar buttons
+    fn init_toolbar_buttons(&self, app: &Application) {
         // Connect file operations buttons
         if let Some(button) = self.toolbar.get_button("new") {
             let config_view = self.config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    config_view.new_config();
-                }
+                config_view.new_config();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("open") {
             let config_view = self.config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(window) = config_view.borrow_mut().as_mut().and_then(|config_view| {
-                    config_view.container.root().and_downcast::<gtk::Window>()
-                }) {
+                if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
                     let dialog = gtk::FileChooserDialog::new(
                         Some("Open Configuration"),
                         Some(&window),
@@ -665,26 +551,26 @@ impl MainFrame {
                         if response == gtk::ResponseType::Accept {
                             if let Some(file) = dialog.file() {
                                 if let Some(path) = file.path() {
-                                    if let Some(config_view) = config_view_clone.borrow_mut().as_mut() {
-                                        info!("Attempting to load configuration from {}", path.display());
-                                        
-                                        // Try to load the configuration
-                                        match config_view.load_config(&path) {
-                                            Ok(_) => {
-                                                // Configuration loaded successfully
-                                                info!("Configuration loaded successfully from {}", path.display());
-                                                
-                                                // Update window title if needed
-                                                if let Some(window) = config_view.container.root().and_downcast::<gtk::Window>() {
-                                                    if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                                                        window.set_title(Some(&format!("EventGhost - {}", filename)));
-                                                    }
+                                    info!("Attempting to load configuration from {}", path.display());
+                                    
+                                    // Try to load the configuration
+                                    match config_view_clone.load_config(&path) {
+                                        Ok(_) => {
+                                            // Configuration loaded successfully
+                                            info!("Configuration loaded successfully from {}", path.display());
+                                            
+                                            // Update window title if needed
+                                            if let Some(window) = config_view_clone.container.root().and_downcast::<gtk::Window>() {
+                                                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                                                    window.set_title(Some(&format!("EventGhost - {}", filename)));
                                                 }
-                                            },
-                                            Err(err) => {
-                                                // Show error to user
-                                                error!("Failed to load configuration: {}", err);
                                             }
+                                        },
+                                        Err(err) => {
+                                            // Show error to user
+                                            error!("Failed to load configuration: {}", err);
+                                            
+                                            // The error message dialog is shown in the load_config method
                                         }
                                     }
                                 }
@@ -701,129 +587,157 @@ impl MainFrame {
         if let Some(button) = self.toolbar.get_button("save") {
             let config_view = self.config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    config_view.save_config();
-                }
+                config_view.save_config();
             });
         }
         
-        // Connect item operation buttons
+        // Add config item buttons
         if let Some(button) = self.toolbar.get_button("add-plugin") {
-            let config_view = self.config_view.clone();
+            let main_frame = self.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    let iter_opt = config_view.get_selected().map(|(_, iter)| iter);
-                    
-                    let dialog = super::config_dialogs::PluginDialog::new();
-                    if let Some(plugin) = dialog.run_for_new() {
-                        config_view.add_item(crate::eg::config::ConfigItem::Plugin(plugin), iter_opt.as_ref());
-                        config_view.save_config();
-                    }
-                }
+                main_frame.add_plugin();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("add-folder") {
-            let config_view = self.config_view.clone();
+            let main_frame = self.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    let iter_opt = config_view.get_selected().map(|(_, iter)| iter);
-                    
-                    let dialog = super::config_dialogs::FolderDialog::new();
-                    if let Some(folder) = dialog.run_for_new() {
-                        config_view.add_item(crate::eg::config::ConfigItem::Folder(folder), iter_opt.as_ref());
-                        config_view.save_config();
-                    }
-                }
+                main_frame.add_folder();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("add-macro") {
-            let config_view = self.config_view.clone();
+            let main_frame = self.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    let iter_opt = config_view.get_selected().map(|(_, iter)| iter);
-                    
-                    let dialog = super::config_dialogs::MacroDialog::new();
-                    if let Some(macro_) = dialog.run_for_new() {
-                        config_view.add_item(crate::eg::config::ConfigItem::Macro(macro_), iter_opt.as_ref());
-                        config_view.save_config();
-                    }
-                }
+                main_frame.add_macro();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("add-event") {
-            let config_view = self.config_view.clone();
+            let main_frame = self.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    let iter_opt = config_view.get_selected().map(|(_, iter)| iter);
-                    
-                    let dialog = super::config_dialogs::EventDialog::new();
-                    if let Some(event) = dialog.run_for_new() {
-                        config_view.add_item(crate::eg::config::ConfigItem::Event(event), iter_opt.as_ref());
-                        config_view.save_config();
-                    }
-                }
+                main_frame.add_event();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("add-action") {
-            let config_view = self.config_view.clone();
+            let main_frame = self.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    let iter_opt = config_view.get_selected().map(|(_, iter)| iter);
-                    
-                    let dialog = super::config_dialogs::ActionDialog::new();
-                    if let Some(action) = dialog.run_for_new() {
-                        config_view.add_item(crate::eg::config::ConfigItem::Action(action), iter_opt.as_ref());
-                        config_view.save_config();
-                    }
-                }
+                main_frame.add_action();
             });
         }
         
-        // Connect tree operations buttons
+        // Expand/collapse buttons
         if let Some(button) = self.toolbar.get_button("expand") {
-            let config_view = self.config_view.clone();
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    if let Some((model, iter)) = config_view.get_selected() {
-                        let path = model.path(&iter);
-                        config_view.get_tree_view().expand_row(&path, false);
-                    }
+                if let Some((model, iter)) = config_view_clone.get_selected() {
+                    let path = model.path(&iter);
+                    config_view_clone.get_tree_view().expand_row(&path, false);
                 }
             });
         }
         
         if let Some(button) = self.toolbar.get_button("collapse") {
-            let config_view = self.config_view.clone();
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    if let Some((model, iter)) = config_view.get_selected() {
-                        let path = model.path(&iter);
-                        config_view.get_tree_view().collapse_row(&path);
-                    }
+                if let Some((model, iter)) = config_view_clone.get_selected() {
+                    let path = model.path(&iter);
+                    config_view_clone.get_tree_view().collapse_row(&path);
+                }
+            });
+        }
+        
+        if let Some(button) = self.toolbar.get_button("expand-children") {
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
+            button.connect_clicked(move |_| {
+                if let Some((model, iter)) = config_view_clone.get_selected() {
+                    let path = model.path(&iter);
+                    config_view_clone.get_tree_view().expand_row(&path, true);
+                }
+            });
+        }
+        
+        if let Some(button) = self.toolbar.get_button("collapse-children") {
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
+            button.connect_clicked(move |_| {
+                if let Some((model, iter)) = config_view_clone.get_selected() {
+                    let path = model.path(&iter);
+                    config_view_clone.get_tree_view().collapse_row(&path);
                 }
             });
         }
         
         if let Some(button) = self.toolbar.get_button("expand-all") {
-            let config_view = self.config_view.clone();
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    config_view.expand_all();
-                }
+                config_view_clone.expand_all();
             });
         }
         
         if let Some(button) = self.toolbar.get_button("collapse-all") {
-            let config_view = self.config_view.clone();
+            let config_view = &self.config_view;
+            let config_view_clone = config_view.clone();
             button.connect_clicked(move |_| {
-                if let Some(config_view) = config_view.borrow_mut().as_mut() {
-                    config_view.collapse_all();
-                }
+                config_view_clone.collapse_all();
             });
+        }
+    }
+
+    fn add_folder(&self) {
+        info!("Adding folder");
+        // Access ConfigView directly
+        let config_view = &self.config_view;
+        config_view.add_folder();
+    }
+
+    fn add_plugin(&self) {
+        info!("Adding plugin");
+        // Access ConfigView directly
+        let config_view = &self.config_view;
+        config_view.add_plugin();
+    }
+
+    fn add_macro(&self) {
+        info!("Adding macro");
+        // Access ConfigView directly
+        let config_view = &self.config_view;
+        config_view.add_macro();
+    }
+
+    fn add_event(&self) {
+        info!("Adding event");
+        // Access ConfigView directly
+        let config_view = &self.config_view;
+        config_view.add_event();
+    }
+
+    fn add_action(&self) {
+        info!("Adding action");
+        // Access ConfigView directly
+        let config_view = &self.config_view;
+        config_view.add_action();
+    }
+}
+
+impl Clone for MainFrame {
+    fn clone(&self) -> Self {
+        // Only clone the window reference, which is sufficient for most operations
+        MainFrame {
+            window: self.window.clone(),
+            menu_bar: self.menu_bar.clone(),
+            toolbar: self.toolbar.clone(),
+            status_bar: self.status_bar.clone(),
+            log_ctrl: self.log_ctrl.clone(),
+            config_view: self.config_view.clone(),
+            container: self.container.clone(),
+            paned: self.paned.clone(),
+            notebook: self.notebook.clone(),
         }
     }
 }
