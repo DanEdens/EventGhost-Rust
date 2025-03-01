@@ -160,4 +160,20 @@ GTK4 uses different module organization than previous versions. Key changes incl
 3. **Configuration Management**
    - Provide sensible defaults but allow customization
    - Support environment variables for configuration
-   - Document connection requirements and security considerations 
+   - Document connection requirements and security considerations
+
+## CLI Parsing Lessons
+
+1. **Clap Parser Implementation**
+   - When implementing `parse()` method on a struct that derives `Parser`, use `<Self as Parser>::parse()` not `Parser::parse()`
+   - This avoids infinite recursion and properly calls the derived parser implementation
+
+2. **Flag Conflicts**
+   - Be mindful of short flag conflicts, especially with auto-generated flags like `-h` for help
+   - Use explicit short flag assignment (`short = 'X'`) when needed to avoid collisions
+   - Consider disabling auto-generated flags if they conflict with essential application flags
+
+3. **Error Handling**
+   - Clap's assertion errors can be cryptic; always test CLI parsing with various arguments
+   - Include robust error handling for command-line arguments
+   - Consider graceful fallbacks for invalid arguments 
