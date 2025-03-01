@@ -158,3 +158,43 @@ These changes ensure that the application works correctly with GTK4 and avoids d
 ### Known Issues
 
 There is an access violation occurring in some tests when run together, but individual tests run fine. This will require further investigation.
+
+## Comparison with Python EventGhost
+
+The original EventGhost is written in Python and has a rich feature set developed over many years. This Rust implementation aims to:
+
+1. **Preserve core functionality**: Event handling, plugin system, and macro execution
+2. **Modernize the codebase**: Use Rust's strong type system and modern UI technologies
+3. **Improve performance**: Take advantage of Rust's efficiency and safety
+
+### Current Gaps
+
+While we're making steady progress, there are still substantial gaps compared to the Python version:
+
+1. **Plugin Ecosystem**: The original has 100+ plugins for various devices and applications
+2. **Python Compatibility**: Legacy plugins require Python interoperability
+3. **UI Features**: Some advanced UI features are still being implemented
+4. **Hardware Support**: Many specialized device drivers need to be ported
+
+### Future Plans
+
+Our roadmap includes:
+
+1. Complete the GTK4 migration for a modern UI experience
+2. Develop a Python compatibility layer for legacy plugins
+3. Implement the most commonly used plugins natively in Rust
+4. Add comprehensive testing and error handling
+5. Create better documentation for both users and developers
+
+See [TODO.md](TODO.md) for detailed implementation plans.
+
+## Lessons Learned During Development
+
+Throughout this project, we've learned:
+
+1. **GTK4 Transition**: Moving from older GTK versions requires careful management of imports and APIs
+2. **Rust for UI**: Rust provides excellent safety guarantees but requires different patterns than traditional UI frameworks
+3. **Testing Complexity**: UI-heavy applications need specialized testing approaches
+4. **Balancing New vs Legacy**: Finding the right balance between modern design and compatibility is challenging
+
+We continue to document our learning in each major feature implementation.

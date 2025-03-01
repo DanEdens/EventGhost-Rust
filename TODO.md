@@ -180,4 +180,61 @@
 - [ ] Action security sandbox
 - [ ] Remote action execution
 
+## Python Compatibility
+- [ ] Support legacy Python plugins
+  - [ ] Python binding layer
+  - [ ] Python plugin bridge
+  - [ ] Support for Python callables in actions
+- [ ] Core API compatibility
+  - [ ] Implement eg.globals equivalent
+  - [ ] Match Python API function signatures
+  - [ ] Support for Python events in Rust
+- [ ] UI compatibility
+  - [ ] Support for Python UI elements
+  - [ ] Python-defined configuration panels
+  - [ ] Legacy dialog support
+
+## Plugin Parity
+- [ ] IR Receiver Plugins
+  - [ ] USB-UIRT
+  - [ ] LIRC
+  - [ ] Streamzap
+  - [ ] Microsoft MCE Remote
+- [ ] System Control Plugins
+  - [ ] Window control
+  - [ ] Keyboard emulation
+  - [ ] Mouse control
+  - [ ] File operations
+- [ ] Network Plugins
+  - [ ] NetworkSender/Receiver
+  - [ ] Webserver
+  - [ ] MQTT Client
+- [ ] Media Control Plugins
+  - [ ] VLC
+  - [ ] Media Player Classic
+  - [ ] WinAmp
+- [ ] Hardware Support
+  - [ ] Serial port communication
+  - [ ] USB device support
+  - [ ] HID device support
+- [ ] Utility Plugins
+  - [ ] Speech (TTS)
+  - [ ] Sound mixer
+  - [ ] Timer/Scheduler
+
+## Core Functionality Gaps
+- [ ] WinAPI integration for hardware/system access
+- [ ] Plugin installation/update system
+- [ ] Language translation system
+- [ ] Remote control functionality
+- [ ] Auto-start and tray icon functionality
+- [ ] Registry handling
+
+## Lessons Learned
+- Rust's ownership model requires careful design of event and plugin systems
+- GTK4 migration takes significant effort but provides a more modern UI framework
+- Mock implementations are crucial for testing in a UI-heavy application
+- Need to balance Python compatibility with modern Rust idioms
+- Consider approach for plugins: native Rust vs Python bridge vs both
+
 
