@@ -142,3 +142,19 @@ See [TODO.md](TODO.md) for planned features and enhancements.
 ## Current Status
 
 EventGhost-Rust is currently in active development. The core architecture is in place, and we're actively implementing features to reach feature parity with the original EventGhost.
+
+## GTK4 Compatibility
+
+We've updated several files to ensure compatibility with GTK4:
+
+1. Updated import paths in `src/eg/classes/tree_ctrl.rs` to use GTK4 components
+2. Fixed ModifierType imports in `src/eg/classes/config_view.rs` to use `gdk4::ModifierType`
+3. Updated Rectangle imports in `src/eg/classes/log_ctrl.rs` to use `gdk4::Rectangle`
+4. Fixed RGBA imports in `src/eg/classes/dialog.rs` to use `gdk4::RGBA`
+5. Implemented MockPlugin and MockEvent directly in core modules for testing
+
+These changes ensure that the application works correctly with GTK4 and avoids deprecation warnings.
+
+### Known Issues
+
+There is an access violation occurring in some tests when run together, but individual tests run fine. This will require further investigation.
