@@ -235,4 +235,52 @@ When adding `#[derive(Clone)]` to a struct, we discovered that all its fields mu
 4. **Favor immutable access**: Use `borrow()` over `borrow_mut()` when possible
 5. **Drop borrows explicitly**: Use `drop()` to release borrows early when no longer needed
 
-These lessons have helped us create a more robust and maintainable GTK application in Rust, with fewer runtime panics and better handling of ownership semantics. 
+These lessons have helped us create a more robust and maintainable GTK application in Rust, with fewer runtime panics and better handling of ownership semantics.
+
+# Lessons Learned: GTK4 Import Resolution and Type Handling
+
+## GTK4 Component Imports
+
+When working with the GTK4 library in Rust, we encountered several import-related challenges:
+
+1. **Component Structure Changes**: Many components have been restructured in GTK4 compared to GTK3:
+   - Some components moved from `gtk::gdk` to `gdk4`
+   - Some components that were nested in GTK3 are top-level in GTK4
+   - Some components require explicit imports that were automatic in GTK3
+
+2. **Dialog Component Imports**: Dialogs require explicit imports:
+   - `AboutDialog` must be imported as `gtk::AboutDialog`
+   - `License` enum must be imported as `gtk::License`
+   - The `Window` type must be imported to support proper type casting
+
+3. **Custom Dialog Components**: Custom dialog components must be carefully imported:
+   - `FileDialogOptions` and `CommonDialogs` from our custom dialog module
+
+## Type Handling in GTK4 Dialogs
+
+We discovered several type handling requirements in GTK4 dialogs:
+
+1. **Option vs Direct Types**: Many methods that accepted direct types in GTK3 now require `Option<T>` in GTK4:
+   - `set_program_name(Some("Name"))` instead of `set_program_name("Name")`
+   - `set_version(Some("1.0"))` instead of `set_version("1.0")`
+
+2. **Unwrapping Options**: Conversely, some methods require unwrapped values:
+   - `set_website_label("Label")` instead of `set_website_label(Some("Label"))`
+
+3. **Type Casting Requirements**: GTK4 is more strict about type specificity:
+   - `ApplicationWindow` must be explicitly cast to `Window` using `upcast_ref()`
+   - Without proper casting, compatibility with dialog methods fails
+
+4. **Method Trait Bounds**: Some methods have stricter trait bound requirements:
+   - `emit_copy_clipboard()` exists for `TreeView` but has trait bounds that weren't satisfied
+   - Alternative approaches are needed for clipboard operations
+
+## Best Practices for GTK4 Components
+
+1. **Explicit Imports**: Always explicitly import all GTK4 components you're using
+2. **Check Method Signatures**: Verify method signatures for Option vs direct type requirements
+3. **Proper Type Casting**: Use `upcast_ref()` for proper widget hierarchy conversions
+4. **Check Trait Bounds**: For methods that fail with trait bound errors, check the API documentation for requirements
+5. **Consult Error Messages**: GTK4 error messages often suggest the correct import or type casting needed
+
+These lessons have helped us successfully migrate components to GTK4 while maintaining compatibility with the existing codebase architecture. 
