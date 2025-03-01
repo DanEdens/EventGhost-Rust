@@ -77,4 +77,16 @@ impl UIComponent for StatusBar {
     fn get_widget(&self) -> &gtk::Widget {
         self.widget.upcast_ref()
     }
+}
+
+impl Clone for StatusBar {
+    fn clone(&self) -> Self {
+        // Create a new StatusBar
+        let mut new_bar = StatusBar::new();
+        
+        // Copy the checkbox state
+        new_bar.set_check_box_state(self.get_check_box_state());
+        
+        new_bar
+    }
 } 

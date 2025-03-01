@@ -80,19 +80,17 @@ fn main() -> glib::ExitCode {
         // Try to load configuration if file exists
         if config_file.exists() {
             debug!("Loading configuration from {:?}", config_file);
-            if let Err(e) = main_frame.config_view.borrow().as_ref().unwrap().load_config(&config_file) {
-                error!("Failed to load configuration: {}", e);
-            } else {
-                info!("Configuration loaded successfully");
-                // Set the config path
-                main_frame.config_view.borrow_mut().as_mut().unwrap().set_config_path(&config_file);
+            if let Err(e) = main_frame.config_view.load_config(&config_file) {
+                eprintln!("Error loading configuration: {}", e);
+                main_frame.config_view.new_config();
             }
+            main_frame.config_view.set_config_path(&config_file);
         } else {
             debug!("Config file does not exist, using default configuration");
             // Create a new configuration
-            main_frame.config_view.borrow_mut().as_mut().unwrap().new_config();
+            main_frame.config_view.new_config();
             // Set the config path
-            main_frame.config_view.borrow_mut().as_mut().unwrap().set_config_path(&config_file);
+            main_frame.config_view.set_config_path(&config_file);
         }
         
         // Show the main window

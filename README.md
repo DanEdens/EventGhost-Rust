@@ -199,6 +199,8 @@ We continue to document our learning in each major feature implementation.
 - Improved TreeView visibility with ScrolledWindow containers
 - Fixed column sizing and expansion in TreeView components
 - Enhanced layout configuration for properly resizable UI components
+- Fixed menu component imports (`MenuItem` from `gio` instead of `gtk`)
+- Removed unnecessary `ModelExt` import that's included in prelude
 
 ### Rust Ownership and GTK Integration
 - Fixed RefCell borrowing issues in UI components to prevent runtime panics

@@ -3,8 +3,9 @@ use gtk::{self, Box, Button, Image, Orientation, Separator};
 use gio::{Icon, File as GFile, Resource};
 use super::UIComponent;
 use std::path::Path;
+use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct ToolbarButton {
     pub widget: Button,
     pub id: String,
@@ -12,8 +13,12 @@ pub struct ToolbarButton {
     pub tooltip: String,
 }
 
+/// A toolbar component for EventGhost.
+#[derive(Clone)]
 pub struct Toolbar {
+    /// The toolbar widget
     pub widget: Box,
+    /// The buttons in the toolbar
     pub buttons: Vec<ToolbarButton>,
 }
 
