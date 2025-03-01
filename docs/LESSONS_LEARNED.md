@@ -176,4 +176,63 @@ GTK4 uses different module organization than previous versions. Key changes incl
 3. **Error Handling**
    - Clap's assertion errors can be cryptic; always test CLI parsing with various arguments
    - Include robust error handling for command-line arguments
-   - Consider graceful fallbacks for invalid arguments 
+   - Consider graceful fallbacks for invalid arguments
+
+# Lessons Learned: Rust Ownership and Borrowing in GTK Applications
+
+## RefCell Borrowing Issues
+
+When working with Rust's `Rc<RefCell<T>>` pattern in a GTK application, we encountered several important lessons about managing mutable borrows:
+
+### Problem: Ownership Conflicts with `borrow_mut()`
+
+In our GTK components (particularly in `ConfigView`, `ActionDialog`, and `PluginConfigDialog`), we found that directly using `borrow_mut()` on `Rc<RefCell<T>>` fields could lead to conflicts when:
+
+1. The borrow was initiated within a closure or callback
+2. The closure is executed later, after other borrows might be active
+3. Multiple UI components might be accessing the same data
+
+### Solution: Clone the `Rc<RefCell<T>>` before borrowing
+
+Instead of:
+```rust
+*self.config.borrow_mut() = Config::new();
+```
+
+We now use:
+```rust
+let config = self.config.clone();
+*config.borrow_mut() = Config::new();
+```
+
+This approach prevents conflicts by:
+- Creating a new reference-counted pointer to the same `RefCell`
+- Allowing borrows through different `Rc` pointers to work without conflicting
+- Preserving the single-writer guarantee that `RefCell` provides
+
+## Clone Implementation for UI Components
+
+### Problem: GTK Callbacks Need Cloneable UI Components
+
+When passing UI components to GTK callbacks (via `clone!` or otherwise), these components need to implement `Clone`. We found many components were missing this trait.
+
+### Solution: Add `#[derive(Clone)]` to UI Structures
+
+We systematically added `Clone` implementations to:
+- All dialog structs (`ConfigDialog`, `PluginDialog`, etc.)
+- Property-related structs (`PropertyGrid`, `PropertyValue`)
+- Configuration components (`PluginPage`, `ActionParameter`)
+
+### Key Insight: All Fields Must Be Cloneable
+
+When adding `#[derive(Clone)]` to a struct, we discovered that all its fields must also implement `Clone`. This propagation requirement led us to add `Clone` to several related structs.
+
+## Best Practices for Rust GTK Applications
+
+1. **Use shadowed variables with `borrow_mut()`**: Always clone `Rc<RefCell<T>>` before borrowing mutably
+2. **Implement `Clone` early**: Add `#[derive(Clone)]` to UI components early in development
+3. **Explicit lifetimes in closures**: Be explicit about what's captured and how long it should live
+4. **Favor immutable access**: Use `borrow()` over `borrow_mut()` when possible
+5. **Drop borrows explicitly**: Use `drop()` to release borrows early when no longer needed
+
+These lessons have helped us create a more robust and maintainable GTK application in Rust, with fewer runtime panics and better handling of ownership semantics. 
