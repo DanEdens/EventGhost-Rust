@@ -283,4 +283,48 @@ We discovered several type handling requirements in GTK4 dialogs:
 4. **Check Trait Bounds**: For methods that fail with trait bound errors, check the API documentation for requirements
 5. **Consult Error Messages**: GTK4 error messages often suggest the correct import or type casting needed
 
-These lessons have helped us successfully migrate components to GTK4 while maintaining compatibility with the existing codebase architecture. 
+These lessons have helped us successfully migrate components to GTK4 while maintaining compatibility with the existing codebase architecture.
+
+# GTK4 Layout and Scrolling Best Practices
+
+When working with TreeView components and complex layouts in GTK4, we discovered several important considerations:
+
+## ScrolledWindow for TreeView Components
+
+1. **Always Wrap TreeViews in ScrolledWindow**: TreeViews need to be wrapped in ScrolledWindow containers to enable proper scrolling behavior. Without this, content can be clipped or invisible.
+
+2. **Expansion Settings**: Both the ScrolledWindow and its parent containers must have proper expansion settings:
+   ```rust
+   scrolled_window.set_hexpand(true);
+   scrolled_window.set_vexpand(true);
+   ```
+
+## Column Configuration for TreeView
+
+1. **Column Sizing**: Use appropriate sizing mode for each column:
+   ```rust
+   column.set_sizing(gtk::TreeViewColumnSizing::Autosize); // For columns that adjust to content
+   column.set_sizing(gtk::TreeViewColumnSizing::Fixed);    // For columns with fixed width
+   ```
+
+2. **Column Expansion**: Allow important columns to expand to fill available space:
+   ```rust
+   column.set_expand(true); // For the main column (like a name column)
+   ```
+
+3. **Minimum Width**: Set a minimum width for expandable columns to ensure they don't collapse completely:
+   ```rust
+   column.set_fixed_width(200); // Minimum width in pixels
+   ```
+
+## Paned Container Configuration
+
+1. **Handle Paned Containers**: When using Paned (splitter) containers, ensure:
+   - Set proper expansion for the Paned itself: `paned.set_hexpand(true); paned.set_vexpand(true);`
+   - Set proper expansion for child containers: `child.set_hexpand(true); child.set_vexpand(true);`
+   - Set a reasonable initial position: `paned.set_position(250);`
+   - Set minimum size for critical components: `component.set_size_request(200, -1);`
+
+2. **Nested Containers**: When nesting containers, ensure each level has proper expansion settings.
+
+These improvements helped us resolve visibility issues where tree views and other components would only display properly in full-screen mode. By applying these GTK4 layout best practices, components now resize properly and maintain visibility at various window sizes. 
