@@ -196,6 +196,9 @@ We continue to document our learning in each major feature implementation.
 - Added explicit imports for dialog components like `AboutDialog` and `License`
 - Fixed method parameter types for GTK4 dialog components
 - Implemented proper type casting for window references
+- Improved TreeView visibility with ScrolledWindow containers
+- Fixed column sizing and expansion in TreeView components
+- Enhanced layout configuration for properly resizable UI components
 
 ### Rust Ownership and GTK Integration
 - Fixed RefCell borrowing issues in UI components to prevent runtime panics
