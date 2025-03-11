@@ -118,10 +118,10 @@
   - [x] Delay/Wait
   - [ ] Jump to macro
 - [ ] System Actions
-  - [ ] Execute program
+  - [x] Execute program
   - [ ] System commands
   - [ ] Registry operations
-  - [ ] File operations
+  - [x] File operations
 - [ ] Window Actions
   - [ ] Window manipulation
   - [ ] Send keys
@@ -171,7 +171,10 @@
 3. ~~Fix GTK4 compatibility issues~~
 4. ~~Enhance .egtree file format support~~
 5. ~~Fix resource loading for icons~~
-6. Create system action implementations 
+6. Create system action implementations (in progress)
+   - Run Command action implemented
+   - File Operations action implemented
+   - Additional system actions needed (Registry operations, Window management)
 7. Implement action thread management
 8. Add action persistence
 9. Develop plugin action integration

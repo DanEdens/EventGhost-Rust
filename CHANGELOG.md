@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Log search functionality
   - Log entry formatting
   - Timestamp and source tracking
+- System Actions
+  - Run Command action for executing system commands
+  - File Operations action for file management (copy, move, delete, create)
+  - Support for background command execution
 
 ### Changed
 - Migrated to GTK4 from GTK3
