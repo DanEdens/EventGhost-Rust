@@ -1,6 +1,9 @@
 use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window};
+use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey};
 use gio::{Menu, MenuItem};
+use gtk::gdk::Key;
+use gtk::gdk::ModifierType;
+use glib::Propagation;
 use super::{Toolbar, StatusBar};
 use crate::eg::classes::log_ctrl::LogCtrl;
 use super::UIComponent;
@@ -104,6 +107,9 @@ impl MainFrame {
         
         // Connect toolbar buttons
         main_frame.init_toolbar_buttons(app);
+        
+        // Set up keyboard shortcuts
+        main_frame.setup_keyboard_shortcuts(app);
         
         Ok(main_frame)
     }
@@ -731,6 +737,109 @@ impl MainFrame {
         // Access ConfigView directly
         let config_view = &self.config_view;
         config_view.add_action();
+    }
+
+    /// Set up keyboard shortcut bindings
+    fn setup_keyboard_shortcuts(&self, app: &Application) {
+        // Create a shortcut controller for the window
+        let controller = EventControllerKey::new();
+        let app_clone = app.clone();
+        
+        // Add key pressed handlers
+        controller.connect_key_pressed(move |_controller, keyval, _keycode, state| {
+            // Check for control modifier
+            let ctrl_pressed = state.contains(ModifierType::CONTROL_MASK);
+            let shift_pressed = state.contains(ModifierType::SHIFT_MASK);
+            
+            if ctrl_pressed {
+                match keyval {
+                    // Ctrl+N = New
+                    Key::n | Key::N if !shift_pressed => {
+                        app_clone.activate_action("new", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+O = Open
+                    Key::o | Key::O if !shift_pressed => {
+                        app_clone.activate_action("open", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+S = Save
+                    Key::s | Key::S if !shift_pressed => {
+                        app_clone.activate_action("save", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+S = Save As
+                    Key::s | Key::S if shift_pressed => {
+                        app_clone.activate_action("saveas", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+X = Cut
+                    Key::x | Key::X if !shift_pressed => {
+                        app_clone.activate_action("cut", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+C = Copy
+                    Key::c | Key::C if !shift_pressed => {
+                        app_clone.activate_action("copy", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+V = Paste
+                    Key::v | Key::V if !shift_pressed => {
+                        app_clone.activate_action("paste", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Z = Undo
+                    Key::z | Key::Z if !shift_pressed => {
+                        app_clone.activate_action("undo", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Y = Redo
+                    Key::y | Key::Y if !shift_pressed => {
+                        app_clone.activate_action("redo", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+P = Add Plugin
+                    Key::p | Key::P if shift_pressed => {
+                        app_clone.activate_action("add_plugin", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+N = Add Folder
+                    Key::n | Key::N if shift_pressed => {
+                        app_clone.activate_action("add_folder", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+M = Add Macro
+                    Key::m | Key::M if shift_pressed => {
+                        app_clone.activate_action("add_macro", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+E = Add Event
+                    Key::e | Key::E if shift_pressed => {
+                        app_clone.activate_action("add_event", None);
+                        Propagation::Stop
+                    },
+                    // Ctrl+Shift+A = Add Action
+                    Key::a | Key::A if shift_pressed => {
+                        app_clone.activate_action("add_action", None);
+                        Propagation::Stop
+                    },
+                    _ => Propagation::Proceed,
+                }
+            } else {
+                // Check for function keys
+                match keyval {
+                    // F5 = Execute
+                    Key::F5 => {
+                        app_clone.activate_action("execute", None);
+                        Propagation::Stop
+                    },
+                    _ => Propagation::Proceed,
+                }
+            }
+        });
+        
+        // Add the controller to the window
+        self.window.add_controller(controller);
     }
 }
 
