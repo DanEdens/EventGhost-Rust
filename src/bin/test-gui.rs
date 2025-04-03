@@ -1,7 +1,12 @@
+use gtk4 as gtk;
 use gtk::prelude::*;
-use gtk::{self, Application};
+use gtk::Application;
+use std::rc::Rc;
+use std::cell::RefCell;
+use gtk::glib;
 use gio::Resource;
-use eventghost::eg::classes::MainFrame;
+
+use eventghost_rust::eg::classes::main_frame::MainFrame;
 
 fn main() {
     // Initialize GTK
@@ -14,16 +19,23 @@ fn main() {
     gio::resources_register(&resource);
 
     // Create application
-    let app = Application::builder()
-        .application_id("org.eventghost.test")
-        .build();
+    let application = Application::new(
+        Some("org.eventghost.test"),
+        gio::ApplicationFlags::NON_UNIQUE,
+    );
 
-    app.connect_activate(move |app| {
-        let mut main_frame = MainFrame::new(app).expect("Failed to create main window");
-        main_frame.update_button_tooltips();
-        main_frame.show();
+    // Connect to the activate signal
+    application.connect_activate(|app| {
+        // Create main frame
+        let main_frame = Rc::new(MainFrame::new(app.clone()));
+        
+        // Initialize UI
+        main_frame.initialize();
+        
+        // Show window
+        main_frame.window.borrow().present();
     });
 
-    // Run application
-    app.run();
+    // Run the application
+    application.run();
 } 

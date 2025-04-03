@@ -4,10 +4,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::fs;
 use std::io;
+use std::io::Write;
 use uuid::Uuid;
 use async_trait::async_trait;
 use tokio::task;
 use serde::{Serialize, Deserialize};
+use serde_json;
 
 use crate::core::action::{Action, ActionConfig, ActionResult};
 use crate::core::Error;
@@ -17,29 +19,32 @@ use crate::core::plugin::Plugin;
 /// Supported file operations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum FileOperation {
-    /// Copy a file from source to destination
-    Copy,
-    /// Move a file from source to destination
-    Move,
-    /// Delete a file
-    Delete,
-    /// Create a new file with the given content
-    Create,
-    /// Create a new directory
-    CreateDirectory,
-    /// Check if a file exists
-    Exists,
+    /// Copy a file or directory from source to destination
+    Copy { source: String, destination: String },
+    /// Move a file or directory from source to destination
+    Move { source: String, destination: String },
+    /// Delete a file or directory
+    Delete { path: String },
+    /// Create a file with the given content
+    Create { path: String, content: String },
+    /// Read the contents of a file
+    Read { path: String },
+    /// Create a directory
+    CreateDirectory { path: String },
+    /// Check if a file or directory exists
+    Exists { path: String },
 }
 
 impl FileOperation {
     fn from_string(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
-            "copy" => Some(FileOperation::Copy),
-            "move" => Some(FileOperation::Move),
-            "delete" => Some(FileOperation::Delete),
-            "create" => Some(FileOperation::Create),
-            "createdir" | "creatediretcory" | "mkdir" => Some(FileOperation::CreateDirectory),
-            "exists" | "check" => Some(FileOperation::Exists),
+            "copy" => Some(FileOperation::Copy { source: String::new(), destination: String::new() }),
+            "move" => Some(FileOperation::Move { source: String::new(), destination: String::new() }),
+            "delete" => Some(FileOperation::Delete { path: String::new() }),
+            "create" => Some(FileOperation::Create { path: String::new(), content: String::new() }),
+            "createdir" | "creatediretcory" | "mkdir" => Some(FileOperation::CreateDirectory { path: String::new() }),
+            "exists" | "check" => Some(FileOperation::Exists { path: String::new() }),
+            "read" | "readfile" | "getcontents" => Some(FileOperation::Read { path: String::new() }),
             _ => None,
         }
     }
@@ -63,11 +68,61 @@ pub struct FileOperationsConfig {
 impl Default for FileOperationsConfig {
     fn default() -> Self {
         Self {
-            operation: FileOperation::Copy,
+            operation: FileOperation::Copy { source: String::new(), destination: String::new() },
             source: PathBuf::new(),
             destination: None,
             content: None,
             overwrite: false,
+        }
+    }
+}
+
+/// Configuration file types supported by EventGhost
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ConfigFileType {
+    /// JSON configuration file (.json)
+    Json,
+    /// XML configuration file (.xml)
+    Xml,
+    /// EventGhost tree file (.egtree)
+    EgTree,
+    /// Unknown file type
+    Unknown,
+}
+
+impl ConfigFileType {
+    /// Get the file type from a path's extension
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+        let path = path.as_ref();
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            match ext.to_lowercase().as_str() {
+                "json" => ConfigFileType::Json,
+                "xml" => ConfigFileType::Xml,
+                "egtree" => ConfigFileType::EgTree,
+                _ => ConfigFileType::Unknown,
+            }
+        } else {
+            ConfigFileType::Unknown
+        }
+    }
+    
+    /// Get the file extension for this config type
+    pub fn extension(&self) -> &'static str {
+        match self {
+            ConfigFileType::Json => "json",
+            ConfigFileType::Xml => "xml",
+            ConfigFileType::EgTree => "egtree",
+            ConfigFileType::Unknown => "",
+        }
+    }
+    
+    /// Get the MIME type for this config type
+    pub fn mime_type(&self) -> &'static str {
+        match self {
+            ConfigFileType::Json => "application/json",
+            ConfigFileType::Xml => "application/xml",
+            ConfigFileType::EgTree => "application/xml",
+            ConfigFileType::Unknown => "application/octet-stream",
         }
     }
 }
@@ -127,6 +182,127 @@ impl FileOperationsAction {
     pub fn with_overwrite(mut self, overwrite: bool) -> Self {
         self.config.overwrite = overwrite;
         self
+    }
+    
+    /// Load a configuration file and parse it based on its extension
+    pub async fn load_config<P: AsRef<Path>>(&self, path: P) -> Result<serde_json::Value, Error> {
+        let path = path.as_ref();
+        
+        // Check if the file exists
+        if !path.exists() {
+            return Err(Error::InvalidArgument(format!("File does not exist: {:?}", path)));
+        }
+        
+        // Read the file content
+        let content = fs::read_to_string(path)
+            .map_err(|e| Error::InvalidOperation(format!("Failed to read file: {}", e)))?;
+        
+        // Parse the content based on the file type
+        match ConfigFileType::from_path(path) {
+            ConfigFileType::Json => {
+                serde_json::from_str(&content)
+                    .map_err(|e| Error::InvalidOperation(format!("Failed to parse JSON: {}", e)))
+            },
+            ConfigFileType::Xml | ConfigFileType::EgTree => {
+                // For XML files, we need to parse them to a JSON value for consistency
+                // This would require xml-to-json conversion which is more complex
+                // For now, we'll return an error
+                Err(Error::InvalidOperation("XML parsing not implemented yet".to_string()))
+            },
+            ConfigFileType::Unknown => {
+                Err(Error::InvalidOperation(format!("Unsupported file type: {:?}", path)))
+            },
+        }
+    }
+    
+    /// Save a configuration file in the specified format
+    pub async fn save_config<P: AsRef<Path>>(&self, path: P, data: &serde_json::Value, overwrite: bool) -> Result<(), Error> {
+        let path = path.as_ref();
+        
+        // Check if the file exists and we're not allowed to overwrite
+        if path.exists() && !overwrite {
+            return Err(Error::InvalidOperation(format!("File already exists: {:?}", path)));
+        }
+        
+        // Ensure parent directories exist
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent)
+                    .map_err(|e| Error::InvalidOperation(format!("Failed to create parent directories: {}", e)))?;
+            }
+        }
+        
+        // Serialize and write the data based on the file type
+        match ConfigFileType::from_path(path) {
+            ConfigFileType::Json => {
+                let json_string = serde_json::to_string_pretty(data)
+                    .map_err(|e| Error::InvalidOperation(format!("Failed to serialize to JSON: {}", e)))?;
+                
+                fs::write(path, json_string)
+                    .map_err(|e| Error::InvalidOperation(format!("Failed to write file: {}", e)))?;
+            },
+            ConfigFileType::Xml | ConfigFileType::EgTree => {
+                // For XML files, we need to convert from JSON to XML
+                // This would require json-to-xml conversion which is more complex
+                // For now, we'll return an error
+                return Err(Error::InvalidOperation("XML saving not implemented yet".to_string()));
+            },
+            ConfigFileType::Unknown => {
+                return Err(Error::InvalidOperation(format!("Unsupported file type: {:?}", path)));
+            },
+        }
+        
+        Ok(())
+    }
+    
+    /// Create a backup of a configuration file
+    pub async fn backup_config<P: AsRef<Path>>(&self, path: P) -> Result<PathBuf, Error> {
+        let path = path.as_ref();
+        
+        // Check if the file exists
+        if !path.exists() {
+            return Err(Error::InvalidArgument(format!("File does not exist: {:?}", path)));
+        }
+        
+        // Generate backup file path with timestamp
+        let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+        let file_name = path.file_name()
+            .ok_or_else(|| Error::InvalidArgument(format!("Invalid file path: {:?}", path)))?
+            .to_str()
+            .ok_or_else(|| Error::InvalidArgument(format!("Invalid file name: {:?}", path)))?;
+        
+        let mut backup_path = path.to_path_buf();
+        backup_path.pop(); // Remove the file name
+        backup_path.push(format!("{}_{}.bak", file_name, timestamp));
+        
+        // Copy the file to the backup path
+        fs::copy(path, &backup_path)
+            .map_err(|e| Error::InvalidOperation(format!("Failed to create backup: {}", e)))?;
+        
+        Ok(backup_path)
+    }
+    
+    /// Get the last modified time of a file
+    pub fn get_file_modified_time<P: AsRef<Path>>(&self, path: P) -> Result<chrono::DateTime<chrono::Local>, Error> {
+        let path = path.as_ref();
+        
+        // Check if the file exists
+        if !path.exists() {
+            return Err(Error::InvalidArgument(format!("File does not exist: {:?}", path)));
+        }
+        
+        // Get the file metadata
+        let metadata = fs::metadata(path)
+            .map_err(|e| Error::InvalidOperation(format!("Failed to get file metadata: {}", e)))?;
+        
+        // Get the modified time
+        let modified = metadata.modified()
+            .map_err(|e| Error::InvalidOperation(format!("Failed to get modified time: {}", e)))?;
+        
+        // Convert to DateTime
+        let datetime = chrono::DateTime::<chrono::Local>::from(modified);
+        
+        Ok(datetime)
     }
 }
 
@@ -216,13 +392,13 @@ impl Action for FileOperationsAction {
         // Execute file operation in a separate task to avoid blocking
         let result = task::spawn_blocking(move || {
             match operation {
-                FileOperation::Copy => {
-                    if let Some(dest) = destination {
+                FileOperation::Copy { source, destination } => {
+                    if let Some(dest) = destination.as_ref() {
                         if dest.exists() && !overwrite {
                             return ActionResult::failure("Destination file already exists");
                         }
                         
-                        match fs::copy(&source, &dest) {
+                        match fs::copy(&source, dest) {
                             Ok(_) => ActionResult::success(),
                             Err(e) => ActionResult::failure(format!("Failed to copy file: {}", e)),
                         }
@@ -230,13 +406,13 @@ impl Action for FileOperationsAction {
                         ActionResult::failure("Destination path is required for copy operation")
                     }
                 },
-                FileOperation::Move => {
-                    if let Some(dest) = destination {
+                FileOperation::Move { source, destination } => {
+                    if let Some(dest) = destination.as_ref() {
                         if dest.exists() && !overwrite {
                             return ActionResult::failure("Destination file already exists");
                         }
                         
-                        match fs::rename(&source, &dest) {
+                        match fs::rename(&source, dest) {
                             Ok(_) => ActionResult::success(),
                             Err(e) => ActionResult::failure(format!("Failed to move file: {}", e)),
                         }
@@ -244,20 +420,22 @@ impl Action for FileOperationsAction {
                         ActionResult::failure("Destination path is required for move operation")
                     }
                 },
-                FileOperation::Delete => {
-                    // Check if the path is a file or directory
-                    if source.is_file() {
-                        match fs::remove_file(&source) {
+                FileOperation::Delete { path } => {
+                    let path = Path::new(&path);
+                    if !path.exists() {
+                        return ActionResult::failure(format!("File or directory does not exist: {:?}", path));
+                    }
+                    
+                    if path.is_file() {
+                        match fs::remove_file(path) {
                             Ok(_) => ActionResult::success(),
                             Err(e) => ActionResult::failure(format!("Failed to delete file: {}", e)),
                         }
-                    } else if source.is_dir() {
-                        // Use remove_dir or remove_dir_all based on whether overwrite is set
-                        // If overwrite is true, remove directory and all contents (potentially dangerous!)
+                    } else if path.is_dir() {
                         let result = if overwrite {
-                            fs::remove_dir_all(&source)
+                            fs::remove_dir_all(path)
                         } else {
-                            fs::remove_dir(&source)
+                            fs::remove_dir(path)
                         };
                         
                         match result {
@@ -265,17 +443,16 @@ impl Action for FileOperationsAction {
                             Err(e) => ActionResult::failure(format!("Failed to delete directory: {}", e)),
                         }
                     } else {
-                        ActionResult::failure(format!("Path does not exist: {:?}", source))
+                        ActionResult::failure(format!("Path is not a file or directory: {:?}", path))
                     }
                 },
-                FileOperation::Create => {
-                    // If the file exists and overwrite is false, return error
-                    if source.exists() && !overwrite {
+                FileOperation::Create { path, content } => {
+                    let path = Path::new(&path);
+                    if path.exists() && !overwrite {
                         return ActionResult::failure("File already exists");
                     }
                     
-                    // Ensure parent directories exist
-                    if let Some(parent) = source.parent() {
+                    if let Some(parent) = path.parent() {
                         if !parent.exists() {
                             if let Err(e) = fs::create_dir_all(parent) {
                                 return ActionResult::failure(format!("Failed to create parent directories: {}", e));
@@ -283,28 +460,41 @@ impl Action for FileOperationsAction {
                         }
                     }
                     
-                    // Write content to file
-                    match fs::write(&source, content.unwrap_or_default()) {
+                    match fs::write(path, content) {
                         Ok(_) => ActionResult::success(),
                         Err(e) => ActionResult::failure(format!("Failed to create file: {}", e)),
                     }
                 },
-                FileOperation::CreateDirectory => {
-                    // If the directory exists and overwrite is false, return error
-                    if source.exists() && !overwrite {
+                FileOperation::CreateDirectory { path } => {
+                    let path = Path::new(&path);
+                    if path.exists() && !overwrite {
                         return ActionResult::failure("Directory already exists");
                     }
                     
-                    // Create directory (and parents if needed)
-                    match fs::create_dir_all(&source) {
+                    match fs::create_dir_all(path) {
                         Ok(_) => ActionResult::success(),
                         Err(e) => ActionResult::failure(format!("Failed to create directory: {}", e)),
                     }
                 },
-                FileOperation::Exists => {
-                    // Check if the file or directory exists
-                    let exists = source.exists();
+                FileOperation::Exists { path } => {
+                    let path = Path::new(&path);
+                    let exists = path.exists();
                     ActionResult::success().with_data(exists)
+                },
+                FileOperation::Read { path } => {
+                    let path = Path::new(&path);
+                    if !path.exists() {
+                        return ActionResult::failure(format!("File does not exist: {:?}", path));
+                    }
+                    
+                    if !path.is_file() {
+                        return ActionResult::failure(format!("Path is not a file: {:?}", path));
+                    }
+                    
+                    let content = fs::read_to_string(path)
+                        .map_err(|e| Error::InvalidOperation(format!("Failed to read file: {}", e)))?;
+                        
+                    ActionResult::success().with_data(content)
                 },
             }
         }).await.map_err(|e| Error::Other(format!("Task error: {}", e)))?;
@@ -319,7 +509,7 @@ impl Action for FileOperationsAction {
         }
         
         // Validate destination path for Copy and Move operations
-        if (self.config.operation == FileOperation::Copy || self.config.operation == FileOperation::Move) 
+        if (matches!(self.config.operation, FileOperation::Copy { .. }) || matches!(self.config.operation, FileOperation::Move { .. })) 
             && self.config.destination.is_none() {
             return Err(Error::InvalidArgument("Destination path is required for copy and move operations".to_string()));
         }
@@ -470,9 +660,7 @@ mod tests {
         // Create plugin and action
         let plugin = Arc::new(TestPlugin);
         let mut action = FileOperationsAction::new(plugin)
-            .with_operation(FileOperation::Create)
-            .with_source(&file_path)
-            .with_content("Hello, world!");
+            .with_operation(FileOperation::Create { path: file_path.to_string_lossy().to_string(), content: "Hello, world!".to_string() });
         
         // Create event
         let event = TestEvent {
@@ -504,9 +692,7 @@ mod tests {
         // Create plugin and action
         let plugin = Arc::new(TestPlugin);
         let mut action = FileOperationsAction::new(plugin)
-            .with_operation(FileOperation::Copy)
-            .with_source(&source_path)
-            .with_destination(&dest_path);
+            .with_operation(FileOperation::Copy { source: source_path.to_string_lossy().to_string(), destination: dest_path.to_string_lossy().to_string() });
         
         // Create event
         let event = TestEvent {
@@ -538,8 +724,7 @@ mod tests {
         // Create plugin and action
         let plugin = Arc::new(TestPlugin);
         let mut action = FileOperationsAction::new(plugin)
-            .with_operation(FileOperation::Delete)
-            .with_source(&file_path);
+            .with_operation(FileOperation::Delete { path: file_path.to_string_lossy().to_string() });
         
         // Create event
         let event = TestEvent {
@@ -567,13 +752,11 @@ mod tests {
         // Create plugin and action for existing file
         let plugin = Arc::new(TestPlugin);
         let mut action1 = FileOperationsAction::new(plugin.clone())
-            .with_operation(FileOperation::Exists)
-            .with_source(&existing_file);
+            .with_operation(FileOperation::Exists { path: existing_file.to_string_lossy().to_string() });
         
         // Create plugin and action for non-existent file
         let mut action2 = FileOperationsAction::new(plugin)
-            .with_operation(FileOperation::Exists)
-            .with_source(&nonexistent_file);
+            .with_operation(FileOperation::Exists { path: nonexistent_file.to_string_lossy().to_string() });
         
         // Create event
         let event = TestEvent {
@@ -606,6 +789,44 @@ mod tests {
                 assert!(!*exists);
             } else {
                 panic!("Expected bool data");
+            }
+        } else {
+            panic!("Expected data");
+        }
+    }
+    
+    #[tokio::test]
+    async fn test_read_file() {
+        // Create a temporary directory for testing
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        
+        // Create file
+        fs::write(&file_path, "Hello, world!").unwrap();
+        
+        // Create plugin and action
+        let plugin = Arc::new(TestPlugin);
+        let mut action = FileOperationsAction::new(plugin)
+            .with_operation(FileOperation::Read { path: file_path.to_string_lossy().to_string() });
+        
+        // Create event
+        let event = TestEvent {
+            event_type: EventType::System,
+        };
+        
+        // Execute action
+        let result = action.execute(&event).await.unwrap();
+        
+        // Check result
+        assert!(result.success);
+        assert!(file_path.exists());
+        
+        // Check file content
+        if let Some(data_box) = result.data {
+            if let Some(content) = data_box.downcast_ref::<String>() {
+                assert_eq!(*content, "Hello, world!");
+            } else {
+                panic!("Expected string data");
             }
         } else {
             panic!("Expected data");

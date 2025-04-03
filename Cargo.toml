@@ -41,7 +41,7 @@ gtk = { version = "0.7", package = "gtk4" }
 gdk4 = "0.7"
 gio = "0.18"
 glib = "0.18"
-windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader"] }
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_System_Registry"] }
 clap = { version = "4.4", features = ["derive"] }
 quick-xml = { version = "0.30", features = ["serialize"] }
 # Added for globals implementation
