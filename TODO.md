@@ -120,7 +120,7 @@
 - [ ] System Actions
   - [x] Execute program
   - [ ] System commands
-  - [ ] Registry operations
+  - [x] Registry operations
   - [x] File operations
 - [ ] Window Actions
   - [ ] Window manipulation
@@ -240,7 +240,7 @@
 - [ ] Language translation system
 - [ ] Remote control functionality
 - [ ] Auto-start and tray icon functionality
-- [ ] Registry handling
+- [x] Registry handling
 
 ## Lessons Learned
 - Rust's ownership model requires careful design of event and plugin systems
