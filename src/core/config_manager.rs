@@ -4,9 +4,13 @@ use std::sync::{Arc, Mutex};
 use serde_json::{Value as JsonValue, json};
 use chrono::{DateTime, Local};
 use log::{debug, info, warn, error};
+use std::any::Any;
+use async_trait::async_trait;
 
 use crate::core::actions::system::file_operations::{FileOperationsAction, ConfigFileType, Error};
-use crate::core::plugin::Plugin;
+use crate::core::plugin::{Plugin, PluginInfo, PluginState, PluginError, PluginCapability};
+use crate::core::event::Event;
+use crate::core::config::Config;
 
 /// Configuration change event type
 #[derive(Debug, Clone, PartialEq)]
@@ -21,15 +25,78 @@ pub enum ConfigChangeEvent {
     Reset,
 }
 
+#[derive(Debug)]
 struct DummyConfigPlugin;
 
+#[async_trait]
 impl Plugin for DummyConfigPlugin {
-    fn name(&self) -> &str {
+    fn get_name(&self) -> &str {
         "ConfigPlugin"
     }
 
-    fn description(&self) -> &str {
+    fn get_description(&self) -> &str {
         "Plugin for configuration file operations"
+    }
+
+    fn get_version(&self) -> &str {
+        "1.0.0"
+    }
+
+    fn get_author(&self) -> &str {
+        "EventGhost Team"
+    }
+
+    fn get_info(&self) -> PluginInfo {
+        PluginInfo {
+            id: uuid::Uuid::new_v4(),
+            name: self.get_name().to_string(),
+            description: self.get_description().to_string(),
+            version: self.get_version().to_string(),
+            author: self.get_author().to_string(),
+            homepage: None,
+            platforms: vec!["all".to_string()],
+            capabilities: vec![PluginCapability::ActionProvider],
+        }
+    }
+
+    fn get_capabilities(&self) -> Vec<PluginCapability> {
+        vec![PluginCapability::ActionProvider]
+    }
+
+    fn get_state(&self) -> PluginState {
+        PluginState::Running
+    }
+
+    async fn initialize(&mut self) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    async fn start(&mut self) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    async fn stop(&mut self) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    async fn handle_event(&mut self, _event: &dyn Event) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    fn get_config(&self) -> Option<&Config> {
+        None
+    }
+
+    async fn update_config(&mut self, _config: Config) -> Result<(), PluginError> {
+        Ok(())
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn Plugin> {
+        Box::new(Self)
     }
 }
 
