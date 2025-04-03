@@ -11,6 +11,8 @@ use tokio::task;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
+// Add path utilities
+use crate::utils::path;
 use crate::core::action::{Action, ActionConfig, ActionResult};
 use crate::core::Error;
 use crate::core::event::{Event, EventType};
@@ -216,29 +218,29 @@ impl FileOperationsAction {
     }
     
     /// Save a configuration file in the specified format
-    pub async fn save_config<P: AsRef<Path>>(&self, path: P, data: &serde_json::Value, overwrite: bool) -> Result<(), Error> {
-        let path = path.as_ref();
+    pub async fn save_config<P: AsRef<Path>>(&self, data: &serde_json::Value, destination: P, overwrite: bool) -> Result<(), Error> {
+        let destination_path = path::to_path_buf(destination);
         
         // Check if the file exists and we're not allowed to overwrite
-        if path.exists() && !overwrite {
-            return Err(Error::InvalidOperation(format!("File already exists: {:?}", path)));
+        if path::exists(&destination_path) && !overwrite {
+            return Err(Error::FileExists(path::to_string_lossy(&destination_path)));
         }
         
         // Ensure parent directories exist
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                fs::create_dir_all(parent)
+        if let Some(parent) = path::parent(&destination_path) {
+            if !path::exists(&parent) {
+                fs::create_dir_all(&parent)
                     .map_err(|e| Error::InvalidOperation(format!("Failed to create parent directories: {}", e)))?;
             }
         }
         
         // Serialize and write the data based on the file type
-        match ConfigFileType::from_path(path) {
+        match ConfigFileType::from_path(&destination_path) {
             ConfigFileType::Json => {
                 let json_string = serde_json::to_string_pretty(data)
                     .map_err(|e| Error::InvalidOperation(format!("Failed to serialize to JSON: {}", e)))?;
                 
-                fs::write(path, json_string)
+                fs::write(&destination_path, json_string)
                     .map_err(|e| Error::InvalidOperation(format!("Failed to write file: {}", e)))?;
             },
             ConfigFileType::Xml | ConfigFileType::EgTree => {
@@ -248,7 +250,7 @@ impl FileOperationsAction {
                 return Err(Error::InvalidOperation("XML saving not implemented yet".to_string()));
             },
             ConfigFileType::Unknown => {
-                return Err(Error::InvalidOperation(format!("Unsupported file type: {:?}", path)));
+                return Err(Error::InvalidOperation(format!("Unsupported file type: {}", path::to_string_lossy(&destination_path))));
             },
         }
         
@@ -257,26 +259,27 @@ impl FileOperationsAction {
     
     /// Create a backup of a configuration file
     pub async fn backup_config<P: AsRef<Path>>(&self, path: P) -> Result<PathBuf, Error> {
-        let path = path.as_ref();
+        let file_path = path::to_path_buf(path);
         
         // Check if the file exists
-        if !path.exists() {
-            return Err(Error::InvalidArgument(format!("File does not exist: {:?}", path)));
+        if !path::exists(&file_path) {
+            return Err(Error::InvalidArgument(format!("File does not exist: {}", path::to_string_lossy(&file_path))));
         }
         
         // Generate backup file path with timestamp
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-        let file_name = path.file_name()
-            .ok_or_else(|| Error::InvalidArgument(format!("Invalid file path: {:?}", path)))?
-            .to_str()
-            .ok_or_else(|| Error::InvalidArgument(format!("Invalid file name: {:?}", path)))?;
+        let file_name = path::file_name(&file_path)
+            .ok_or_else(|| Error::InvalidArgument(format!("Invalid file name: {}", path::to_string_lossy(&file_path))))?;
         
-        let mut backup_path = path.to_path_buf();
-        backup_path.pop(); // Remove the file name
-        backup_path.push(format!("{}_{}.bak", file_name, timestamp));
+        let mut backup_path = file_path.clone();
+        if let Some(parent_dir) = path::parent(&file_path) {
+            backup_path = path::join(parent_dir, format!("{}_{}.bak", file_name, timestamp));
+        } else {
+            backup_path = path::with_extension(&file_path, format!("{}_{}.bak", file_name, timestamp));
+        }
         
         // Copy the file to the backup path
-        fs::copy(path, &backup_path)
+        fs::copy(&file_path, &backup_path)
             .map_err(|e| Error::InvalidOperation(format!("Failed to create backup: {}", e)))?;
         
         Ok(backup_path)

@@ -1,6 +1,5 @@
-use gtk4 as gtk;
-use gtk::prelude::*;
-use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button, WindowPosition};
+use crate::prelude::*;
+use gtk::{Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button};
 use gtk::gio::{Menu, MenuItem};
 use gtk::gdk::{Display, Key, ModifierType};
 use gtk::glib::{self, Propagation, clone};
@@ -9,11 +8,13 @@ use gtk::glib::{self, Propagation, clone};
 use gtk::prelude::{
     BoxExt, ButtonExt, GtkWindowExt, ApplicationWindowExt, OrientableExt,
     TreeModelExt, TreeViewExt, WidgetExt, NotebookExt, PanedExt,
-    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt, ApplicationExt
+    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt, ApplicationExt,
+    TreeModelFilterExt, TreeSelectionExt, TreeSortableExt, ScrollableExt,
+    FileChooserExt, FileExt, GObjectExt
 };
 
 use super::{Toolbar, StatusBar};
-use crate::eg::classes::log_ctrl::LogCtrl;
+use super::log_ctrl::LogCtrl;
 use super::UIComponent;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -853,7 +854,7 @@ impl MainFrame {
     /// Set up file menu actions
     fn setup_file_menu(&self) {
         let window = self.window.borrow().clone();
-        let config_manager = Rc::new(RefCell::new(ConfigManager::new()));
+        let config_manager: Rc<RefCell<ConfigManager>> = Rc::new(RefCell::new(ConfigManager::new()));
         
         // Create config file dialog
         let config_dialog = ConfigFileDialog::new(window.clone(), config_manager.clone());
@@ -861,7 +862,7 @@ impl MainFrame {
         // Set up New action
         let new_action = gtk::gio::SimpleAction::new("new", None);
         new_action.connect_activate(clone!(@weak window, @strong config_manager => move |_, _| {
-            let config_manager_ref = config_manager.clone();
+            let config_manager_ref: &Rc<RefCell<ConfigManager>> = &config_manager;
             glib::MainContext::default().spawn_local(async move {
                 // Check for unsaved changes
                 if config_manager_ref.borrow().is_modified() {
@@ -890,6 +891,7 @@ impl MainFrame {
                                 }
                             } else {
                                 // Show save dialog
+                                let dialog = ConfigFileDialog::new(window.clone(), config_manager_ref.clone());
                                 let result = dialog.show_save_dialog().await;
                                 match result {
                                     ConfigFileDialogResult::Saved { .. } => {},
