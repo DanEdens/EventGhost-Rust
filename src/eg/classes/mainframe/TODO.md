@@ -13,8 +13,8 @@
 
 ## Immediate Tasks
 - [ ] Add tree view for configuration items
+- [x] Add keyboard shortcut bindings
 - [ ] Implement full action handlers for toolbar buttons
-- [ ] Add keyboard shortcut bindings
 - [ ] Implement plugin panel (right side)
 - [ ] Add configuration panel
 
@@ -59,7 +59,7 @@
 1. Complete event logging view implementation
 2. Add tree view for configuration
 3. Implement plugin panel
-4. Add keyboard shortcut support
+4. [x] Add keyboard shortcut support
 5. Implement configuration dialogs
 6. Add event monitoring system
 

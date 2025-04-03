@@ -29,6 +29,10 @@
   - [x] Support for .egtree XML format
   - [x] Fix path handling for configuration files
   - [x] Enhance .egtree file format support with base64 encoding/decoding
+- [x] Keyboard shortcuts
+  - [x] Support for common operations (new, open, save, etc.)
+  - [x] Support for editing operations (cut, copy, paste, etc.)
+  - [x] Support for configuration operations (add plugin, folder, macro, etc.)
 
 ## Core
 - [x] Plugin System
