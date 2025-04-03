@@ -2,9 +2,19 @@ use gtk::prelude::*;
 use gtk4 as gtk;
 use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button, WindowPosition};
 use gio::{Menu, MenuItem};
-use gtk::gdk::Key;
-use gtk::gdk::ModifierType;
+use gdk::Display;
+use gdk::Key;
+use gdk::ModifierType;
 use glib::Propagation;
+use glib::clone;
+
+// Add all necessary GTK traits
+use gtk::prelude::{
+    BoxExt, ButtonExt, GtkWindowExt, ApplicationWindowExt, OrientableExt,
+    TreeModelExt, TreeViewExt, WidgetExt, NotebookExt, PanedExt,
+    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt
+};
+
 use super::{Toolbar, StatusBar};
 use crate::eg::classes::log_ctrl::LogCtrl;
 use super::UIComponent;
@@ -19,14 +29,6 @@ use log::{error, info, debug};
 use crate::eg::classes::dialog::{FileDialogOptions, CommonDialogs};
 use crate::core::config_manager::ConfigManager;
 use crate::eg::dialogs::config_file_dialog::{ConfigFileDialog, ConfigFileDialogResult};
-use glib::clone;
-use gdk::Display;
-
-// Add these missing imports for GTK traits
-use gtk::prelude::{ButtonExt, TreeModelExt, TreeViewExt};
-use std::ops::Deref;
-
-// use glib::Error;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 800;
 const DEFAULT_WINDOW_HEIGHT: i32 = 600;
