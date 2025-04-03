@@ -1,18 +1,15 @@
-use gtk::prelude::*;
 use gtk4 as gtk;
+use gtk::prelude::*;
 use gtk::{self, Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button, WindowPosition};
-use gio::{Menu, MenuItem};
-use gdk::Display;
-use gdk::Key;
-use gdk::ModifierType;
-use glib::Propagation;
-use glib::clone;
+use gtk::gio::{Menu, MenuItem};
+use gtk::gdk::{Display, Key, ModifierType};
+use gtk::glib::{self, Propagation, clone};
 
 // Add all necessary GTK traits
 use gtk::prelude::{
     BoxExt, ButtonExt, GtkWindowExt, ApplicationWindowExt, OrientableExt,
     TreeModelExt, TreeViewExt, WidgetExt, NotebookExt, PanedExt,
-    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt
+    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt, ApplicationExt
 };
 
 use super::{Toolbar, StatusBar};

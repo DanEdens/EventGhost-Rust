@@ -7,10 +7,11 @@ use log::{debug, info, warn, error};
 use std::any::Any;
 use async_trait::async_trait;
 
-use crate::core::actions::system::file_operations::{FileOperationsAction, ConfigFileType, Error};
+use crate::core::actions::system::file_operations::{FileOperationsAction, ConfigFileType};
 use crate::core::plugin::{Plugin, PluginInfo, PluginState, PluginError, PluginCapability};
 use crate::core::event::Event;
 use crate::core::config::Config;
+use crate::core::Error;
 
 /// Configuration change event type
 #[derive(Debug, Clone, PartialEq)]
