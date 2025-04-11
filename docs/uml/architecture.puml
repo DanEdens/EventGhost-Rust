@@ -1,0 +1,97 @@
+@startuml EventGhost Rust Architecture
+
+' Overall architecture diagram of the EventGhost-Rust project
+
+title EventGhost-Rust: Overall Architecture
+
+' Define main packages
+package "Core" as Core {
+    [Error] as CoreError
+    [Event] as CoreEvent
+    [Plugin] as CorePlugin
+    [PluginRegistry] as CorePluginRegistry
+    [ConfigManager] as CoreConfigManager
+    
+    package "Actions" as Actions {
+        [FileOperations] as FileOps
+        [System] as SystemActions
+        [Network] as NetworkActions
+    }
+}
+
+package "EG (EventGhost)" as EG {
+    [Config] as EGConfig
+    [MainFrame] as EGMainFrame
+    [LogCtrl] as EGLogCtrl
+    
+    package "Classes" as Classes {
+        [ConfigView] as ClassConfigView
+        [Dialog] as ClassDialog
+        [ConfigDialogs] as ClassConfigDialogs
+        [DragDrop] as ClassDragDrop
+        [TreeCtrl] as ClassTreeCtrl
+        [Menu] as ClassMenu
+    }
+    
+    package "Prelude" as Prelude {
+        [GTK Imports] as GTKImports
+        [Common Traits] as CommonTraits
+        [Common Types] as CommonTypes
+    }
+    
+    package "Dialogs" as Dialogs {
+        [ConfigFileDialog] as DialogConfigFile
+    }
+}
+
+package "Utils" as Utils {
+    [Path] as UtilsPath
+    [GTK Utils] as UtilsGTK
+}
+
+package "CLI" as CLI {
+    [Commands] as CLICommands
+}
+
+' Define relationships
+Core --> EG : provides core functionality
+EG --> Utils : uses utilities
+CLI --> Core : interacts with
+EG --> Core : depends on
+
+EGMainFrame --> ClassConfigView : contains
+EGMainFrame --> EGLogCtrl : contains
+EGMainFrame --> ClassMenu : contains
+
+ClassConfigView --> EGConfig : manipulates
+ClassConfigView --> ClassDialog : uses
+ClassConfigView --> ClassDragDrop : implements
+
+ClassConfigDialogs --> ClassDialog : extends
+
+Core ..> Prelude : imports from
+EG ..> Prelude : imports from
+Utils ..> Prelude : imports from
+
+UtilsPath --> CoreError : returns
+UtilsGTK --> CoreError : returns
+
+EGConfig --> CoreConfigManager : uses
+CorePlugin --> CoreEvent : processes
+CorePluginRegistry --> CorePlugin : manages
+
+' Note about prelude pattern
+note bottom of Prelude
+  The prelude module centralizes common imports,
+  particularly GTK components and traits,
+  simplifying module imports across the codebase.
+end note
+
+' Note about RefCell pattern
+note right of ClassConfigView
+  Classes use Rc<RefCell<>> pattern 
+  for shared mutable state between
+  GTK components.
+end note
+
+@enduml 

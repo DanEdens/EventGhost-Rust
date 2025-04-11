@@ -1,0 +1,168 @@
+@startuml EventGhost UI Components
+
+' UI Component hierarchy of the EventGhost-Rust project
+
+title EventGhost-Rust: UI Component Hierarchy
+
+' Define main UI components
+
+interface UIComponent {
+  +get_widget(): &gtk::Widget
+}
+
+class MainFrame {
+  +window: ApplicationWindow
+  +menu_bar: PopoverMenuBar
+  +toolbar: Toolbar
+  +status_bar: StatusBar
+  +log_ctrl: LogCtrl
+  +config_view: ConfigView
+  +container: Box
+  +paned: Paned
+  +notebook: Notebook
+  +new(app: &Application): Result<Self, Error>
+  +show()
+  +close()
+  +initialize()
+  +can_close(): bool
+}
+
+class ConfigView {
+  +container: Box
+  +scrolled_window: ScrolledWindow
+  +tree_view: TreeView
+  +tree_store: TreeStore
+  +config: Rc<RefCell<Config>>
+  +config_path: Rc<RefCell<Option<PathBuf>>>
+  +new(): Self
+  +set_config_path(path: P)
+  +new_config()
+  +save_config(): Result<(), Error>
+  +load_config(path: P): io::Result<()>
+  +update_tree()
+}
+
+class LogCtrl {
+  +container: ScrolledWindow
+  +widget: TreeView
+  +store: ListStore
+  +entries: Arc<Mutex<VecDeque<LogEntry>>>
+  +new(): Self
+  +write(entry: LogEntry)
+  +clear()
+  +scroll_to_end()
+}
+
+class Dialog <<trait>> {
+  +show()
+  +hide()
+  +show_modal(): Result<DialogResult, Error>
+  +end_dialog(result: DialogResult)
+  +on_init(): Result<(), Error>
+  +on_command(command: u32): Result<(), Error>
+}
+
+class TreeCtrl {
+  +container: Box
+  +tree_view: TreeView
+  +store: TreeStore
+  +selection: TreeSelection
+  +view: TreeView
+  +drag_source: DragSource
+  +new(): Self
+  +expand_item(iter: &TreeIter)
+  +collapse_item(iter: &TreeIter)
+  +expand_all()
+  +collapse_all()
+}
+
+class Menu {
+  +widget: Box
+  +menu_button: MenuButton
+  +menu: gio::Menu
+  +new(): Self
+  +append_menu(label: &str): gio::Menu
+  +append_item(menu: &gio::Menu, label: &str, action: Option<&str>)
+}
+
+class MessageDialog {
+  +dialog: gtk4::MessageDialog
+  +new(title: &str, message: &str, parent: Option<&Window>): Self
+}
+
+class FileDialog {
+  +dialog: FileChooserDialog
+  +new(title: &str, parent: Option<&Window>, action: FileChooserAction): Self
+}
+
+class ColorDialog {
+  +dialog: ColorChooserDialog
+  +new(title: &str, parent: Option<&Window>): Self
+}
+
+class ConfigDialog {
+  +dialog: gtk4::Dialog
+  +new(parent: Option<&Window>): Self
+}
+
+class CustomDialog {
+  +widget: gtk4::Dialog
+  +result: DialogResult
+  +new(app: Option<&Application>): Self
+  +run(): ResponseType
+  +close()
+}
+
+class DragDropManager {
+  +widget: gtk::Widget
+  +current_data: Arc<Mutex<Option<DragData>>>
+  +current_effect: Arc<Mutex<DragEffects>>
+  +target: Arc<Mutex<Option<Box<dyn DropTarget>>>>
+  +new(widget: gtk::Widget): Self
+  +register_drop_target(target: Box<dyn DropTarget>): Result<(), Error>
+  +start_drag(source: Box<dyn DragSource>, data: DragData, allowed_effects: DragEffects): Result<DragEffects, Error>
+}
+
+' Define relationships
+UIComponent <|.. MainFrame
+UIComponent <|.. ConfigView
+UIComponent <|.. LogCtrl
+UIComponent <|.. TreeCtrl
+UIComponent <|.. Menu
+UIComponent <|.. CustomDialog
+
+Dialog <|.. MessageDialog
+Dialog <|.. FileDialog
+Dialog <|.. ColorDialog
+Dialog <|.. ConfigDialog
+
+MainFrame *-- ConfigView
+MainFrame *-- LogCtrl
+MainFrame *-- Menu
+
+ConfigView o-- Dialog
+LogCtrl o-- TreeCtrl
+DragDropManager o-- TreeCtrl
+
+' Notes
+note right of UIComponent
+  All UI components implement this interface
+  to provide uniform access to gtk::Widget
+end note
+
+note right of MainFrame
+  MainFrame serves as the application's main window
+  and coordinates all other components
+end note
+
+note bottom of ConfigView
+  ConfigView manages configuration tree display
+  and editing; a central component of EventGhost
+end note
+
+note bottom of Dialog
+  Dialog trait abstracts common dialog
+  functionality for all dialog types
+end note
+
+@enduml 

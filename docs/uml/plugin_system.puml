@@ -1,0 +1,181 @@
+@startuml EventGhost Plugin System
+
+' Plugin System architecture of the EventGhost-Rust project
+
+title EventGhost-Rust: Plugin System Architecture
+
+' Define main components of the plugin system
+
+interface Plugin {
+  +get_name(): &str
+  +get_description(): &str
+  +get_version(): &str
+  +get_author(): &str
+  +get_info(): PluginInfo
+  +get_capabilities(): Vec<PluginCapability>
+  +get_state(): PluginState
+  +initialize(): Result<(), PluginError>
+  +start(): Result<(), PluginError>
+  +stop(): Result<(), PluginError>
+  +handle_event(event: &dyn Event): Result<(), PluginError>
+  +get_config(): Option<&Config>
+  +update_config(config: Config): Result<(), PluginError>
+  +as_any(): &dyn Any
+  +clone_box(): Box<dyn Plugin>
+}
+
+enum PluginState {
+  Uninitialized
+  Initialized
+  Running
+  Stopped
+  Error
+}
+
+enum PluginCapability {
+  ReceivesEvents
+  GeneratesEvents
+  HasConfig
+  HasUI
+  SystemIntegration
+  NetworkAccess
+}
+
+class PluginInfo {
+  +name: String
+  +description: String
+  +version: String
+  +author: String
+  +website: Option<String>
+  +icon: Option<String>
+  +capabilities: Vec<PluginCapability>
+}
+
+class PluginRegistry {
+  -plugins: HashMap<String, Arc<dyn Plugin>>
+  +new(): Self
+  +register(plugin: Arc<dyn Plugin>): Result<(), PluginError>
+  +unregister(name: &str): Result<(), PluginError>
+  +get(name: &str): Option<Arc<dyn Plugin>>
+  +get_all(): Vec<Arc<dyn Plugin>>
+  +initialize_all(): Result<(), PluginError>
+  +start_all(): Result<(), PluginError>
+  +stop_all(): Result<(), PluginError>
+}
+
+class PluginLoader {
+  +load_plugin(path: &Path): Result<Arc<dyn Plugin>, PluginError>
+  +load_plugins_from_directory(dir: &Path): Result<Vec<Arc<dyn Plugin>>, PluginError>
+  +discover_plugins(): Result<Vec<Arc<dyn Plugin>>, PluginError>
+}
+
+class Event {
+  +get_id(): &str
+  +get_type(): EventType
+  +get_payload(): &EventPayload
+  +get_timestamp(): DateTime<Local>
+  +get_source(): Option<&str>
+  +as_any(): &dyn Any
+  +as_any_mut(): &mut dyn Any
+  +clone_event(): Box<dyn Event + Send + Sync>
+}
+
+class Action {
+  +get_id(): Uuid
+  +get_name(): &str
+  +get_description(): &str
+  +get_supported_event_types(): Vec<EventType>
+  +get_plugin(): Arc<dyn Plugin>
+  +get_icon_path(): Option<String>
+  +is_configurable(): bool
+  +configure(config: ActionConfig): Result<(), Error>
+  +execute(event: &dyn Event): Result<ActionResult, Error>
+  +validate(): Result<(), Error>
+  +as_any(): &dyn Any
+}
+
+class EventPayload {
+  +data: HashMap<String, Value>
+  +new(): Self
+  +with_data(key: &str, value: Value): Self
+  +get(&self, key: &str): Option<&Value>
+  +set(&mut self, key: &str, value: Value)
+}
+
+enum EventType {
+  Button
+  Keyboard
+  Mouse
+  System
+  Network
+  Timer
+  Custom
+}
+
+class FileOperationsAction {
+  -id: Uuid
+  -plugin: Arc<dyn Plugin>
+  -config: FileOperationsConfig
+  +new(plugin: Arc<dyn Plugin>): Self
+  +with_id(id: Uuid, plugin: Arc<dyn Plugin>): Self
+  +with_operation(operation: FileOperation): Self
+  +execute(event: &dyn Event): Result<ActionResult, Error>
+}
+
+enum FileOperation {
+  Copy { source: String, destination: String }
+  Move { source: String, destination: String }
+  Delete { path: String }
+  Create { path: String, content: String }
+  Read { path: String }
+  CreateDirectory { path: String }
+  Exists { path: String }
+}
+
+' Define relationships
+Plugin <|.. FileOperationsAction : implements
+
+FileOperationsAction --|> Action : implements
+FileOperationsAction o-- FileOperation : contains
+
+PluginRegistry o-- Plugin : manages
+PluginLoader ..> Plugin : creates
+PluginLoader ..> PluginRegistry : fills
+
+Plugin ..> Event : handles
+Plugin ..> PluginInfo : returns
+Plugin ..> PluginState : returns
+Plugin ..> PluginCapability : returns
+
+Event o-- EventType : has
+Event o-- EventPayload : has
+
+' Notes
+note right of Plugin
+  Core interface that all plugins must implement.
+  Uses async_trait to support async methods.
+end note
+
+note bottom of PluginRegistry
+  Central registry that manages plugin lifecycle.
+  Plugins are stored as Arc<dyn Plugin> for
+  shared ownership across the application.
+end note
+
+note bottom of FileOperationsAction
+  Concrete implementation of Action trait
+  that performs file system operations.
+end note
+
+note left of PluginLoader
+  Responsible for loading plugin shared libraries
+  and instantiating plugin objects.
+end note
+
+note right of Event
+  Events are the primary way plugins
+  communicate with each other and
+  the core application.
+end note
+
+@enduml 
