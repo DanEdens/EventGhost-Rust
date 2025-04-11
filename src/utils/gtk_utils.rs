@@ -32,8 +32,7 @@ pub fn show_confirmation_dialog(
     title: &str, 
     message: &str
 ) -> bool {
-    let (sender, receiver) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-    
+    // Create a dialog and set it up
     let dialog = MessageDialog::new(
         parent,
         gtk::DialogFlags::MODAL,
@@ -43,19 +42,21 @@ pub fn show_confirmation_dialog(
     );
     dialog.set_title(Some(title));
     
+    // We'll use a oneshot channel to get the response
+    let (sender, receiver) = std::sync::mpsc::channel();
     let dialog_clone = dialog.clone();
+    
     dialog.connect_response(move |_, response| {
         let confirmed = response == ResponseType::Yes;
         sender.send(confirmed).expect("Failed to send response");
         dialog_clone.destroy();
     });
     
+    // Show the dialog
     dialog.show();
     
-    // Block until response is received
-    glib::MainContext::default().block_on(async {
-        receiver.recv().await.unwrap_or(false)
-    })
+    // Block waiting for the response
+    receiver.recv().unwrap_or(false)
 }
 
 /// Show a file chooser dialog for opening files
@@ -65,7 +66,7 @@ pub fn show_file_chooser_open<F>(
     filters: Vec<(String, Vec<String>)>,
     callback: F
 ) where
-    F: FnOnce(Option<PathBuf>) + 'static,
+    F: Fn(Option<PathBuf>) + 'static,
 {
     let dialog = FileChooserDialog::new(
         Some(title),
@@ -106,7 +107,7 @@ pub fn show_file_chooser_save<F>(
     default_name: Option<&str>,
     callback: F
 ) where
-    F: FnOnce(Option<PathBuf>) + 'static,
+    F: Fn(Option<PathBuf>) + 'static,
 {
     let dialog = FileChooserDialog::new(
         Some(title),
@@ -152,7 +153,7 @@ pub fn show_input_dialog<F>(
     default_value: Option<&str>,
     callback: F
 ) where
-    F: FnOnce(Option<String>) + 'static,
+    F: Fn(Option<String>) + 'static,
 {
     let dialog = Dialog::new();
     dialog.set_title(Some(title));

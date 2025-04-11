@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath, Entry, HeaderBar, Label, Orientation, PopoverMenu, ScrolledWindow, Widget};
+use crate::prelude::*;
+use crate::prelude::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererPixbuf, CellRendererText, TreeIter, SelectionMode, TreePath, Entry, HeaderBar, Label, Orientation, PopoverMenu, ScrolledWindow, Widget};
 use gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
 use gdk4::ModifierType;
 use gtk::glib::{self, clone};
@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::io;
 use log::{debug, error, info};
 use std::collections::HashMap;
+use crate::prelude::FileChooserExtManual;
 
 use crate::eg::config::{Config, ConfigItem, Plugin, Folder, Macro, Event, Action};
 use super::config_dialogs::{PluginDialog, FolderDialog, MacroDialog, EventDialog, ActionDialog};
@@ -19,6 +20,7 @@ const COL_NAME: i32 = 0;
 const COL_TYPE: i32 = 1;
 const COL_ICON: i32 = 2;
 const COL_ID: i32 = 3;
+const COL_ENABLED: i32 = 4;
 
 /// Helper function to convert TreePath to string
 fn path_to_string(path: &TreePath) -> Option<String> {
@@ -58,11 +60,13 @@ impl ConfigView {
         // 1: item type (String)
         // 2: icon name (String)
         // 3: item id (String)
+        // 4: item enabled (bool)
         let tree_store = TreeStore::new(&[
             glib::Type::STRING, // name
             glib::Type::STRING, // type
             glib::Type::STRING, // icon
             glib::Type::STRING, // id
+            glib::Type::BOOL, // enabled
         ]);
         
         // Create tree view
@@ -230,88 +234,27 @@ impl ConfigView {
         info!("New configuration created successfully");
     }
 
-    /// Saves the configuration to disk with error handling
-    pub fn save_config(&self) {
-        if let Some(path) = &*self.config_path.borrow() {
+    /// Save the configuration to a file
+    pub fn save_config(&mut self) -> Result<(), Error> {
+        let config_path = self.config_path.clone();
+        let config_path_ref = config_path.borrow();
+        
+        if let Some(path) = &*config_path_ref {
             debug!("Saving configuration to {}", path.display());
             match self.config.borrow().save_to_file(path) {
                 Ok(_) => {
-                    info!("Configuration saved successfully to {}", path.display());
-                    // Show success message in status bar or log
-                    if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
-                        let dialog = gtk::MessageDialog::new(
-                            Some(&window),
-                            gtk::DialogFlags::MODAL,
-                            gtk::MessageType::Info,
-                            gtk::ButtonsType::Ok,
-                            &format!("Configuration saved to {}", path.display())
-                        );
-                        dialog.connect_response(move |dialog, _| {
-                            dialog.close();
-                        });
-                        dialog.show();
-                    }
+                    self.show_success("Configuration saved successfully.");
+                    Ok(())
                 },
                 Err(err) => {
-                    error!("Failed to save configuration: {}", err);
-                    self.show_error(&format!("Failed to save configuration: {}", err));
+                    let error_msg = format!("Failed to save configuration: {}", err);
+                    self.show_error(&error_msg);
+                    Err(Error::Config(error_msg.into()))
                 }
             }
         } else {
-            // No path set, show save as dialog
-            if let Some(window) = self.container.root().and_downcast::<gtk::Window>() {
-                let dialog = gtk::FileChooserDialog::new(
-                    Some("Save Configuration As"),
-                    Some(&window),
-                    gtk::FileChooserAction::Save,
-                    &[
-                        ("Cancel", gtk::ResponseType::Cancel),
-                        ("Save", gtk::ResponseType::Accept),
-                    ],
-                );
-                
-                // Add file filters
-                let json_filter = gtk::FileFilter::new();
-                json_filter.set_name(Some("JSON Configuration Files"));
-                json_filter.add_pattern("*.json");
-                dialog.add_filter(&json_filter);
-                
-                let xml_filter = gtk::FileFilter::new();
-                xml_filter.set_name(Some("XML Configuration Files"));
-                xml_filter.add_pattern("*.xml");
-                xml_filter.add_pattern("*.egtree");
-                dialog.add_filter(&xml_filter);
-                
-                let all_filter = gtk::FileFilter::new();
-                all_filter.set_name(Some("All Configuration Files"));
-                all_filter.add_pattern("*.json");
-                all_filter.add_pattern("*.xml");
-                all_filter.add_pattern("*.egtree");
-                dialog.add_filter(&all_filter);
-                
-                // Set current folder to config directory
-                if let Ok(config_dir) = crate::core::utils::get_config_dir() {
-                    dialog.set_current_folder(Some(&gio::File::for_path(config_dir)));
-                }
-                
-                let config_view_clone = self.clone();
-                dialog.connect_response(move |dialog, response| {
-                    if response == gtk::ResponseType::Accept {
-                        if let Some(file) = dialog.file() {
-                            if let Some(path) = file.path() {
-                                // Set the configuration path
-                                config_view_clone.set_config_path(&path);
-                                
-                                // Save the configuration
-                                config_view_clone.save_config();
-                            }
-                        }
-                    }
-                    dialog.close();
-                });
-                
-                dialog.show();
-            }
+            debug!("No configuration path set, using Save As...");
+            self.save_config_as()
         }
     }
 
@@ -372,7 +315,8 @@ impl ConfigView {
     
     /// Populates the tree view from the loaded configuration
     fn populate_tree_from_config(&self) {
-        let config = self.config.borrow();
+        let config = self.config.clone();
+        let config_ref = config.borrow();
         
         // Find the root folders (Plugins, Folders, Autostart, etc.)
         let mut root_folders = HashMap::new();
@@ -399,7 +343,7 @@ impl ConfigView {
         let mut folder_iters = HashMap::new();
         
         // Map all folders by ID for hierarchy construction
-        for item in &config.items {
+        for item in &config_ref.items {
             match item {
                 ConfigItem::Folder(folder) => {
                     let parent_iter = if folder.name == "Autostart" {
@@ -418,7 +362,7 @@ impl ConfigView {
         }
         
         // Add remaining items to the tree
-        for item in &config.items {
+        for item in &config_ref.items {
             match item {
                 ConfigItem::Plugin(plugin) => {
                     // Add to Plugins folder or Autostart based on hierarchy
@@ -500,9 +444,10 @@ impl ConfigView {
     
     /// Finds the parent macro ID for an event
     fn find_parent_id_for_event(&self, event_id: Uuid) -> Option<Uuid> {
-        let config = self.config.borrow();
+        let config = self.config.clone();
+        let config_ref = config.borrow();
         
-        for item in &config.items {
+        for item in &config_ref.items {
             if let ConfigItem::Macro(macro_) = item {
                 if macro_.events.contains(&event_id) {
                     return Some(macro_.id);
@@ -515,9 +460,10 @@ impl ConfigView {
     
     /// Finds the parent macro ID for an action
     fn find_parent_id_for_action(&self, action_id: Uuid) -> Option<Uuid> {
-        let config = self.config.borrow();
+        let config = self.config.clone();
+        let config_ref = config.borrow();
         
-        for item in &config.items {
+        for item in &config_ref.items {
             if let ConfigItem::Macro(macro_) = item {
                 if macro_.actions.contains(&action_id) {
                     return Some(macro_.id);
@@ -751,6 +697,7 @@ impl ConfigView {
             (COL_TYPE as u32, &"Folder"),
             (COL_ICON as u32, &"folder"),
             (COL_ID as u32, &"plugins"),
+            (COL_ENABLED as u32, &true.to_value()),
         ]);
         
         // Add Macros folder
@@ -760,6 +707,7 @@ impl ConfigView {
             (COL_TYPE as u32, &"Folder"),
             (COL_ICON as u32, &"folder"),
             (COL_ID as u32, &"macros"),
+            (COL_ENABLED as u32, &true.to_value()),
         ]);
         
         // Add Autostart folder
@@ -769,6 +717,7 @@ impl ConfigView {
             (COL_TYPE as u32, &"Folder"),
             (COL_ICON as u32, &"folder"),
             (COL_ID as u32, &"autostart"),
+            (COL_ENABLED as u32, &true.to_value()),
         ]);
     }
 
@@ -869,6 +818,7 @@ impl ConfigView {
             (COL_TYPE as u32, &item_type),
             (COL_ICON as u32, &icon),
             (COL_ID as u32, &item.id().to_string()),
+            (COL_ENABLED as u32, &true.to_value()),
         ]);
         
         Some(iter)
@@ -1064,6 +1014,33 @@ impl ConfigView {
         if let Some(action) = dialog.run_for_new() {
             self.add_item(crate::eg::config::ConfigItem::Action(action), iter_opt.as_ref());
             self.save_config();
+        }
+    }
+
+    pub fn update_tree(&mut self) {
+        debug!("Updating configuration tree");
+        
+        // Clear the tree store
+        self.tree_store.clear();
+        
+        // Get the config
+        let config = self.config.clone();
+        let config_ref = config.borrow();
+        
+        // Add root item
+        let root_iter = self.tree_store.append(None);
+        self.tree_store.set_value(&root_iter, COL_NAME as u32, &"Configuration".to_string().to_value());
+        self.tree_store.set_value(&root_iter, COL_TYPE as u32, &"root".to_string().to_value());
+        self.tree_store.set_value(&root_iter, COL_ICON as u32, &"document".to_string().to_value());
+        self.tree_store.set_value(&root_iter, COL_ENABLED as u32, &true.to_value());
+        self.tree_store.set_value(&root_iter, COL_ID as u32, &"root".to_string().to_value());
+        
+        // Expand root by default
+        self.tree_view.expand_row(&self.tree_store.path(&root_iter), false);
+        
+        // Add all items
+        for item in &config_ref.items {
+            self.add_item_to_tree(item.clone(), None);
         }
     }
 }

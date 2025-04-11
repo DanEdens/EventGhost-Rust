@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Widget, DragSource as GtkDragSource, DropTarget as GtkDropTarget};
+use crate::prelude::*;
+use crate::prelude::{self, DragSource as GtkDragSource, DropTarget as GtkDropTarget};
 use gtk::gdk;
 use gtk::glib;
 use std::path::PathBuf;
@@ -13,6 +13,8 @@ use gtk::TreeIter;
 use gtk::TreePath;
 use gdk4::ModifierType;
 use uuid::Uuid;
+use gtk4::prelude::IsA;
+use std::boxed::Box;
 
 #[derive(Debug, Clone)]
 pub enum DragData {

@@ -1,17 +1,8 @@
 use crate::prelude::*;
-use gtk::{Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button};
+use crate::prelude::{Application, ApplicationWindow, Box, Orientation, PopoverMenuBar, Paned, Notebook, TreeView, TreeStore, AboutDialog, License, Window, ShortcutController, EventControllerKey, Button, TreeSelectionExt, GObjectExt, NotebookExt, TreeModelFilterExt, TreeSortableExt, ScrollableExt, FileChooserExt, FileExt, PanedExt, MenuButtonExt};
 use gtk::gio::{Menu, MenuItem};
-use gtk::gdk::{Display, Key, ModifierType};
+use gtk::gdk::{Key, ModifierType};
 use gtk::glib::{self, Propagation, clone};
-
-// Add all necessary GTK traits
-use gtk::prelude::{
-    BoxExt, ButtonExt, GtkWindowExt, ApplicationWindowExt, OrientableExt,
-    TreeModelExt, TreeViewExt, WidgetExt, NotebookExt, PanedExt,
-    MenuButtonExt, PopoverExt, DialogExt, NativeDialogExt, ApplicationExt,
-    TreeModelFilterExt, TreeSelectionExt, TreeSortableExt, ScrollableExt,
-    FileChooserExt, FileExt, GObjectExt
-};
 
 use super::{Toolbar, StatusBar};
 use super::log_ctrl::LogCtrl;
@@ -27,6 +18,7 @@ use log::{error, info, debug};
 use crate::eg::classes::dialog::{FileDialogOptions, CommonDialogs};
 use crate::core::config_manager::ConfigManager;
 use crate::eg::dialogs::config_file_dialog::{ConfigFileDialog, ConfigFileDialogResult};
+use crate::prelude::DialogExtManual;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 800;
 const DEFAULT_WINDOW_HEIGHT: i32 = 600;
@@ -118,7 +110,7 @@ impl MainFrame {
         main_frame.init_toolbar_buttons(app);
         
         // Set up keyboard shortcuts
-        main_frame.setup_keyboard_shortcuts(app);
+        main_frame.setup_keyboard_shortcuts();
         
         Ok(main_frame)
     }
@@ -280,9 +272,10 @@ impl MainFrame {
         menu_model
     }
     
-    /// Shows the main application window.
+    /// Shows the main window
     pub fn show(&self) {
-        self.window.show();
+        let window = self.window.clone();
+        window.borrow().show();
     }
 
     /// Gets the window title
@@ -748,113 +741,45 @@ impl MainFrame {
         config_view.add_action();
     }
 
-    /// Set up keyboard shortcut bindings
-    fn setup_keyboard_shortcuts(&self, app: &Application) {
-        // Create a shortcut controller for the window
-        let controller = EventControllerKey::new();
-        let app_clone = app.clone();
+    /// Set up keyboard shortcuts for common operations
+    fn setup_keyboard_shortcuts(&self) {
+        let controller = ShortcutController::new();
+        let window = self.window.clone();
         
-        // Add key pressed handlers
-        controller.connect_key_pressed(move |_controller, keyval, _keycode, state| {
-            // Check for control modifier
-            let ctrl_pressed = state.contains(ModifierType::CONTROL_MASK);
-            let shift_pressed = state.contains(ModifierType::SHIFT_MASK);
-            
-            if ctrl_pressed {
-                match keyval {
-                    // Ctrl+N = New
-                    Key::n | Key::N if !shift_pressed => {
-                        app_clone.activate_action("new", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+O = Open
-                    Key::o | Key::O if !shift_pressed => {
-                        app_clone.activate_action("open", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+S = Save
-                    Key::s | Key::S if !shift_pressed => {
-                        app_clone.activate_action("save", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+S = Save As
-                    Key::s | Key::S if shift_pressed => {
-                        app_clone.activate_action("saveas", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+X = Cut
-                    Key::x | Key::X if !shift_pressed => {
-                        app_clone.activate_action("cut", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+C = Copy
-                    Key::c | Key::C if !shift_pressed => {
-                        app_clone.activate_action("copy", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+V = Paste
-                    Key::v | Key::V if !shift_pressed => {
-                        app_clone.activate_action("paste", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Z = Undo
-                    Key::z | Key::Z if !shift_pressed => {
-                        app_clone.activate_action("undo", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Y = Redo
-                    Key::y | Key::Y if !shift_pressed => {
-                        app_clone.activate_action("redo", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+P = Add Plugin
-                    Key::p | Key::P if shift_pressed => {
-                        app_clone.activate_action("add_plugin", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+N = Add Folder
-                    Key::n | Key::N if shift_pressed => {
-                        app_clone.activate_action("add_folder", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+M = Add Macro
-                    Key::m | Key::M if shift_pressed => {
-                        app_clone.activate_action("add_macro", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+E = Add Event
-                    Key::e | Key::E if shift_pressed => {
-                        app_clone.activate_action("add_event", None);
-                        Propagation::Stop
-                    },
-                    // Ctrl+Shift+A = Add Action
-                    Key::a | Key::A if shift_pressed => {
-                        app_clone.activate_action("add_action", None);
-                        Propagation::Stop
-                    },
-                    _ => Propagation::Proceed,
-                }
-            } else {
-                // Check for function keys
-                match keyval {
-                    // F5 = Execute
-                    Key::F5 => {
-                        app_clone.activate_action("execute", None);
-                        Propagation::Stop
-                    },
-                    _ => Propagation::Proceed,
-                }
-            }
-        });
+        // File operations
+        let shortcut = gtk::Shortcut::builder()
+            .action(gtk::NamedAction::new("app.new"))
+            .trigger(gtk::ShortcutTrigger::parse_string("<Control>n").unwrap())
+            .build();
+        controller.add_shortcut(shortcut);
         
-        // Add the controller to the window
-        self.window.add_controller(controller);
+        let shortcut = gtk::Shortcut::builder()
+            .action(gtk::NamedAction::new("app.open"))
+            .trigger(gtk::ShortcutTrigger::parse_string("<Control>o").unwrap())
+            .build();
+        controller.add_shortcut(shortcut);
+        
+        let shortcut = gtk::Shortcut::builder()
+            .action(gtk::NamedAction::new("app.save"))
+            .trigger(gtk::ShortcutTrigger::parse_string("<Control>s").unwrap())
+            .build();
+        controller.add_shortcut(shortcut);
+        
+        let shortcut = gtk::Shortcut::builder()
+            .action(gtk::NamedAction::new("app.save-as"))
+            .trigger(gtk::ShortcutTrigger::parse_string("<Control><Shift>s").unwrap())
+            .build();
+        controller.add_shortcut(shortcut);
+        
+        // Add window controller
+        self.window.borrow().add_controller(controller);
     }
 
     /// Set up file menu actions
     fn setup_file_menu(&self) {
         let window = self.window.borrow().clone();
         let config_manager: Rc<RefCell<ConfigManager>> = Rc::new(RefCell::new(ConfigManager::new()));
+        let config_manager_ref: &Rc<RefCell<ConfigManager>> = &config_manager;
         
         // Create config file dialog
         let config_dialog = ConfigFileDialog::new(window.clone(), config_manager.clone());
@@ -862,7 +787,6 @@ impl MainFrame {
         // Set up New action
         let new_action = gtk::gio::SimpleAction::new("new", None);
         new_action.connect_activate(clone!(@weak window, @strong config_manager => move |_, _| {
-            let config_manager_ref: &Rc<RefCell<ConfigManager>> = &config_manager;
             glib::MainContext::default().spawn_local(async move {
                 // Check for unsaved changes
                 if config_manager_ref.borrow().is_modified() {
@@ -881,7 +805,7 @@ impl MainFrame {
                                             Some(&window),
                                             gtk::DialogFlags::MODAL,
                                             gtk::MessageType::Error,
-                                            gtk::ButtonsType::OK,
+                                            gtk::ButtonsType::Ok,
                                             &format!("Failed to save configuration: {}", e),
                                         );
                                         error_dialog.run_future().await;
@@ -901,7 +825,7 @@ impl MainFrame {
                                             Some(&window),
                                             gtk::DialogFlags::MODAL,
                                             gtk::MessageType::Error,
-                                            gtk::ButtonsType::OK,
+                                            gtk::ButtonsType::Ok,
                                             &message,
                                         );
                                         error_dialog.run_future().await;
@@ -927,7 +851,6 @@ impl MainFrame {
         // Set up Open action
         let open_action = gtk::gio::SimpleAction::new("open", None);
         open_action.connect_activate(clone!(@weak window, @strong config_manager => move |_, _| {
-            let config_manager_ref = config_manager.clone();
             glib::MainContext::default().spawn_local(async move {
                 // Check for unsaved changes
                 if config_manager_ref.borrow().is_modified() {
@@ -946,7 +869,7 @@ impl MainFrame {
                                             Some(&window),
                                             gtk::DialogFlags::MODAL,
                                             gtk::MessageType::Error,
-                                            gtk::ButtonsType::OK,
+                                            gtk::ButtonsType::Ok,
                                             &format!("Failed to save configuration: {}", e),
                                         );
                                         error_dialog.run_future().await;
@@ -966,7 +889,7 @@ impl MainFrame {
                                             Some(&window),
                                             gtk::DialogFlags::MODAL,
                                             gtk::MessageType::Error,
-                                            gtk::ButtonsType::OK,
+                                            gtk::ButtonsType::Ok,
                                             &message,
                                         );
                                         error_dialog.run_future().await;
@@ -998,7 +921,7 @@ impl MainFrame {
                             Some(&window),
                             gtk::DialogFlags::MODAL,
                             gtk::MessageType::Error,
-                            gtk::ButtonsType::OK,
+                            gtk::ButtonsType::Ok,
                             &message,
                         );
                         error_dialog.run_future().await;
@@ -1012,7 +935,6 @@ impl MainFrame {
         // Set up Save action
         let save_action = gtk::gio::SimpleAction::new("save", None);
         save_action.connect_activate(clone!(@weak window, @strong config_manager => move |_, _| {
-            let config_manager_ref = config_manager.clone();
             glib::MainContext::default().spawn_local(async move {
                 if let Some(path) = config_manager_ref.borrow().config_path() {
                     // Save to existing path
@@ -1026,7 +948,7 @@ impl MainFrame {
                                 Some(&window),
                                 gtk::DialogFlags::MODAL,
                                 gtk::MessageType::Error,
-                                gtk::ButtonsType::OK,
+                                gtk::ButtonsType::Ok,
                                 &format!("Failed to save configuration: {}", e),
                             );
                             error_dialog.run_future().await;
@@ -1048,7 +970,7 @@ impl MainFrame {
                                 Some(&window),
                                 gtk::DialogFlags::MODAL,
                                 gtk::MessageType::Error,
-                                gtk::ButtonsType::OK,
+                                gtk::ButtonsType::Ok,
                                 &message,
                             );
                             error_dialog.run_future().await;
@@ -1063,7 +985,6 @@ impl MainFrame {
         // Set up Save As action
         let save_as_action = gtk::gio::SimpleAction::new("save-as", None);
         save_as_action.connect_activate(clone!(@weak window, @strong config_manager => move |_, _| {
-            let config_manager_ref = config_manager.clone();
             glib::MainContext::default().spawn_local(async move {
                 // Show save dialog
                 let dialog = ConfigFileDialog::new(window.clone(), config_manager_ref.clone());
@@ -1079,7 +1000,7 @@ impl MainFrame {
                             Some(&window),
                             gtk::DialogFlags::MODAL,
                             gtk::MessageType::Error,
-                            gtk::ButtonsType::OK,
+                            gtk::ButtonsType::Ok,
                             &message,
                         );
                         error_dialog.run_future().await;
@@ -1149,9 +1070,118 @@ impl MainFrame {
         true
     }
     
-    /// Close the application
+    /// Closes the main window
     pub fn close(&self) {
-        self.window.borrow().close();
+        let window = self.window.clone();
+        window.borrow().close();
+    }
+
+    /// Create a new configuration
+    fn create_new_config(&self) {
+        let window = self.window.clone();
+        let window_ref = window.borrow();
+        
+        // Create confirmation dialog if there are unsaved changes
+        let config_manager = self.config_view.get_config_manager();
+        let config_manager_ref = config_manager.clone();
+        
+        if config_manager_ref.borrow().is_modified() {
+            let dialog = gtk::MessageDialog::new(
+                Some(&window_ref),
+                gtk::DialogFlags::MODAL,
+                gtk::MessageType::QUESTION,
+                gtk::ButtonsType::YES_NO,
+                "There are unsaved changes. Do you want to save them before creating a new configuration?"
+            );
+            
+            dialog.connect_response(clone!(@strong config_manager_ref, @weak window_ref => move |dialog, response| {
+                dialog.close();
+                
+                if response == gtk::ResponseType::Yes {
+                    // Save first, then create new config
+                    if let Some(path) = config_manager_ref.borrow().config_path() {
+                        // Save to existing path
+                        match config_manager_ref.borrow_mut().save_config(&path) {
+                            Ok(_) => {
+                                // Now create new config
+                                config_manager_ref.borrow_mut().create_new_config();
+                            },
+                            Err(e) => {
+                                // Show error
+                                let error_dialog = gtk::MessageDialog::new(
+                                    Some(&window_ref),
+                                    gtk::DialogFlags::MODAL,
+                                    gtk::MessageType::ERROR,
+                                    gtk::ButtonsType::OK,
+                                    &format!("Failed to save configuration: {}", e)
+                                );
+                                error_dialog.connect_response(|dialog, _| {
+                                    dialog.close();
+                                });
+                                error_dialog.show();
+                            }
+                        }
+                    } else {
+                        // Need to show Save As dialog
+                        let file_dialog = gtk::FileChooserDialog::new(
+                            Some("Save Configuration"),
+                            Some(&window_ref),
+                            gtk::FileChooserAction::SAVE,
+                            &[
+                                ("Cancel", gtk::ResponseType::Cancel),
+                                ("Save", gtk::ResponseType::Accept),
+                            ]
+                        );
+                        
+                        // Set default file name
+                        file_dialog.set_current_name("config.xml");
+                        
+                        file_dialog.connect_response(clone!(@strong config_manager_ref => move |dialog, response| {
+                            if response == gtk::ResponseType::Accept {
+                                if let Some(file) = dialog.file() {
+                                    if let Some(path) = file.path() {
+                                        match config_manager_ref.borrow_mut().save_config(&path) {
+                                            Ok(_) => {
+                                                // Now create new config
+                                                config_manager_ref.borrow_mut().create_new_config();
+                                            },
+                                            Err(e) => {
+                                                // Show error
+                                                let error_dialog = gtk::MessageDialog::new(
+                                                    Some(&window_ref),
+                                                    gtk::DialogFlags::MODAL,
+                                                    gtk::MessageType::ERROR,
+                                                    gtk::ButtonsType::OK,
+                                                    &format!("Failed to save configuration: {}", e)
+                                                );
+                                                error_dialog.connect_response(|dialog, _| {
+                                                    dialog.close();
+                                                });
+                                                error_dialog.show();
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Create new config anyway
+                                config_manager_ref.borrow_mut().create_new_config();
+                            }
+                            dialog.close();
+                        }));
+                        
+                        file_dialog.show();
+                    }
+                } else {
+                    // Just create new config without saving
+                    config_manager_ref.borrow_mut().create_new_config();
+                }
+            }));
+            
+            dialog.show();
+        } else {
+            // No unsaved changes, just create new config
+            config_manager_ref.borrow_mut().create_new_config();
+        }
     }
 }
 

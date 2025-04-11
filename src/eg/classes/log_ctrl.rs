@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, TreeView, TreeViewColumn, CellRendererText, CellRendererPixbuf, ScrolledWindow, ListStore};
+use crate::prelude::*;
+use crate::prelude::{self, Box, TreeView, TreeViewColumn, CellRendererText, CellRendererPixbuf, ScrolledWindow};
 use glib;
 use gdk4;
 use chrono::{DateTime, Local};
@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::{self, Write, BufRead};
 use std::fmt;
 use std::cell::Cell;
+use gtk4::ListStore;
 
 const MAX_BUFFER_SIZE: usize = 2000;
 const REMOVE_ON_MAX: usize = 200;

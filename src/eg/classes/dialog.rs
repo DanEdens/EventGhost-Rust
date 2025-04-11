@@ -1,6 +1,6 @@
-use gtk::prelude::*;
-use gtk::{self, Dialog as GtkDialog, FileChooserDialog, MessageDialog as GtkMessageDialog, ColorChooserDialog, ResponseType, FileChooserAction, Window};
-use gdk4;
+use crate::prelude::*;
+use crate::prelude::{self, Box, Button, FileChooserDialog, MessageDialog, Dialog, ResponseType, FileChooserAction, Window, DialogExtManual};
+use gtk4::ColorChooserDialog;
 // use gtk::gdk;
 use crate::core::Error;
 use super::UIComponent;
@@ -277,13 +277,13 @@ pub enum MessageBoxStyle {
 }
 
 pub struct CustomDialog {
-    pub widget: GtkDialog,
+    pub widget: gtk4::Dialog,
     result: DialogResult,
 }
 
 impl CustomDialog {
     pub fn new(app: Option<&Application>) -> Self {
-        let dialog = GtkDialog::new();
+        let dialog = gtk4::Dialog::new();
         if let Some(app) = app {
             dialog.set_application(Some(app));
         }
@@ -374,17 +374,17 @@ impl Dialog for FileDialog {
 }
 
 pub struct MessageDialog {
-    dialog: GtkMessageDialog,
+    dialog: gtk4::MessageDialog,
 }
 
 impl MessageDialog {
     pub fn new(title: &str, message: &str, parent: Option<&Window>) -> Self {
-        let dialog = GtkMessageDialog::new(
+        let dialog = gtk4::MessageDialog::new(
             parent,
             gtk::DialogFlags::MODAL,
             gtk::MessageType::Info,
             gtk::ButtonsType::Ok,
-            message,
+            message
         );
         dialog.set_title(Some(title));
         
@@ -463,12 +463,12 @@ impl Dialog for ColorDialog {
 
 /// A dialog for configuring plugin settings
 pub struct ConfigDialog {
-    dialog: GtkDialog,
+    dialog: gtk4::Dialog,
 }
 
 impl ConfigDialog {
     pub fn new(parent: Option<&Window>) -> Self {
-        let dialog = GtkDialog::builder()
+        let dialog = gtk4::Dialog::builder()
             .title("Configure")
             .modal(true)
             .build();

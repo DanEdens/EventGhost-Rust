@@ -1,9 +1,10 @@
-use gtk::prelude::*;
-use gtk::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter, SelectionMode};
+use crate::prelude::*;
+use crate::prelude::{self, TreeView, TreeStore, TreeSelection, TreePath, TreeIter, SelectionMode};
 use gdk4::{self, DragAction};
-use gtk::{DragSource};
+use crate::prelude::{DragSource};
 use glib;
 use super::UIComponent;
+use std::boxed::Box;
 
 pub struct TreeItem {
     pub data: Option<Box<dyn std::any::Any + Send + Sync>>,

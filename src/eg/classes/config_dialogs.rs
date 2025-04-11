@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Dialog, Box, Label, Entry, Grid, Button, ResponseType};
+use crate::prelude::*;
+use crate::prelude::{self, Dialog, Box, Label, Entry, Grid, Button, ResponseType};
 use gtk::glib::{self, clone, MainContext};
 use uuid::Uuid;
 use std::collections::HashMap;
@@ -263,7 +263,10 @@ impl ActionDialog {
             action = Some(Action {
                 id: Uuid::new_v4(),
                 name: self.base.get_name(),
-                parameters: parameters.borrow().clone(),
+                parameters: {
+                    let params = parameters.clone();
+                    params.borrow().clone()
+                },
             });
         }
         
@@ -288,7 +291,10 @@ impl ActionDialog {
             let config_action = Action {
                 id: action.id,
                 name: action.name.clone(),
-                parameters: parameters.borrow().clone(),
+                parameters: {
+                    let params = parameters.clone();
+                    params.borrow().clone()
+                },
             };
             
             // Create and show the advanced configuration dialog
@@ -309,7 +315,10 @@ impl ActionDialog {
             result = Some(Action {
                 id: action.id,
                 name: self.base.get_name(),
-                parameters: parameters.borrow().clone(),
+                parameters: {
+                    let params = parameters.clone();
+                    params.borrow().clone()
+                },
             });
         }
         

@@ -5,12 +5,12 @@ pub mod cli;
 
 // Re-exports of common types
 pub use core::{Error, Event, Plugin, PluginRegistry};
-pub use eg::prelude;
+pub use eg::classes::main_frame::MainFrame;
+pub use eg::classes::log_ctrl::LogCtrl;
+pub use eg::config::Config;
 
-// Convenience import
-pub mod prelude {
-    pub use crate::eg::prelude::*;
-}
+// Export the prelude module
+pub use eg::prelude;
 
 // Test utilities
 #[cfg(any(test, feature = "testing"))]

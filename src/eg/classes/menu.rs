@@ -1,5 +1,6 @@
-use gtk::prelude::*;
-use gtk::{self, Box, MenuButton, PopoverMenu, gio};
+use crate::prelude::*;
+use crate::prelude::{self, Box, PopoverMenu, gio};
+use gtk4::MenuButton;
 use super::UIComponent;
 
 pub struct Menu {

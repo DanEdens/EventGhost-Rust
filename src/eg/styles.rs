@@ -1,5 +1,6 @@
-use gtk::prelude::*;
-use gtk::{CssProvider, StyleContext};
+use gtk4 as gtk;
+use crate::prelude::*;
+use crate::prelude::{CssProvider, StyleContext};
 use gtk::gdk;
 use std::str::from_utf8;
 
@@ -17,6 +18,19 @@ pub fn init_styles() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+pub fn apply_css(css: &str) {
+    let provider = gtk::CssProvider::new();
+    provider.load_from_data(css);
+    
+    if let Some(display) = gtk4::Display::default() {
+        gtk4::StyleContext::add_provider_for_display(
+            &display,
+            &provider,
+            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
 }
 
 #[cfg(test)]

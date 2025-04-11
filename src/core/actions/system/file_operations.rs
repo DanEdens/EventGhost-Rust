@@ -394,59 +394,43 @@ impl Action for FileOperationsAction {
         
         // Execute file operation in a separate task to avoid blocking
         let result = task::spawn_blocking(move || {
-            match operation {
+            if create_backup && path.exists() {
+                self.backup_config(&path)?;
+            }
+
+            // Result is the return type of the execute function
+            Ok(match operation {
                 FileOperation::Copy { source, destination } => {
-                    if let Some(dest) = destination.as_ref() {
-                        if dest.exists() && !overwrite {
-                            return ActionResult::failure("Destination file already exists");
-                        }
-                        
-                        match fs::copy(&source, dest) {
-                            Ok(_) => ActionResult::success(),
-                            Err(e) => ActionResult::failure(format!("Failed to copy file: {}", e)),
-                        }
+                    if std::path::Path::new(&destination).exists() && !overwrite {
+                        return Err(Error::InvalidOperation(format!("Destination already exists: {}", destination)));
+                    }
+                    
+                    // Check if source exists
+                    if !std::path::Path::new(&source).exists() {
+                        ActionResult::failure(format!("File or directory does not exist: {:?}", source))
                     } else {
-                        ActionResult::failure("Destination path is required for copy operation")
+                        // Execute the copy operation
+                        self.copy_file(&source, &destination, overwrite)?
                     }
                 },
                 FileOperation::Move { source, destination } => {
-                    if let Some(dest) = destination.as_ref() {
-                        if dest.exists() && !overwrite {
-                            return ActionResult::failure("Destination file already exists");
-                        }
-                        
-                        match fs::rename(&source, dest) {
-                            Ok(_) => ActionResult::success(),
-                            Err(e) => ActionResult::failure(format!("Failed to move file: {}", e)),
-                        }
+                    if std::path::Path::new(&destination).exists() && !overwrite {
+                        return Err(Error::InvalidOperation(format!("Destination already exists: {}", destination)));
+                    }
+                    
+                    // Check if source exists
+                    if !std::path::Path::new(&source).exists() {
+                        ActionResult::failure(format!("File or directory does not exist: {:?}", source))
                     } else {
-                        ActionResult::failure("Destination path is required for move operation")
+                        // Execute the move operation
+                        self.move_file(&source, &destination, overwrite)?
                     }
                 },
                 FileOperation::Delete { path } => {
-                    let path = Path::new(&path);
-                    if !path.exists() {
-                        return ActionResult::failure(format!("File or directory does not exist: {:?}", path));
-                    }
-                    
-                    if path.is_file() {
-                        match fs::remove_file(path) {
-                            Ok(_) => ActionResult::success(),
-                            Err(e) => ActionResult::failure(format!("Failed to delete file: {}", e)),
-                        }
-                    } else if path.is_dir() {
-                        let result = if overwrite {
-                            fs::remove_dir_all(path)
-                        } else {
-                            fs::remove_dir(path)
-                        };
-                        
-                        match result {
-                            Ok(_) => ActionResult::success(),
-                            Err(e) => ActionResult::failure(format!("Failed to delete directory: {}", e)),
-                        }
+                    if !std::path::Path::new(&path).exists() {
+                        ActionResult::failure(format!("File or directory does not exist: {:?}", path))
                     } else {
-                        ActionResult::failure(format!("Path is not a file or directory: {:?}", path))
+                        self.delete_file(&path)?
                     }
                 },
                 FileOperation::Create { path, content } => {
@@ -499,7 +483,7 @@ impl Action for FileOperationsAction {
                         
                     ActionResult::success().with_data(content)
                 },
-            }
+            })
         }).await.map_err(|e| Error::Other(format!("Task error: {}", e)))?;
         
         Ok(result)
