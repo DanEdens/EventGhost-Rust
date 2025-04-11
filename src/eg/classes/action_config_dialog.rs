@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Dialog, Box, Label, Entry, Grid, Button, Frame, CheckButton, 
+use crate::prelude::*;
+use crate::prelude::{self, Dialog, Box, Label, Entry, Grid, Button, Frame, CheckButton, 
           ResponseType, ScrolledWindow, Orientation, Align, Widget};
 use uuid::Uuid;
 use std::collections::HashMap;

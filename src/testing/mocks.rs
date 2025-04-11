@@ -6,8 +6,8 @@ use crate::core::{
     Error, Config, ConfigStore, ConfigError,
 };
 use crate::core::event::EventHandler;
-use gtk::prelude::*;
-use gtk::{self, Window};
+use crate::prelude::*;
+use crate::prelude::{self, Window};
 use std::any::Any;
 use chrono::{DateTime, Local};
 use crate::core::event::{EventType, EventPayload};

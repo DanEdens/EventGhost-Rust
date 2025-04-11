@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Box, Button, Image, Orientation, Separator};
+use crate::prelude::*;
+use crate::prelude::{self, Box, Button, Image, Orientation, Separator};
 use gio::{Icon, File as GFile, Resource};
 use super::UIComponent;
 use std::path::Path;

@@ -1099,3 +1099,104 @@ pub trait Plugin {
     async fn handle_network_io(&mut self) -> Result<(), Error>;
 }
 ```
+
+# EventGhost-Rust Architecture
+
+This document outlines the architectural decisions and code organization for the EventGhost-Rust project.
+
+## Project Structure
+
+The project is organized into the following main modules:
+
+- **core**: Contains core functionality like events, plugins, actions, and configuration
+- **eg**: Contains the EventGhost application-specific code, UI components, and dialogs
+- **utils**: Contains utility functions shared across the codebase
+- **cli**: Contains command-line interface components
+
+## Module Relationships
+
+```
+┌───────────┐     ┌───────────┐     ┌───────────┐
+│           │     │           │     │           │
+│   core    │◄────│    eg     │────►│   utils   │
+│           │     │           │     │           │
+└───────────┘     └───────────┘     └───────────┘
+      ▲                 ▲                 ▲
+      │                 │                 │
+      └─────────┬───────┴─────────┬───────┘
+                │                 │
+          ┌───────────┐     ┌───────────┐
+          │           │     │           │
+          │   cli     │     │   bin     │
+          │           │     │           │
+          └───────────┘     └───────────┘
+```
+
+## Design Principles
+
+1. **Clear Module Boundaries**: Each module has a well-defined responsibility and public API
+2. **Consistent Imports**: Use the prelude module for common imports
+3. **Path-Agnostic Functions**: Use `AsRef<Path>` for functions that accept paths
+4. **Error Handling**: Use the `Error` enum for all error handling
+5. **UI Structure**: GTK UI components follow a consistent pattern
+
+## GTK Imports
+
+To maintain consistency with GTK imports, follow these guidelines:
+
+1. Import from the prelude module:
+   ```rust
+   use crate::prelude::*;
+   ```
+
+2. For additional GTK components not in the prelude, use:
+   ```rust
+   use gtk::{Component1, Component2};
+   ```
+
+3. When working with GTK types directly, always use `gtk4` rather than `gtk`.
+
+## Path Handling
+
+For consistent path handling, follow these guidelines:
+
+1. Use utility functions from `utils::path` module
+2. Define function parameters as `AsRef<Path>` rather than specific path types
+3. Return `PathBuf` from functions that create new paths
+4. Use `utils::path::to_string` to convert paths to strings
+
+## Plugin System
+
+Plugins follow a consistent pattern:
+
+1. Implement the `Plugin` trait
+2. Use the `async_trait` attribute for async methods
+3. Return errors using the `PluginError` type
+4. Register plugins with the `PluginRegistry`
+
+## Error Handling
+
+The codebase uses a central `Error` enum defined in `core::error`.
+
+1. Define new error variants in the `Error` enum
+2. Implement `From` traits for common error types
+3. Use `?` operator with `Result<T, Error>` for propagating errors
+4. Provide detailed error messages
+
+## UI Components
+
+UI components follow a consistent pattern:
+
+1. Implement the `UIComponent` trait
+2. Provide a `container` field for the root widget
+3. Implement `Clone` for components when needed
+4. Use the builder pattern for component creation
+
+## Testing
+
+Testing follows these principles:
+
+1. Unit tests in the same file as the code they test
+2. Integration tests in the `tests` directory
+3. Use the `testing` feature for testing utilities
+4. Mock external dependencies for unit tests

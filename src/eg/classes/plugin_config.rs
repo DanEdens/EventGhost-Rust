@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Dialog, Button, Entry, Label, ResponseType, Grid, Window, HeaderBar, Box};
+use crate::prelude::*;
+use crate::prelude::{self, Dialog, Button, Entry, Label, ResponseType, Grid, Window, HeaderBar, Box};
 use gtk::glib;
 use std::rc::Rc;
 use std::cell::RefCell;

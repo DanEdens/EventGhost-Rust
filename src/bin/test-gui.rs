@@ -1,5 +1,5 @@
 use gtk4 as gtk;
-use gtk::prelude::*;
+use crate::prelude::*;
 use gtk::Application;
 use std::rc::Rc;
 use std::cell::RefCell;

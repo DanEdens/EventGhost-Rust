@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{Application, gio};
+use crate::prelude::*;
+use crate::prelude::{Application, gio};
 
 /// Adds all application actions to the GTK application.
 pub fn add_actions(app: &Application) {

@@ -70,6 +70,18 @@ pub enum Error {
     
     #[error("Other error: {0}")]
     Other(String),
+
+    #[error("File already exists: {0}")]
+    FileExists(String),
+    
+    #[error("Invalid path: {0}")]
+    InvalidPath(String),
+    
+    #[error("Plugin error: {0}")]
+    PluginError(String),
+    
+    #[error("Configuration error: {0}")]
+    ConfigError(String),
 }
 
 impl From<String> for Error {

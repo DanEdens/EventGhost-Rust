@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Widget, DragSource as GtkDragSource, DropTarget as GtkDropTarget};
+use crate::prelude::*;
+use crate::prelude::{self, Widget, DragSource as GtkDragSource, DropTarget as GtkDropTarget};
 use gtk::gdk;
 use gtk::glib;
 use std::path::PathBuf;

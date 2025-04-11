@@ -2,8 +2,8 @@ mod core;
 mod eg;
 mod cli;
 
-use gtk::prelude::*;
-use gtk::{self, Application};
+use crate::prelude::*;
+use crate::prelude::{self, Application};
 use gio::{self, Resource};
 use log::{debug, error, info, LevelFilter};
 use std::path::Path;

@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererText};
+use crate::prelude::*;
+use crate::prelude::{self, Box, TreeView, TreeStore, TreeViewColumn, CellRendererText};
 use gtk::glib;
 use super::UIComponent;
 use crate::core::Error;

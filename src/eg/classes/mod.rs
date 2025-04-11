@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use crate::prelude::*;
 use gtk::Widget;
 
 // Module declarations
@@ -23,7 +23,6 @@ pub use self::menu::Menu;
 pub use self::toolbar::Toolbar;
 pub use self::status_bar::StatusBar;
 pub use self::dialog::{ConfigDialog, Dialog};
-pub use gtk::{MessageDialog, MessageType};
 pub use self::actions::add_actions;
 pub use self::log_ctrl::LogCtrl;
 pub use self::config_view::ConfigView;

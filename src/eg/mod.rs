@@ -1,11 +1,13 @@
 pub mod action;
 pub mod tree;
 pub mod classes;
+pub mod dialogs;
 pub mod winapi;
 pub mod bunch;
 pub mod globals;
 pub mod config;
 pub mod styles;
+pub mod prelude;
 
 use crate::core::event::EventManager;
 use crate::core::PluginRegistry;

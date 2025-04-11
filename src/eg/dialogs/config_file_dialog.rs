@@ -3,8 +3,9 @@ use std::sync::{Arc, Mutex};
 use std::rc::Rc;
 use std::cell::RefCell;
 use gtk4 as gtk;
-use gtk::prelude::*;
-use gtk::{FileChooserAction, FileChooserDialog, FileFilter, ResponseType};
+use crate::prelude::*;
+use crate::prelude::DialogExtManual;
+use crate::prelude::{FileChooserAction, FileChooserDialog, FileFilter, ResponseType, Window};
 use crate::core::config_manager::{ConfigManager, ConfigChangeEvent};
 use crate::core::actions::system::file_operations::ConfigFileType;
 use glib::clone;
@@ -29,16 +30,34 @@ pub struct ConfigFileDialog {
     config_manager: Rc<RefCell<ConfigManager>>,
     recent_files: Vec<PathBuf>,
     default_dir: Option<PathBuf>,
+    dialog: FileChooserDialog,
 }
 
 impl ConfigFileDialog {
     /// Create a new configuration file dialog
-    pub fn new(parent: gtk::Window, config_manager: Rc<RefCell<ConfigManager>>) -> Self {
+    pub fn new(parent: Option<&Window>, config_manager: Rc<RefCell<ConfigManager>>) -> Self {
+        let parent_window = parent.cloned().unwrap_or_else(|| {
+            let win = gtk::Window::new();
+            win.set_title(Some("EventGhost Configuration"));
+            win
+        });
+        
+        let dialog = FileChooserDialog::new(
+            Some("Choose Configuration File"),
+            Some(&parent_window),
+            FileChooserAction::Open,
+            &[("Cancel", ResponseType::Cancel), ("OK", ResponseType::Accept)]
+        );
+        
+        dialog.set_modal(true);
+        dialog.set_select_multiple(false);
+        
         Self {
-            parent,
+            parent: parent_window,
             config_manager,
             recent_files: Vec::new(),
             default_dir: None,
+            dialog,
         }
     }
 
@@ -169,9 +188,6 @@ impl ConfigFileDialog {
             }
         }
 
-        // Confirm overwrite
-        dialog.set_do_overwrite_confirmation(true);
-
         // Show dialog and get response
         let response = dialog.run_future().await;
         
@@ -271,7 +287,7 @@ mod tests {
                 window.show();
                 
                 let config_manager = Rc::new(RefCell::new(ConfigManager::new()));
-                let dialog = ConfigFileDialog::new(window, config_manager);
+                let dialog = ConfigFileDialog::new(Some(&window), config_manager);
                 
                 assert!(!dialog.recent_files.is_empty() || dialog.recent_files.is_empty());
             });

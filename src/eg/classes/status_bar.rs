@@ -1,5 +1,5 @@
-use gtk::prelude::*;
-use gtk::{self, Box, CheckButton, Statusbar};
+use crate::prelude::*;
+use crate::prelude::{self, Box, CheckButton, Statusbar};
 // use glib;
 use super::UIComponent;
 

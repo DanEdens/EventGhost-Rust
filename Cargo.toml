@@ -19,6 +19,10 @@ no-leading-underscore = true
 
 # Add a dependency to help control DLL exports
 [dependencies]
+gtk4 = "0.7"
+glib = "0.18"
+gio = "0.18"
+gdk4 = "0.7"
 tokio = { version = "1.32", features = ["full"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -37,17 +41,13 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 bitflags = "2.4"
-gtk = { version = "0.7", package = "gtk4" }
-gdk4 = "0.7"
-gio = "0.18"
-glib = "0.18"
-windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_System_Registry"] }
 clap = { version = "4.4", features = ["derive"] }
 quick-xml = { version = "0.30", features = ["serialize"] }
 # Added for globals implementation
 rumqttc = { version = "0.22", optional = true }
 redis = { version = "0.23", features = ["tokio-comp"], optional = true }
 base64 = "0.21"
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_System_Registry"] }
 
 [dev-dependencies]
 tokio-test = "0.4" 

@@ -6,12 +6,14 @@ use chrono::{DateTime, Local};
 use log::{debug, info, warn, error};
 use std::any::Any;
 use async_trait::async_trait;
+use std::fmt::Debug;
+use uuid;
 
 use crate::core::actions::system::file_operations::{FileOperationsAction, ConfigFileType};
 use crate::core::plugin::{Plugin, PluginInfo, PluginState, PluginError, PluginCapability};
+use crate::core::Error;
 use crate::core::event::Event;
 use crate::core::config::Config;
-use crate::core::Error;
 
 /// Configuration change event type
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +28,7 @@ pub enum ConfigChangeEvent {
     Reset,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DummyConfigPlugin;
 
 #[async_trait]
@@ -97,7 +99,7 @@ impl Plugin for DummyConfigPlugin {
     }
 
     fn clone_box(&self) -> Box<dyn Plugin> {
-        Box::new(Self)
+        Box::new(self.clone())
     }
 }
 
@@ -174,34 +176,18 @@ impl ConfigManager {
     }
     
     /// Save the current configuration to the given path
-    pub async fn save<P: AsRef<Path>>(&mut self, path: P, overwrite: bool) -> Result<(), Error> {
+    pub async fn save<P: AsRef<std::path::Path>>(&self, path: P, overwrite: bool) -> Result<(), Error> {
         let path = path.as_ref();
-        
-        debug!("Saving configuration to {:?}", path);
-        
-        // Create a backup if the file exists
-        if path.exists() {
-            debug!("Creating backup of existing configuration file");
-            let backup_path = self.file_operations.backup_config(path).await?;
-            debug!("Backup created at {:?}", backup_path);
-        }
-        
-        // Get the configuration
         let config = self.config.lock().unwrap().clone();
         
-        // Save the configuration
-        self.file_operations.save_config(path, &config, overwrite).await?;
+        if let Some(existing_path) = &self.config_path {
+            if existing_path == path {
+                self.file_operations.save_config(&config, path.to_str().unwrap(), overwrite).await?;
+                return Ok(());
+            }
+        }
         
-        // Update the path and modified flag
-        self.config_path = Some(path.to_path_buf());
-        self.modified = false;
-        self.last_saved = Some(Local::now());
-        
-        // Notify listeners
-        self.notify_listeners(ConfigChangeEvent::Saved { path: path.to_path_buf() });
-        
-        info!("Configuration saved to {:?}", path);
-        
+        self.file_operations.save_config(&config, path.to_str().unwrap(), overwrite).await?;
         Ok(())
     }
     
