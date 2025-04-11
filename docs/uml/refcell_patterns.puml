@@ -1,106 +1,50 @@
-@startuml RefCell Borrowing Patterns
+@startuml RefCell_Patterns
 
-title RefCell Borrowing Patterns in EventGhost-Rust
+title "RefCell Borrowing Patterns"
 
-' Classes that demonstrate RefCell patterns
-class Component {
-  -config: Rc<RefCell<Config>>
-  -window: Rc<RefCell<Window>>
-  +get_config(): Rc<RefCell<Config>>
-  +get_window(): Rc<RefCell<Window>>
+class "Component" as Component {
+  config: Rc<RefCell<Config>>
+  window: Rc<RefCell<Window>>
+  + get_config(): Rc<RefCell<Config>>
+  + get_window(): Rc<RefCell<Window>>
+  + use_config()
 }
 
-class Config {
-  -items: Vec<ConfigItem>
-  +load_from_file(): Result<(), Error>
-  +save_to_file(): Result<(), Error>
+class "Config" as Config {
+  items: Vec<Item>
+  + add_item(item: Item)
+  + get_items(): &[Item]
 }
 
-class Dialog {
-  +run_with_data(data: Rc<RefCell<Config>>): Result<(), Error>
-}
+Component --> Config : references
 
-note right of Component
-  RefCell patterns help manage shared mutable state
-  between GTK components safely
+note top of Component
+  <b>Interior Mutability Pattern</b>
+  - RefCell<T> allows mutable borrows checked at runtime
+  - Rc<RefCell<T>> enables multiple owners with mutable access
+  - Trade-off: Compile-time guarantees for runtime checks
 end note
 
-note right of Component::get_config
-  Clone + Borrow Pattern:
-  
+note right of Component::use_config
+  <b>Safe Pattern</b>
   // Clone the Rc first
   let config = self.config.clone();
-  // Then borrow
+  
+  // Then borrow the RefCell contents
   let config_ref = config.borrow();
   
-  // Use config_ref safely
+  // Now use config_ref safely
+  for item in config_ref.get_items() {
+    println!("{:?}", item);
+  }
 end note
 
-note right of Component::get_window
-  Window Pattern:
-  
-  // For GTK widgets
-  let window = self.window.clone();
-  let window_ref = window.borrow();
-  
-  // Use window_ref
-  window_ref.show();
-end note
-
-note right of Dialog
-  Callback Pattern:
-  
-  // For GTK callbacks
-  let params = params.clone();
-  
-  button.connect_clicked(move |_| {
-    // Safe to use params inside callback
-    let mut params_ref = params.borrow_mut();
-    // Modify params
-  });
-end note
-
-' Sequence diagram
-actor User
-participant Component
-participant "Rc<RefCell<Config>>" as RCConfig
-participant Closure
-participant Dialog
-
-User -> Component: call method
-activate Component
-
-Component -> RCConfig: clone()
-RCConfig --> Component: Rc<RefCell<Config>> clone
-
-Component -> RCConfig: borrow()
-RCConfig --> Component: Ref<Config>
-
-Component -> Dialog: show(closure)
-activate Dialog
-
-Dialog -> Closure: invoke
-activate Closure
-
-Closure -> RCConfig: clone()
-RCConfig --> Closure: Rc<RefCell<Config>> clone
-
-Closure -> RCConfig: borrow_mut()
-RCConfig --> Closure: RefMut<Config>
-
-Closure -> Closure: modify config
-Closure --> Dialog: return
-deactivate Closure
-
-Dialog --> Component: dialog closed
-deactivate Dialog
-
-Component --> User: method returns
-deactivate Component
-
-note over Component, Dialog
-  This pattern allows RefCell borrowing in callbacks
-  without causing compile errors due to complex lifetimes
+note bottom of Config
+  <b>Runtime Borrowing Rules</b>
+  - Multiple shared borrows (borrow()) allowed
+  - Only one mutable borrow (borrow_mut()) allowed
+  - Can't have shared + mutable borrows simultaneously
+  - Violating rules causes runtime panic
 end note
 
 @enduml 

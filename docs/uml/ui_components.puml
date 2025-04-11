@@ -1,16 +1,6 @@
-@startuml EventGhost UI Components
-!theme cerulean
-skinparam classAttributeIconSize 0
-skinparam classFontStyle bold
-skinparam classBackgroundColor #FEFEFE
-skinparam classBorderColor #63B175
-skinparam InterfaceBackgroundColor #B8E6B8
+@startuml UIComponents
 
-' UI Component hierarchy of the EventGhost-Rust project
-
-title EventGhost-Rust: UI Component Hierarchy
-
-' Define main UI components
+title "EventGhost-Rust UI Component Hierarchy"
 
 interface UIComponent {
   +get_widget(): &gtk::Widget
@@ -18,240 +8,46 @@ interface UIComponent {
 
 class MainFrame {
   +window: ApplicationWindow
-  +menu_bar: PopoverMenuBar
-  +toolbar: Toolbar
-  +status_bar: StatusBar
-  +log_ctrl: LogCtrl
   +config_view: ConfigView
-  +container: Box
-  +paned: Paned
-  +notebook: Notebook
-  +new(app: &Application): Result<Self, Error>
+  +log_ctrl: LogCtrl
   +show()
-  +close()
-  +initialize()
-  +can_close(): bool
-  +setup_keyboard_shortcuts()
-  +handle_window_close(): bool
 }
 
 class ConfigView {
-  +container: Box
-  +scrolled_window: ScrolledWindow
-  +tree_view: TreeView
-  +tree_store: TreeStore
   +config: Rc<RefCell<Config>>
-  +config_path: Rc<RefCell<Option<PathBuf>>>
-  +new(): Self
-  +set_config_path(path: P)
-  +new_config()
-  +save_config(): Result<(), Error>
-  +load_config(path: P): io::Result<()>
   +update_tree()
-  +get_selected_item(): Option<ConfigItem>
-  +add_item(parent: Option<&TreeIter>, item: &ConfigItem)
-  +remove_selected_item()
 }
 
 class LogCtrl {
-  +container: ScrolledWindow
-  +widget: TreeView
-  +store: ListStore
-  +entries: Arc<Mutex<VecDeque<LogEntry>>>
-  +new(): Self
   +write(entry: LogEntry)
-  +clear()
-  +scroll_to_end()
-  +set_max_entries(max: usize)
-  +get_entries(): Vec<LogEntry>
 }
 
-class Dialog {
+interface Dialog {
   +show()
   +hide()
-  +show_modal(): Result<DialogResult, Error>
-  +end_dialog(result: DialogResult)
-  +on_init(): Result<(), Error>
-  +on_command(command: u32): Result<(), Error>
-}
-
-class TreeCtrl {
-  +container: Box
-  +tree_view: TreeView
-  +store: TreeStore
-  +selection: TreeSelection
-  +view: TreeView
-  +drag_source: DragSource
-  +new(): Self
-  +expand_item(iter: &TreeIter)
-  +collapse_item(iter: &TreeIter)
-  +expand_all()
-  +collapse_all()
-  +get_selected_path(): Option<TreePath>
-  +select_path(path: &TreePath)
-}
-
-class Menu {
-  +widget: Box
-  +menu_button: MenuButton
-  +menu: gio::Menu
-  +new(): Self
-  +append_menu(label: &str): gio::Menu
-  +append_item(menu: &gio::Menu, label: &str, action: Option<&str>)
-  +create_action(name: &str, callback: F)
-  +set_accelerator(action: &str, accelerator: &str)
 }
 
 class MessageDialog {
-  +dialog: gtk4::MessageDialog
-  +new(title: &str, message: &str, parent: Option<&Window>): Self
-  +add_button(text: &str, response_id: ResponseType)
-  +set_default_response(response: ResponseType)
-  +connect_response<F>(callback: F)
+  +new(title: &str, message: &str): Self
 }
 
 class FileDialog {
-  +dialog: FileChooserDialog
-  +new(title: &str, parent: Option<&Window>, action: FileChooserAction): Self
-  +set_current_folder(folder: &Path)
-  +add_filter(filter: &FileFilter)
-  +get_file(): Option<File>
+  +new(title: &str): Self
 }
 
-class ColorDialog {
-  +dialog: ColorChooserDialog
-  +new(title: &str, parent: Option<&Window>): Self
-  +get_rgba(): RGBA
-  +set_rgba(color: &RGBA)
-}
-
-class ConfigDialog {
-  +dialog: gtk4::Dialog
-  +new(parent: Option<&Window>): Self
-  +add_widget(widget: &impl IsA<Widget>)
-  +validate(): bool
-  +apply_changes()
-}
-
-class CustomDialog {
-  +widget: gtk4::Dialog
-  +result: DialogResult
-  +new(app: Option<&Application>): Self
-  +run(): ResponseType
-  +close()
-  +create_content_area(): Box
-  +add_button(text: &str, response_id: ResponseType)
-}
-
-class DragDropManager {
-  +widget: gtk::Widget
-  +current_data: Arc<Mutex<Option<DragData>>>
-  +current_effect: Arc<Mutex<DragEffects>>
-  +target: Arc<Mutex<Option<Box<dyn DropTarget>>>>
-  +new(widget: gtk::Widget): Self
-  +register_drop_target(target: Box<dyn DropTarget>): Result<(), Error>
-  +start_drag(source: Box<dyn DragSource>, data: DragData, allowed_effects: DragEffects): Result<DragEffects, Error>
-}
-
-' Define relationships
 UIComponent <|.. MainFrame
 UIComponent <|.. ConfigView
 UIComponent <|.. LogCtrl
-UIComponent <|.. TreeCtrl
-UIComponent <|.. Menu
-UIComponent <|.. CustomDialog
 
 Dialog <|.. MessageDialog
 Dialog <|.. FileDialog
-Dialog <|.. ColorDialog
-Dialog <|.. ConfigDialog
 
-MainFrame *-- ConfigView : "1"
-MainFrame *-- LogCtrl : "1"
-MainFrame *-- Menu : "1"
+MainFrame *-- ConfigView
+MainFrame *-- LogCtrl
 
-ConfigView o-- Dialog : "uses"
-LogCtrl o-- TreeCtrl : "uses"
-DragDropManager o-- TreeCtrl : "manages"
-
-' Interaction flows
-note right of MainFrame::setup_keyboard_shortcuts
-  Sets up keyboard shortcuts for:
-  - New configuration (Ctrl+N)
-  - Open configuration (Ctrl+O) 
-  - Save configuration (Ctrl+S)
-  - Undo/Redo actions (Ctrl+Z/Ctrl+Y)
-  - Copy/Cut/Paste (Ctrl+C/X/V)
+note right of ConfigView
+  Uses Rc<RefCell<Config>> for shared 
+  mutable state between components
 end note
-
-note right of MainFrame::handle_window_close
-  1. Prompts to save unsaved changes
-  2. Stops all running plugins
-  3. Saves window state/position
-  4. Returns true to allow close
-end note
-
-note bottom of ConfigView::update_tree
-  1. Clears the tree store
-  2. Recursively adds items from config
-  3. Expands items that were previously expanded
-  4. Restores selection if possible
-end note
-
-note bottom of DragDropManager
-  Handles drag and drop operations between:
-  - Tree items (reordering/nesting)
-  - External files (importing)
-  - Plugins (adding to configuration)
-  
-  Uses Gtk's GdkDrop and GdkDrag APIs
-end note
-
-' Notes
-note right of UIComponent
-  All UI components implement this interface
-  to provide uniform access to gtk::Widget.
-  This enables composite UI patterns and
-  hierarchical component organization.
-end note
-
-note right of MainFrame
-  MainFrame serves as the application's main window
-  and coordinates all other components.
-  
-  Startup sequence:
-  1. Initialize GTK application
-  2. Create MainFrame
-  3. Set up widgets and layout
-  4. Connect signals and shortcuts
-  5. Load configuration
-  6. Show window
-end note
-
-note bottom of ConfigView
-  ConfigView manages configuration tree display
-  and editing; a central component of EventGhost.
-  
-  Uses Rc<RefCell<Config>> to share configuration
-  state with other components while allowing
-  mutable access.
-end note
-
-note bottom of Dialog
-  Dialog trait abstracts common dialog
-  functionality for all dialog types.
-  
-  In GTK4, dialogs no longer use run()
-  but instead use show() with response
-  signals connected to callbacks.
-end note
-
-' Legend
-legend right
-  |= Relationship |= Meaning |
-  |--- Implements ---| Class implements an interface |
-  |--- Contains ---| Composition (strong ownership) |
-  |--- Uses ---| Association (weak reference) |
-endlegend
 
 @enduml 
