@@ -1,117 +1,92 @@
 @startuml RefCell Borrowing Patterns
 
-' RefCell borrowing patterns in the EventGhost-Rust project
-
-title EventGhost-Rust: RefCell Borrowing Patterns
+title RefCell Borrowing Patterns in EventGhost-Rust
 
 ' Classes that demonstrate RefCell patterns
-
-class "Component" as Component {
-  +config: Rc<RefCell<Config>>
-  +window: Rc<RefCell<ApplicationWindow>>
-  
-  +problematic_borrow_example()
-  +better_borrow_pattern()
-  +callback_pattern() 
-  +window_pattern()
+class Component {
+  -config: Rc<RefCell<Config>>
+  -window: Rc<RefCell<Window>>
+  +get_config(): Rc<RefCell<Config>>
+  +get_window(): Rc<RefCell<Window>>
 }
 
-class "Config" as Config {
-  +items: Vec<ConfigItem>
-  +load_from_file(path: &Path): Result<(), Error>
-  +save_to_file(path: &Path): Result<(), Error>
+class Config {
+  -items: Vec<ConfigItem>
+  +load_from_file(): Result<(), Error>
+  +save_to_file(): Result<(), Error>
 }
 
-class "Dialog" as Dialog {
-  +run_with_data(data: Rc<RefCell<HashMap<String, String>>>)
+class Dialog {
+  +run_with_data(data: Rc<RefCell<Config>>): Result<(), Error>
 }
 
-' Diagrams showing the different borrowing patterns
-note right of Component::problematic_borrow_example
-  // Problematic pattern - difficult type annotation
-  let config = self.config.borrow();
-  
-  // Can lead to errors like:
-  // expected struct `std::cell::Ref<'_, Config>`
-  // found reference `&_`
+note right of Component
+  RefCell patterns help manage shared mutable state
+  between GTK components safely
 end note
 
-note right of Component::better_borrow_pattern
-  // Better pattern - use clone + borrow
+note right of Component::get_config
+  Clone + Borrow Pattern:
+  
+  // Clone the Rc first
   let config = self.config.clone();
+  // Then borrow
   let config_ref = config.borrow();
   
-  // Now we can use config_ref normally
-  for item in &config_ref.items {
-    // Use item...
-  }
+  // Use config_ref safely
 end note
 
-note right of Component::callback_pattern
-  // For GTK callbacks with RefCell
-  let params = std::rc::Rc::new(std::cell::RefCell::new(HashMap::new()));
+note right of Component::get_window
+  Window Pattern:
   
-  // Use clone to access inside callback
-  button.connect_clicked(clone!(@strong params => move |_| {
-    // We can now modify params inside the callback
-    let params_clone = params.clone();
-    let mut params_ref = params_clone.borrow_mut();
-    params_ref.insert("key".to_string(), "value".to_string());
-  }));
-  
-  // Later access pattern:
-  let result = {
-    let p = params.clone();
-    p.borrow().clone()
-  };
-end note
-
-note right of Component::window_pattern
-  // For GTK window and RefCell
+  // For GTK widgets
   let window = self.window.clone();
   let window_ref = window.borrow();
   
-  // Now we can use window_ref
+  // Use window_ref
   window_ref.show();
 end note
 
-' Show sequence diagram of borrowing pattern for closures
-skinparam sequenceMessageAlign center
+note right of Dialog
+  Callback Pattern:
+  
+  // For GTK callbacks
+  let params = params.clone();
+  
+  button.connect_clicked(move |_| {
+    // Safe to use params inside callback
+    let mut params_ref = params.borrow_mut();
+    // Modify params
+  });
+end note
 
+' Sequence diagram
 actor User
 participant Component
-participant "RC<RefCell<Config>>" as RCConfig
-participant "Closure" as Closure
-participant "Dialog" as Dialog
+participant "Rc<RefCell<Config>>" as RCConfig
+participant Closure
+participant Dialog
 
 User -> Component: call method
 activate Component
 
 Component -> RCConfig: clone()
-activate RCConfig
 RCConfig --> Component: Rc<RefCell<Config>> clone
-deactivate RCConfig
 
 Component -> RCConfig: borrow()
-activate RCConfig
 RCConfig --> Component: Ref<Config>
-deactivate RCConfig
 
 Component -> Dialog: show(closure)
 activate Dialog
 
-Dialog -> Closure: invoke with ui event
+Dialog -> Closure: invoke
 activate Closure
 
 Closure -> RCConfig: clone()
-activate RCConfig
 RCConfig --> Closure: Rc<RefCell<Config>> clone
-deactivate RCConfig
 
 Closure -> RCConfig: borrow_mut()
-activate RCConfig
 RCConfig --> Closure: RefMut<Config>
-deactivate RCConfig
 
 Closure -> Closure: modify config
 Closure --> Dialog: return

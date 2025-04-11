@@ -1,4 +1,13 @@
 @startuml EventGhost Plugin System
+!theme cerulean
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classBackgroundColor #FEFEFE
+skinparam classBorderColor #63B175
+skinparam InterfaceBackgroundColor #B8E6B8
+skinparam EnumBackgroundColor #F2DFCE
+skinparam ArrowColor #0066CC
+skinparam packageBackgroundColor #F5F5F5
 
 ' Plugin System architecture of the EventGhost-Rust project
 
@@ -6,7 +15,7 @@ title EventGhost-Rust: Plugin System Architecture
 
 ' Define main components of the plugin system
 
-interface Plugin {
+interface Plugin #B8E6B8 {
   +get_name(): &str
   +get_description(): &str
   +get_version(): &str
@@ -24,7 +33,7 @@ interface Plugin {
   +clone_box(): Box<dyn Plugin>
 }
 
-enum PluginState {
+enum PluginState #F2DFCE {
   Uninitialized
   Initialized
   Running
@@ -32,7 +41,7 @@ enum PluginState {
   Error
 }
 
-enum PluginCapability {
+enum PluginCapability #F2DFCE {
   ReceivesEvents
   GeneratesEvents
   HasConfig
@@ -41,7 +50,7 @@ enum PluginCapability {
   NetworkAccess
 }
 
-class PluginInfo {
+class PluginInfo #E6F7FF {
   +name: String
   +description: String
   +version: String
@@ -51,8 +60,10 @@ class PluginInfo {
   +capabilities: Vec<PluginCapability>
 }
 
-class PluginRegistry {
+class PluginRegistry #A0D6B4 {
   -plugins: HashMap<String, Arc<dyn Plugin>>
+  -event_listeners: Vec<Arc<dyn Plugin>>
+  -config_manager: Arc<ConfigManager>
   +new(): Self
   +register(plugin: Arc<dyn Plugin>): Result<(), PluginError>
   +unregister(name: &str): Result<(), PluginError>
@@ -61,15 +72,22 @@ class PluginRegistry {
   +initialize_all(): Result<(), PluginError>
   +start_all(): Result<(), PluginError>
   +stop_all(): Result<(), PluginError>
+  +dispatch_event(event: &dyn Event): Result<(), PluginError>
+  +save_plugin_configs(): Result<(), PluginError>
 }
 
-class PluginLoader {
+class PluginLoader #A0D6B4 {
+  -plugin_directories: Vec<PathBuf>
+  -registry: Arc<PluginRegistry>
+  +new(registry: Arc<PluginRegistry>): Self
+  +add_plugin_directory(dir: PathBuf)
   +load_plugin(path: &Path): Result<Arc<dyn Plugin>, PluginError>
   +load_plugins_from_directory(dir: &Path): Result<Vec<Arc<dyn Plugin>>, PluginError>
   +discover_plugins(): Result<Vec<Arc<dyn Plugin>>, PluginError>
+  +reload_plugin(name: &str): Result<Arc<dyn Plugin>, PluginError>
 }
 
-class Event {
+interface Event #B8E6B8 {
   +get_id(): &str
   +get_type(): EventType
   +get_payload(): &EventPayload
@@ -80,7 +98,7 @@ class Event {
   +clone_event(): Box<dyn Event + Send + Sync>
 }
 
-class Action {
+interface Action #B8E6B8 {
   +get_id(): Uuid
   +get_name(): &str
   +get_description(): &str
@@ -94,15 +112,18 @@ class Action {
   +as_any(): &dyn Any
 }
 
-class EventPayload {
+class EventPayload #E6F7FF {
   +data: HashMap<String, Value>
   +new(): Self
   +with_data(key: &str, value: Value): Self
   +get(&self, key: &str): Option<&Value>
   +set(&mut self, key: &str, value: Value)
+  +merge(&mut self, other: &EventPayload)
+  +as_json(): Result<String, Error>
+  +from_json(json: &str): Result<Self, Error>
 }
 
-enum EventType {
+enum EventType #F2DFCE {
   Button
   Keyboard
   Mouse
@@ -112,7 +133,7 @@ enum EventType {
   Custom
 }
 
-class FileOperationsAction {
+class FileOperationsAction #A0D6B4 {
   -id: Uuid
   -plugin: Arc<dyn Plugin>
   -config: FileOperationsConfig
@@ -120,62 +141,160 @@ class FileOperationsAction {
   +with_id(id: Uuid, plugin: Arc<dyn Plugin>): Self
   +with_operation(operation: FileOperation): Self
   +execute(event: &dyn Event): Result<ActionResult, Error>
+  +validate_paths(): Result<(), Error>
+  +handle_errors(err: &std::io::Error): Error
 }
 
-enum FileOperation {
-  Copy { source: String, destination: String }
-  Move { source: String, destination: String }
-  Delete { path: String }
+enum FileOperation #F2DFCE {
+  Copy { source: String, destination: String, overwrite: bool }
+  Move { source: String, destination: String, overwrite: bool }
+  Delete { path: String, recursive: bool }
   Create { path: String, content: String }
-  Read { path: String }
-  CreateDirectory { path: String }
+  Read { path: String, encoding: Option<String> }
+  CreateDirectory { path: String, recursive: bool }
   Exists { path: String }
 }
 
+package "Event Flow" as EventFlow #D5E5F2 {
+    class EventBus #A0D6B4 {
+        -listeners: Vec<Box<dyn Fn(&dyn Event) -> Result<(), Error>>>
+        +publish(event: &dyn Event): Result<(), Error>
+        +subscribe<F>(callback: F): SubscriptionId
+        +unsubscribe(id: SubscriptionId): bool
+    }
+    
+    class EventFilter #E6F7FF {
+        -type_filter: Option<EventType>
+        -source_filter: Option<String>
+        -payload_filter: HashMap<String, Vec<String>>
+        +matches(&self, event: &dyn Event): bool
+        +with_type(event_type: EventType): Self
+        +with_source(source: &str): Self
+        +with_payload_key(key: &str, value: &str): Self
+    }
+}
+
 ' Define relationships
-Plugin <|.. FileOperationsAction : implements
+Plugin <|.. FileOperationsAction #line:green;line.bold : implements
 
-FileOperationsAction --|> Action : implements
-FileOperationsAction o-- FileOperation : contains
+FileOperationsAction --|> Action #line:green;line.bold : implements
+FileOperationsAction o-- FileOperation #line:blue;line.bold : contains
 
-PluginRegistry o-- Plugin : manages
-PluginLoader ..> Plugin : creates
-PluginLoader ..> PluginRegistry : fills
+PluginRegistry o-- Plugin #line:red;line.bold : manages
+PluginLoader ..> Plugin #line:blue;line.dashed : creates
+PluginLoader ..> PluginRegistry #line:blue;line.dashed : fills
 
-Plugin ..> Event : handles
-Plugin ..> PluginInfo : returns
-Plugin ..> PluginState : returns
-Plugin ..> PluginCapability : returns
+Plugin ..> Event #line:blue : handles
+Plugin --o PluginInfo #line:blue : provides
+Plugin ..> PluginState #line:blue : returns
+Plugin ..> PluginCapability #line:blue : returns
 
-Event o-- EventType : has
-Event o-- EventPayload : has
+Event o-- EventType #line:blue;line.bold : has
+Event o-- EventPayload #line:blue;line.bold : has
 
-' Notes
-note right of Plugin
-  Core interface that all plugins must implement.
-  Uses async_trait to support async methods.
+EventFlow.EventBus o-- Event #line:red;line.bold : publishes
+EventFlow.EventFilter ..> Event #line:blue;line.dashed : filters
+
+PluginRegistry o-- EventFlow.EventBus #line:red : uses
+PluginRegistry ..> EventFlow.EventFilter #line:blue;line.dashed : configures
+
+' Sequence diagrams and process flows
+note right of PluginRegistry::dispatch_event
+  1. Receive event from source
+  2. Apply event filters
+  3. For each listening plugin:
+     a. Check if plugin can handle event
+     b. Call plugin.handle_event()
+     c. Collect results
+  4. Return combined result
 end note
 
-note bottom of PluginRegistry
+note right of PluginLoader::load_plugin
+  1. Load dynamic library with libloading
+  2. Call library's plugin_create() function
+  3. Validate plugin interface
+  4. Register with PluginRegistry
+  5. Return Arc<dyn Plugin>
+end note
+
+note right of FileOperationsAction::execute
+  1. Extract operation parameters from event
+  2. Validate paths and permissions
+  3. Perform file operation
+  4. Handle any IO errors
+  5. Return success or error result
+end note
+
+' Notes
+note right of Plugin #E0FFE0
+  Core interface that all plugins must implement.
+  Uses async_trait to support async methods.
+  
+  Lifecycle:
+  1. Load → 2. Initialize → 3. Start → 4. Handle Events → 5. Stop
+end note
+
+note bottom of PluginRegistry #E0FFE0
   Central registry that manages plugin lifecycle.
   Plugins are stored as Arc<dyn Plugin> for
   shared ownership across the application.
+  
+  Responsible for:
+  - Plugin registration/deregistration
+  - Plugin lifecycle (init/start/stop)
+  - Event dispatching to plugins
+  - Configuration management
 end note
 
-note bottom of FileOperationsAction
+note bottom of FileOperationsAction #E0FFE0
   Concrete implementation of Action trait
   that performs file system operations.
+  
+  Handles file operations with proper error handling
+  and path validation for security.
 end note
 
-note left of PluginLoader
+note left of PluginLoader #E0FFE0
   Responsible for loading plugin shared libraries
   and instantiating plugin objects.
+  
+  Uses libloading crate to dynamically load
+  Rust plugin libraries at runtime.
 end note
 
-note right of Event
+note right of Event #E0FFE0
   Events are the primary way plugins
   communicate with each other and
   the core application.
+  
+  Events are immutable and cloneable to
+  allow safe sharing between components.
 end note
+
+note bottom of EventFlow.EventBus #E0FFE0
+  The EventBus provides a publish-subscribe
+  pattern for Event distribution.
+  
+  Allows components to subscribe to events
+  without direct coupling to event sources.
+end note
+
+' Color legend
+legend right
+  |= Component Type |= Purpose |
+  |<#B8E6B8>| Core Interfaces | 
+  |<#A0D6B4>| Main Plugin System Classes |
+  |<#E6F7FF>| Data Structures |
+  |<#F2DFCE>| Enums & Constants |
+endlegend
+
+' Relationship legend
+legend bottom
+  |= Relationship |= Meaning |
+  |<#green>--- Implements ---| Class implements an interface |
+  |<#red>--- Contains ---| Composition (strong ownership) |
+  |<#blue>--- Uses ---| Association (weak reference) |
+  |<#blue;line.dashed>--- Creates ---| Factory relationship |
+endlegend
 
 @enduml 
