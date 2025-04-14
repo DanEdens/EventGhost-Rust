@@ -1,37 +1,48 @@
 @startuml UIComponents
+!theme cerulean
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #3D7944
+skinparam InterfaceBackgroundColor #D4EDDA
+skinparam ArrowColor #0056B3
+skinparam NoteBackgroundColor #E2F0FF
+skinparam NoteBorderColor #5B9BD5
+skinparam NoteTextColor #000000
+skinparam ClassFontColor #000000
 
 title "EventGhost-Rust UI Component Hierarchy"
 
-interface UIComponent {
+interface UIComponent #D4EDDA {
   +get_widget(): &gtk::Widget
 }
 
-class MainFrame {
+class MainFrame #E2F0FF {
   +window: ApplicationWindow
   +config_view: ConfigView
   +log_ctrl: LogCtrl
   +show()
 }
 
-class ConfigView {
+class ConfigView #E2F0FF {
   +config: Rc<RefCell<Config>>
   +update_tree()
 }
 
-class LogCtrl {
+class LogCtrl #E2F0FF {
   +write(entry: LogEntry)
 }
 
-interface Dialog {
+interface Dialog #D4EDDA {
   +show()
   +hide()
 }
 
-class MessageDialog {
+class MessageDialog #E2F0FF {
   +new(title: &str, message: &str): Self
 }
 
-class FileDialog {
+class FileDialog #E2F0FF {
   +new(title: &str): Self
 }
 

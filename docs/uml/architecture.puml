@@ -3,25 +3,29 @@
 skinparam packageStyle rectangle
 skinparam componentStyle uml2
 skinparam defaultFontName Arial
-skinparam ArrowColor #0066CC
-skinparam packageBackgroundColor #F5F5F5
+skinparam ArrowColor #0056B3
+skinparam packageBackgroundColor #FFFFFF
+skinparam NoteBackgroundColor #E2F0FF
+skinparam NoteBorderColor #5B9BD5
+skinparam ClassFontColor #000000
+skinparam NoteTextColor #000000
 
 ' Overall architecture diagram of the EventGhost-Rust project
 
 title EventGhost-Rust: Overall Architecture
 
 ' Define main packages
-package "Core" as Core #DEEAEE {
-    [Error] as CoreError #F47174 
-    [Event] as CoreEvent #A0D6B4
-    [Plugin] as CorePlugin #A0D6B4
-    [PluginRegistry] as CorePluginRegistry #A0D6B4
-    [ConfigManager] as CoreConfigManager #F8B195
+package "Core" as Core #F0F7FF {
+    [Error] as CoreError #FFD9D9
+    [Event] as CoreEvent #D4EDDA
+    [Plugin] as CorePlugin #D4EDDA
+    [PluginRegistry] as CorePluginRegistry #D4EDDA
+    [ConfigManager] as CoreConfigManager #FFE8D6
     
-    package "Actions" as Actions #D5E5F2 {
-        [FileOperations] as FileOps
-        [System] as SystemActions
-        [Network] as NetworkActions
+    package "Actions" as Actions #F8F9FA {
+        [FileOperations] as FileOps #E2F0FF
+        [System] as SystemActions #E2F0FF
+        [Network] as NetworkActions #E2F0FF
     }
 
     note right of CoreEvent
@@ -31,28 +35,28 @@ package "Core" as Core #DEEAEE {
     end note
 }
 
-package "EG (EventGhost)" as EG #E3F2FD {
-    [Config] as EGConfig #F8B195
-    [MainFrame] as EGMainFrame #A0D6B4
-    [LogCtrl] as EGLogCtrl #A0D6B4
+package "EG (EventGhost)" as EG #F0F7FF {
+    [Config] as EGConfig #FFE8D6
+    [MainFrame] as EGMainFrame #D4EDDA
+    [LogCtrl] as EGLogCtrl #D4EDDA
     
-    package "Classes" as Classes #D5E5F2 {
-        [ConfigView] as ClassConfigView #A0D6B4
-        [Dialog] as ClassDialog #A0D6B4
-        [ConfigDialogs] as ClassConfigDialogs #A0D6B4
-        [DragDrop] as ClassDragDrop #A0D6B4
-        [TreeCtrl] as ClassTreeCtrl #A0D6B4
-        [Menu] as ClassMenu #A0D6B4
+    package "Classes" as Classes #F8F9FA {
+        [ConfigView] as ClassConfigView #D4EDDA
+        [Dialog] as ClassDialog #D4EDDA
+        [ConfigDialogs] as ClassConfigDialogs #D4EDDA
+        [DragDrop] as ClassDragDrop #D4EDDA
+        [TreeCtrl] as ClassTreeCtrl #D4EDDA
+        [Menu] as ClassMenu #D4EDDA
     }
     
-    package "Prelude" as Prelude #D5E5F2 {
-        [GTK Imports] as GTKImports
-        [Common Traits] as CommonTraits
-        [Common Types] as CommonTypes
+    package "Prelude" as Prelude #F8F9FA {
+        [GTK Imports] as GTKImports #E2F0FF
+        [Common Traits] as CommonTraits #E2F0FF
+        [Common Types] as CommonTypes #E2F0FF
     }
     
-    package "Dialogs" as Dialogs #D5E5F2 {
-        [ConfigFileDialog] as DialogConfigFile
+    package "Dialogs" as Dialogs #F8F9FA {
+        [ConfigFileDialog] as DialogConfigFile #E2F0FF
     }
 
     note right of EGMainFrame
@@ -62,13 +66,13 @@ package "EG (EventGhost)" as EG #E3F2FD {
     end note
 }
 
-package "Utils" as Utils #E8F5E9 {
-    [Path] as UtilsPath
-    [GTK Utils] as UtilsGTK
+package "Utils" as Utils #F0F7FF {
+    [Path] as UtilsPath #E2F0FF
+    [GTK Utils] as UtilsGTK #E2F0FF
 }
 
-package "CLI" as CLI #FFF9C4 {
-    [Commands] as CLICommands
+package "CLI" as CLI #F0F7FF {
+    [Commands] as CLICommands #E2F0FF
 }
 
 ' Define relationships
@@ -101,10 +105,10 @@ CorePluginRegistry --> CorePlugin : manages
 ' Color legend
 legend right
   |= Component Type |= Description |
-  |<#A0D6B4>| UI Components |
-  |<#F8B195>| Configuration Management |
-  |<#F47174>| Error Handling |
-  |<#D5E5F2>| Support Modules |
+  |<#D4EDDA>| UI Components |
+  |<#FFE8D6>| Configuration Management |
+  |<#FFD9D9>| Error Handling |
+  |<#E2F0FF>| Support Modules |
 endlegend
 
 ' Note about prelude pattern
