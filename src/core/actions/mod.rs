@@ -8,6 +8,7 @@ pub use system::RunCommandAction;
 pub use system::FileOperationsAction;
 pub use system::RegistryOperationsAction;
 pub use system::WindowActionsAction;
+pub use system::SendKeysAction;
 
 #[cfg(test)]
 mod tests; 

@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Run Command action for executing system commands
   - File Operations action for file management (copy, move, delete, create)
   - Window Actions for window manipulation (minimize, maximize, activate, etc.)
+  - Send Keys action for keyboard input simulation (typing, key combinations)
   - Support for background command execution
 
 ### Changed

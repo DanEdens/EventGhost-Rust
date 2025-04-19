@@ -128,7 +128,7 @@
   - [x] File operations
 - [ ] Window Actions
   - [x] Window manipulation
-  - [ ] Send keys
+  - [x] Send keys
   - [ ] Mouse control
 - [ ] Variable Actions
   - [ ] Set/Get variables
