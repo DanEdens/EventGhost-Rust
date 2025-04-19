@@ -129,17 +129,30 @@ EventGhost-Rust is currently in active development. The core architecture is in 
 - **Detailed Item Display in Configuration View**: Items in the tree view now display more detailed information (e.g., file paths for plugins, script previews for actions).
 - **Autostart Folder**: Added the Autostart folder to the configuration tree to better organize startup items.
 
-## GTK4 Compatibility
+## Recent Improvements
 
-We've updated several files to ensure compatibility with GTK4:
+### Mouse Control Actions
+- Added comprehensive mouse control functions for Windows
+- Implemented smooth mouse movement with configurable steps
+- Added support for all mouse buttons (left, right, middle)
+- Implemented drag operations with configurable start/end positions
+- Added mouse wheel scrolling with configurable amounts
+- Implemented position restoration after operations
+- Added ability to verify mouse cursor position with tolerance
 
-1. Updated import paths in `src/eg/classes/tree_ctrl.rs` to use GTK4 components
-2. Fixed ModifierType imports in `src/eg/classes/config_view.rs` to use `gdk4::ModifierType`
-3. Updated Rectangle imports in `src/eg/classes/log_ctrl.rs` to use `gdk4::Rectangle`
-4. Fixed RGBA imports in `src/eg/classes/dialog.rs` to use `gdk4::RGBA`
-5. Implemented MockPlugin and MockEvent directly in core modules for testing
-
-These changes ensure that the application works correctly with GTK4 and avoids deprecation warnings.
+### GTK4 Compatibility
+- Updated import paths to use GTK4 components
+- Fixed ModifierType imports to use `gdk4::ModifierType`
+- Updated Rectangle imports to use `gdk4::Rectangle`
+- Fixed RGBA imports to use `gdk4::RGBA`
+- Added explicit imports for dialog components like `AboutDialog` and `License`
+- Fixed method parameter types for GTK4 dialog components
+- Implemented proper type casting for window references
+- Improved TreeView visibility with ScrolledWindow containers
+- Fixed column sizing and expansion in TreeView components
+- Enhanced layout configuration for properly resizable UI components
+- Fixed menu component imports (`MenuItem` from `gio` instead of `gtk`)
+- Removed unnecessary `ModelExt` import that's included in prelude
 
 ### Known Issues
 
@@ -187,6 +200,15 @@ Throughout this project, we've learned:
 We continue to document our learning in each major feature implementation.
 
 ## Recent Improvements
+
+### Mouse Control Actions
+- Added comprehensive mouse control functions for Windows
+- Implemented smooth mouse movement with configurable steps
+- Added support for all mouse buttons (left, right, middle)
+- Implemented drag operations with configurable start/end positions
+- Added mouse wheel scrolling with configurable amounts
+- Implemented position restoration after operations
+- Added ability to verify mouse cursor position with tolerance
 
 ### GTK4 Compatibility
 - Updated import paths to use GTK4 components
