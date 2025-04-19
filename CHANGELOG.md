@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - System Actions
   - Run Command action for executing system commands
   - File Operations action for file management (copy, move, delete, create)
+  - Window Actions for window manipulation (minimize, maximize, activate, etc.)
   - Support for background command execution
 
 ### Changed

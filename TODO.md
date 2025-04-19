@@ -127,7 +127,7 @@
   - [x] Registry operations
   - [x] File operations
 - [ ] Window Actions
-  - [ ] Window manipulation
+  - [x] Window manipulation
   - [ ] Send keys
   - [ ] Mouse control
 - [ ] Variable Actions
