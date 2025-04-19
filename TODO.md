@@ -129,7 +129,8 @@
 - [ ] Window Actions
   - [x] Window manipulation
   - [x] Send keys
-  - [ ] Mouse control
+  - [x] Mouse control
+  - [x] Mouse recorder (capturing and playback)
 - [ ] Variable Actions
   - [ ] Set/Get variables
   - [ ] Mathematical operations

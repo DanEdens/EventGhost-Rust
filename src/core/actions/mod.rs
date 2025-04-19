@@ -9,6 +9,8 @@ pub use system::FileOperationsAction;
 pub use system::RegistryOperationsAction;
 pub use system::WindowActionsAction;
 pub use system::SendKeysAction;
+pub use system::MouseControlAction;
+pub use system::MouseRecorderAction;
 
 #[cfg(test)]
 mod tests; 

@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - File Operations action for file management (copy, move, delete, create)
   - Window Actions for window manipulation (minimize, maximize, activate, etc.)
   - Send Keys action for keyboard input simulation (typing, key combinations)
+  - Mouse Control action for mouse simulation (move, click, scroll, drag)
+  - Mouse Recorder action for recording and replaying mouse actions with delays
   - Support for background command execution
 
 ### Changed
